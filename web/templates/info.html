@@ -1,0 +1,13 @@
+{{define "workspace-info"}}
+<table>
+    <tr><td class="info-field">ID</td><td>{{.ID}}</td></tr>
+    <tr><td class="info-field">Name</td><td>{{.Name}}</td></tr>
+    <tr><td class="info-field">Model</td><td>{{.Model}}</td></tr>
+    <tr><td class="info-field">Status</td><td data-status="{{.Status}}">{{.Status}}</td></tr>
+    <tr><td class="info-field">Path</td><td><code class="path">{{.BasePath}}</code></td></tr>
+    <tr><td class="info-field">Work Dir</td><td><code class="path">{{.WorkDir}}</code></td></tr>
+    <tr><td class="info-field">Created</td><td>{{.CreatedAt}}</td></tr>
+    <tr><td class="info-field">Started</td><td>{{.StartedAt}}</td></tr>
+    <tr><td class="info-field">Finished</td><td>{{.FinishedAt}}</td></tr>
+</table>
+{{end}}

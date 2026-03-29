@@ -1,0 +1,12 @@
+defaults:
+  resources:
+    cpu: "16"
+    memory: "32G"
+git:
+  user_name: "Global User"
+  user_email: "global@test.com"
+proxy:
+  port: 3128
+  base_allowlist:
+    - ".npmjs.org"
+    - ".github.com"

@@ -1,0 +1,20 @@
+name: custom-prompt
+source:
+  local_path: ./repo
+agent:
+  image: dwoe-agent:latest
+  model: claude-sonnet-4-6
+  max_turns: 10
+  task_prompt: >
+    You are working on a Go CLI tool. Read main.go to understand the
+    current code. Add a --name flag that customizes the greeting.
+    Add tests. Run go test ./... and commit.
+  env_vars:
+    CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN}
+git:
+  user_name: "dwoe-agent"
+  user_email: "agent@dwoe.dev"
+no_proxy: true
+resources:
+  cpu: "2"
+  memory: "4G"

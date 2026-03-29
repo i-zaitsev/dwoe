@@ -1,0 +1,18 @@
+{{define "diff-info"}}
+<div class="diff-section">
+    <h3>Commits</h3>
+    {{range .Commits}}
+    <div class="diff-commit"><code>{{.Hash}}</code> {{.Message}}</div>
+    {{else}}
+    <div>No commits</div>
+    {{end}}
+</div>
+<div class="diff-section">
+    <h3>Summary</h3>
+    <pre class="diff-stat">{{.Stat}}</pre>
+</div>
+<div class="diff-section">
+    <h3>Diff</h3>
+    <pre class="diff-content">{{.Diff}}</pre>
+</div>
+{{end}}

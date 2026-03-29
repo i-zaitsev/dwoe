@@ -1,0 +1,27 @@
+version: 2
+
+builds:
+  - main: ./cmd/dwoe
+    binary: dwoe
+    ldflags:
+      - -s -w
+      - -X github.com/i-zaitsev/dwoe/internal/version.version={{.Version}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

@@ -1,0 +1,6 @@
+# allowlist.txt - Domains the agent container can access
+# One domain per line
+# Leading dot (.domain.com) matches domain AND all subdomains
+{{- range .AllowedDomains}}
+{{.}}
+{{- end}}

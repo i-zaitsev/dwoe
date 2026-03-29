@@ -1,0 +1,18 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - gocritic
+    - revive
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+
+issues:
+  exclude-dirs:
+    - testdata

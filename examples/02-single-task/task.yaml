@@ -1,0 +1,16 @@
+name: go-hello
+source:
+  local_path: ./repo
+  prompt_file: ./prompt.md
+agent:
+  image: dwoe-agent:go
+  model: claude-sonnet-4-6
+  max_turns: 10
+  env_vars:
+    CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN}
+git:
+  user_name: "dwoe-agent"
+  user_email: "agent@dwoe.dev"
+resources:
+  cpu: "2"
+  memory: "4G"

@@ -1,0 +1,55 @@
+{{define "logs-page"}}
+<!DOCTYPE html>
+<html lang="en"{{if eq .Theme "light"}} data-theme="light"{{end}}>
+<head>
+    <meta charset="utf-8">
+    <title>dwoe: logs - {{.Info.Name}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="logs-header">
+        <a href="/">Back</a>
+        <h1>{{.Info.Name}}</h1>
+    </div>
+    <div id="ws-detail" class="workspace-detail">
+        {{template "workspace-info" .Info}}
+    </div>
+    <div class="logs-actions">
+        <a href="" class="btn collapse-btn">Collapse All</a>
+        {{if ne .Info.Status "running"}}
+        <a class="btn"
+           hx-get="/workspaces/diff?q={{.Info.ID}}"
+           hx-target="#diff"
+           hx-swap="innerHTML">Changes</a>
+        {{end}}
+    </div>
+    <div id="diff"></div>
+    <h4>Logs</h4>
+    {{if eq .Info.Status "running"}}
+    <div hx-ext="sse"
+         sse-connect="/workspaces/logs/stream?q={{.Info.ID}}"
+         sse-close="done">
+        <div sse-swap="log" hx-swap="beforeend" hx-target="#logs"></div>
+    </div>
+    <div style="display:none"
+         hx-trigger="htmx:sseClose from:body"
+         hx-get="/workspaces/inspect?q={{.Info.ID}}"
+         hx-target="#ws-detail"
+         hx-swap="innerHTML">
+    </div>
+    {{end}}
+    <div id="logs">
+        {{if ne .Info.Status "running"}}
+        <div hx-get="/workspaces/logs?q={{.Info.ID}}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+        </div>
+        {{end}}
+    </div>
+</div>
+<script src="/static/htmx.min.js"></script>
+<script src="/static/htmx-ext-sse.min.js"></script>
+</body>
+</html>
+{{end}}

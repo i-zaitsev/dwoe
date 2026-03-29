@@ -1,0 +1,22 @@
+{
+  "id": "test-batch-2",
+  "source_dir": "/tmp/source",
+  "created_at": "2026-01-15T12:34:56Z",
+  "entries": [
+    {
+      "task_file": "tasks/agent/three.yaml",
+      "workspace_id": "ws-10",
+      "branch": "agent/one"
+    },
+    {
+      "task_file": "tasks/agent/four.yaml",
+      "workspace_id": "ws-11",
+      "branch": "agent/two"
+    },
+    {
+      "task_file": "tasks/quick/work/task.yaml",
+      "workspace_id": "ws-12",
+      "branch": "agent/three"
+    }
+  ]
+}

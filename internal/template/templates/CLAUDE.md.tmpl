@@ -1,0 +1,99 @@
+# Project Instructions for Claude Code
+
+## Autonomous Operation Mode
+
+You are running in **autonomous mode** inside an isolated Docker container with **FILTERED NETWORK ACCESS**.
+
+Only allowlisted domains are accessible. Follow these rules strictly:
+
+### Core Behavior
+
+1. **Never ask for clarification** – make reasonable assumptions and document them
+2. **Never wait for user input** – proceed with the best judgment
+3. **Log all blockers** to `UNRESOLVED.md` as `[TODO]` items instead of stopping
+4. **Commit working changes frequently** with descriptive messages
+5. **Handle network failures gracefully** – see the Network Constraints section
+
+### Container Environment
+
+- You are running inside a Docker container with **filtered** network access
+- The `/workspace` directory is your only writable area
+- Only specific domains are accessible (npm, CDNs, GitHub raw content, documentation)
+- All your actions are being logged for later inspection
+- Host filesystem is completely inaccessible
+
+### Network Constraints (CRITICAL)
+
+**ALLOWLISTED DOMAINS** (these will work):
+{{range .AllowedDomains}}- `{{.}}`
+{{end}}
+**BLOCKED DOMAINS** (will return HTTP 403 or timeout):
+- General websites: `google.com`, `stackoverflow.com`, etc.
+- Social media, search engines, arbitrary APIs
+- Any domain not in the allowlist
+
+### Handling Blocked Requests
+
+When you encounter a network error (403, timeout, connection refused):
+
+1. **DO NOT retry the same request repeatedly** – it will not succeed
+2. **Log it immediately** to `UNRESOLVED.md` as a `[TODO]` item
+3. **Find an alternative**:
+   - Use an allowlisted CDN instead
+   - Bundle the resource locally
+   - Implement a fallback/placeholder
+   - Skip the feature if non-essential
+4. **Continue with the rest of the task**
+
+### Task Management
+
+- Read the task files and source code in `/workspace`
+- Track progress in `PROGRESS.md`
+- Log unresolved issues in `UNRESOLVED.md` with `[TODO]` prefix
+- Update `PROGRESS.md` after each significant step
+
+### TODO Categories for UNRESOLVED.md
+
+Use these prefixes to categorize issues:
+
+- `[TODO-NET-xxx]` - Network/blocked domain issues
+- `[TODO-BUG-xxx]` - Bugs that couldn't be fixed
+- `[TODO-FEATURE-xxx]` - Features skipped due to constraints
+- `[TODO-DATA-xxx]` - Missing data or resources
+- `[TODO-TEST-xxx]` - Tests that need manual verification
+
+### Completion Protocol
+
+When the task is as complete as possible given constraints:
+1. Update `PROGRESS.md` with final status
+2. Ensure all blockers are documented in `UNRESOLVED.md` with clear `[TODO]` items
+3. Commit all changes
+4. Write exactly `<promise>DONE</promise>` as your final output
+
+Note: "Complete" means the core functionality works. Features blocked by network restrictions should be logged as TODOs, not considered failures.
+
+### Error Handling
+
+If you encounter an error you cannot resolve:
+1. Document it in `UNRESOLVED.md` with:
+   - `[TODO-xxx]` prefix and unique ID
+   - Error description
+   - What you attempted
+   - Why it failed
+   - Workaround applied (if any)
+   - What manual resolution is needed
+2. Continue with other parts of the task
+3. Do NOT stop or ask for help
+
+### Git Workflow
+
+- Commit after completing each logical unit of work
+- Use conventional commit messages: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`
+- Do not push (no remote configured)
+- Commit even partial progress to preserve work
+
+### Testing
+
+- Run tests after significant changes
+- Fix failing tests before moving to next task
+- If tests cannot be fixed, log to `UNRESOLVED.md` and continue

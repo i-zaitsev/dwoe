@@ -1,0 +1,4 @@
+FROM alpine:latest
+RUN printf '#!/bin/sh\necho "test ok"\necho "<promise>DONE</promise>"\n' > /test-entry.sh && chmod +x /test-entry.sh
+ENTRYPOINT ["/test-entry.sh"]
+WORKDIR /workspace

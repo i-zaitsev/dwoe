@@ -1,0 +1,45 @@
+{{define "workspace-list"}}
+{{if .BatchFilter}}
+<div class="filter-bar">
+    Filtered by batch: <strong>{{.BatchFilter}}</strong>
+    <a hx-get="/workspaces/list"
+       hx-target="#workspaces"
+       hx-swap="innerHTML"
+       hx-push-url="/"
+       class="btn btn-small">Clear</a>
+</div>
+{{end}}
+<table>
+    <thead>
+        <tr><th>Name</th><th>ID</th><th>Batch</th><th>Status</th><th>Started</th><th></th></tr>
+    </thead>
+    <tbody>
+    {{range .Items}}
+        <tr class="line-highlight"{{if .BatchColor}} data-batch="{{.BatchColor}}"{{end}}>
+            <td>{{.Name}}</td>
+            <td>{{.ID}}</td>
+            <td class="batch-cell">
+            {{if .BatchID}}
+                <a hx-get="/workspaces/list?batch={{.BatchID}}"
+                   hx-target="#workspaces"
+                   hx-swap="innerHTML"
+                   hx-push-url="/?batch={{.BatchID}}"
+                   class="batch-link"
+                   data-batch="{{.BatchColor}}"
+                >
+                    {{.BatchDisplay}}
+                </a>
+            {{end}}
+            </td>
+            <td data-status="{{.Status}}">{{.Status}}</td>
+            <td>{{.ShortTime}}</td>
+            <td class="right-align">
+                <a href="/workspaces/logs/view?q={{.ID}}" class="btn">Inspect</a>
+            </td>
+        </tr>
+    {{else}}
+        <tr><td colspan="6">No workspaces</td></tr>
+    {{end}}
+    </tbody>
+</table>
+{{end}}

@@ -1,0 +1,31 @@
+# dwoe-agent:go is an image to work with Go using Claude Code.
+# Build: docker build -f docker/Dockerfile.claude-go -t dwoe-agent:go docker/
+FROM golang:1.23-bookworm
+
+ARG USER_ID=9999
+ARG GROUP_ID=9999
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ca-certificates \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g ${GROUP_ID} agent && \
+    useradd -m -u ${USER_ID} -g agent -s /bin/bash agent
+
+RUN mkdir -p /workspace /logs && \
+    chown -R agent:agent /workspace /logs
+
+USER agent
+WORKDIR /workspace
+
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV PATH="/home/agent/.local/bin:${PATH}"
+
+RUN mkdir -p /home/agent/.claude
+
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,5 @@
+{{define "log-line"}}<div class="log-line">{{.}}</div>{{end}}
+
+{{define "log-line-json" -}}
+<details class="log-line json"><summary>{{.Raw}}</summary><pre>{{.Pretty}}</pre></details>
+{{- end}}

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      {{range $i, $p := .Permissions}}{{if $i}},
+      {{end}}"{{$p}}"{{end}}
+    ]
+  }
+}

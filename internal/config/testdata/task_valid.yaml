@@ -1,0 +1,22 @@
+name: test
+description: Test task
+
+source:
+  repo: github.com/i-zaitcev/url
+  branch: main
+  prompt_file: prompt.txt
+  spec_file: spec.md
+
+agent:
+  model: test-model
+  max_turns: 9999
+  env_vars:
+    SECRET_KEY: "s3cr3t"
+    PRIVATE_KEY: "pr1v@te"
+  permissions:
+    - Bash(cat file.txt)
+    - Bash(cp code/**)
+    - Bash(git clone https://github.com/i-zaitcev/url.git)
+
+resources:
+  memory: "16G"

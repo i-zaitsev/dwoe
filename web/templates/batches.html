@@ -1,0 +1,65 @@
+{{define "batches-page"}}
+<!DOCTYPE html>
+<html lang="en"{{if eq .Theme "light"}} data-theme="light"{{end}}>
+<head>
+    <meta charset="utf-8">
+    <title>dwoe: batches</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="logs-header">
+        <a href="/">Back</a>
+        <h1>Batches</h1>
+    </div>
+    <table>
+        <thead>
+            <tr><th>Batch</th><th>Workers</th><th>Started</th><th>Finished</th><th></th></tr>
+        </thead>
+        <tbody>
+        {{range .Batches}}
+            <tr class="line-highlight">
+                <td><code>{{.ShortID}}</code></td>
+                <td>{{.Workers}}</td>
+                <td>{{.StartedFmt}}</td>
+                <td>{{.FinishedFmt}}</td>
+                <td class="right-align">
+                    <a href="/batches?batch={{.ID}}" class="btn">Changes</a>
+                </td>
+            </tr>
+        {{else}}
+            <tr><td colspan="5">No batches</td></tr>
+        {{end}}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
+{{end}}
+
+{{define "batches-changes"}}
+<!DOCTYPE html>
+<html lang="en"{{if eq .Theme "light"}} data-theme="light"{{end}}>
+<head>
+    <meta charset="utf-8">
+    <title>dwoe: batch changes - {{.BatchID}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="logs-header">
+        <a href="/batches">Back</a>
+        <h1>Changes: {{.BatchID}}</h1>
+    </div>
+    {{range .Diffs}}
+    <div class="batch-diff-entry">
+        <h3>{{.Name}} <small>({{.ID}})</small></h3>
+        {{template "diff-info" .}}
+    </div>
+    {{else}}
+    <p>No changes</p>
+    {{end}}
+</div>
+</body>
+</html>
+{{end}}

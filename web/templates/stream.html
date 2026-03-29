@@ -1,0 +1,7 @@
+{{define "stream-connect"}}
+<div hx-ext="sse"
+     sse-connect="/workspaces/logs/stream?q={{.}}"
+     sse-swap="message"
+     hx-swap="beforeend">
+</div>
+{{end}}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"{{if eq .Theme "light"}} data-theme="light"{{end}}>
+<head>
+    <meta charset="utf-8">
+    <title>dwoe: web</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="page-header">
+        <h1>Workspaces Dashboard</h1>
+        <div class="header-links">
+            <a href="/batches" class="theme-link">Batches</a>
+            {{if eq .Theme "light"}}
+            <a href="/theme?v=dark" class="theme-link">Dark</a>
+            {{else}}
+            <a href="/theme?v=light" class="theme-link">Light</a>
+            {{end}}
+        </div>
+    </div>
+    <div class="search-bar">
+        <input type="text" name="q" placeholder="Filter by name"
+               hx-get="/workspaces/list"
+               hx-trigger="keyup changed delay:300ms"
+               hx-target="#workspaces"
+               hx-swap="innerHTML" />
+    </div>
+    <div id="workspaces"
+         hx-get="/workspaces/list{{if .BatchFilter}}?batch={{.BatchFilter}}{{end}}"
+         hx-trigger="load"
+         hx-swap="innerHTML"></div>
+</div>
+<script src="/static/htmx.min.js"></script>
+<script src="/static/htmx-ext-sse.min.js"></script>
+</body>
+</html>
