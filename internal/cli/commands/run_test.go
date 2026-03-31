@@ -9,8 +9,10 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
@@ -137,6 +139,62 @@ func TestRunCmd_Run_Interrupted(t *testing.T) {
 
 	testutil.WantErr(t, err, errRunInterrupted)
 	testutil.ContainsAll(t, setup.stdout.String(), "Interrupted")
+}
+
+func TestRunCmd_Run_SourceDirOverride(t *testing.T) {
+	t.Parallel()
+	ts := newCmdTestSetup(t)
+	srcDir := t.TempDir()
+	ts.env.SetSourceDir(srcDir)
+
+	dir := t.TempDir()
+	taskFile := testutil.WriteTaskFile(t, filepath.Join(dir, "task.yaml"), &config.Task{
+		Name:   "no-source",
+		Source: config.Source{PromptFile: filepath.Join(dir, "prompt.md")},
+	})
+	testutil.WriteFile(t, filepath.Join(dir, "prompt.md"), "do the thing")
+
+	cmd := &cmdRun{taskPath: taskFile, detach: true}
+	err := cmd.Run(ts.env)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+}
+
+func TestRunCmd_Run_ModelOverride(t *testing.T) {
+	t.Parallel()
+	ts := newCmdTestSetup(t)
+	ts.env.SetModel("custom-model")
+
+	dir := t.TempDir()
+	taskFile := writeTaskFile(t, dir, "model-test")
+	cmd := &cmdRun{taskPath: taskFile, detach: true}
+
+	err := cmd.Run(ts.env)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+}
+
+func TestRunCmd_Run_SourceDirNotUsedWhenYAMLHasSource(t *testing.T) {
+	t.Parallel()
+	ts := newCmdTestSetup(t)
+	ts.env.SetSourceDir("/should/not/be/used")
+
+	dir := t.TempDir()
+	taskFile := writeTaskFile(t, dir, "has-source")
+	cmd := &cmdRun{taskPath: taskFile, detach: true}
+
+	err := cmd.Run(ts.env)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:")
 }
 
 func TestRunCmd_Run_MissingFile(t *testing.T) {

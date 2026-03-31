@@ -82,6 +82,12 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	if err != nil {
 		return cli.CmdErr(c, "load config: %w", err)
 	}
+	if e.SourceDir() != "" && taskCfg.Source.LocalPath == "" && taskCfg.Source.Repo == "" {
+		taskCfg.Source.LocalPath = e.SourceDir()
+	}
+	if e.Model() != "" && taskCfg.Agent.Model == "" {
+		taskCfg.Agent.Model = e.Model()
+	}
 	if e.NoProxy() {
 		taskCfg.NoProxy = true
 	}

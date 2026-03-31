@@ -45,11 +45,6 @@ func LoadTaskConfig(path string) (*Task, error) {
 		task.Network.Proxy.AllowList = append(task.Network.Proxy.AllowList, extra...)
 	}
 
-	slog.Debug("config: load-task validation")
-	if errVal := task.Validate(); errVal != nil {
-		return nil, fmt.Errorf("invalid task config: %w", errVal)
-	}
-
 	return &task, nil
 }
 
