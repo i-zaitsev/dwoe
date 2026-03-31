@@ -7,9 +7,11 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/i-zaitsev/dwoe/internal/batch"
@@ -94,7 +96,15 @@ func (c *cmdBatch) Run(e *cli.Env) error {
 	}
 
 	slog.Debug("cli: batch saving record", "dataDir", e.DataDir())
-	rec := batch.NewRecord(sourceDir, taskFiles, ids)
+	relPaths := make([]string, len(taskFiles))
+	for i, tf := range taskFiles {
+		rel, errRel := filepath.Rel(c.dir, tf)
+		if errRel != nil {
+			rel = tf
+		}
+		relPaths[i] = rel
+	}
+	rec := batch.NewRecord(sourceDir, relPaths, ids)
 	if errSave := batch.SaveRecord(e.DataDir(), rec); errSave != nil {
 		return cli.CmdErr(c, "%w", errSave)
 	}
@@ -208,18 +218,26 @@ func (c *cmdBatch) waitAll(e *cli.Env, manager *workspace.Manager, ids []string)
 	return nil
 }
 
-// discoverTasks returns a list of task files found in the dir.
-// It is assumed that each task file starts with "task-" and is a valid YAML file with task definition.
-// The files are sorted by name.
+// discoverTasks walks dir recursively and returns all .yaml files found.
+// The returned paths are sorted lexicographically.
 func discoverTasks(dir string) ([]string, error) {
-	pattern := filepath.Join(dir, "task-*.yaml")
-	matches, err := filepath.Glob(pattern)
+	var tasks []string
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".yaml") {
+			return nil
+		}
+		tasks = append(tasks, path)
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("batch: glob: %w", err)
+		return nil, fmt.Errorf("batch: walk: %w", err)
 	}
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("batch: no task-*.yaml files found in %s", dir)
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("batch: no .yaml task files found in %s", dir)
 	}
-	sort.Strings(matches)
-	return matches, nil
+	sort.Strings(tasks)
+	return tasks, nil
 }

@@ -121,9 +121,6 @@ func TestDiscoverTasks(t *testing.T) {
 		testutil.WriteFile(t, filepath.Join(dir, name), "name: test")
 	}
 
-	// Non-matching file should be ignored.
-	testutil.WriteFile(t, filepath.Join(dir, "config.yaml"), "x: y")
-
 	got, err := discoverTasks(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -138,6 +135,46 @@ func TestDiscoverTasks(t *testing.T) {
 	}
 }
 
+func TestDiscoverTasks_Recursive(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(dir, "one", "deep", "task.yaml"), "name: deep")
+	testutil.WriteFile(t, filepath.Join(dir, "two", "task.yaml"), "name: two")
+	testutil.WriteFile(t, filepath.Join(dir, "task.yaml"), "name: root")
+
+	got, err := discoverTasks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("len = %d, want 3", len(got))
+	}
+	for _, path := range got {
+		if filepath.Base(path) != "task.yaml" {
+			t.Errorf("unexpected file: %s", path)
+		}
+	}
+}
+
+func TestDiscoverTasks_IgnoresNonYAML(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(dir, "task.yaml"), "name: test")
+	testutil.WriteFile(t, filepath.Join(dir, "readme.md"), "# README")
+	testutil.WriteFile(t, filepath.Join(dir, "notes.txt"), "notes")
+
+	got, err := discoverTasks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len = %d, want 1", len(got))
+	}
+	if filepath.Base(got[0]) != "task.yaml" {
+		t.Errorf("got = %q, want task.yaml", got[0])
+	}
+}
+
 func TestDiscoverTasks_Empty(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
@@ -145,4 +182,42 @@ func TestDiscoverTasks_Empty(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty dir")
 	}
+}
+
+func TestBatchCmd_Run_WithSourceDir(t *testing.T) {
+	t.Parallel()
+	setup := newCmdTestSetup(t)
+	srcDir := t.TempDir()
+	setup.env.SetSourceDir(srcDir)
+
+	batchDir := t.TempDir()
+	promptFile := filepath.Join(batchDir, "prompt.md")
+	testutil.WriteFile(t, promptFile, "do the thing")
+	testutil.WriteTaskFile(t, filepath.Join(batchDir, "task-light.yaml"), &config.Task{
+		Name:   "light-task",
+		Source: config.Source{PromptFile: promptFile},
+	})
+
+	cmd := &cmdBatch{
+		dir: batchDir,
+		loadConfig: func(_, _ string) (*config.Task, error) {
+			return &config.Task{
+				Name:   "light-task",
+				Source: config.Source{LocalPath: srcDir},
+			}, nil
+		},
+		ensureRepo: func(_, _, _ string) error { return nil },
+	}
+
+	err := cmd.Run(setup.env)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := setup.stdout.String()
+	testutil.ContainsAll(t, out,
+		"discovered 1 task(s)",
+		"Batch ID:",
+		"Summary: 1 total, 1 completed, 0 failed",
+	)
 }
