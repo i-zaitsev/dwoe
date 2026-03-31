@@ -23,6 +23,8 @@ type GlobalFlags struct {
 	logFile   string        // logFile redirects logs to a file
 	logLevel  logLevelParam // logLevel specifies the logging level
 	logFormat logpkg.Format // logFormat specifies the log output format: JSON or text
+	sourceDir string        // sourceDir overrides source.local_path when not set in task
+	model     string        // model overrides agent.model when not set in task
 	noProxy   bool          // noProxy disables the proxy container
 }
 
@@ -40,6 +42,8 @@ func parseGlobalFlags(args []string) (*GlobalFlags, []string, error) {
 	fs.StringVar(&flags.logFile, "logfile", "", "write JSON logs to file")
 	fs.Var(&flags.logLevel, "loglevel", "log level (debug, info, warn, Error)")
 	fs.Var(&flags.logFormat, "logfmt", "log output format (JSON or text)")
+	fs.StringVar(&flags.sourceDir, "sourceDir", "", "default source directory for tasks")
+	fs.StringVar(&flags.model, "model", "", "default model for tasks")
 	fs.BoolVar(&flags.noProxy, "no-proxy", false, "disable proxy container")
 	fs.BoolVar(&help, "h", false, "show help")
 

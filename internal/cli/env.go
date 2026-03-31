@@ -28,6 +28,8 @@ type Env struct {
 	stderr     io.Writer
 	ctx        context.Context
 	dataDir    string
+	sourceDir  string
+	model      string
 	noProxy    bool
 	newManager func() (*workspace.Manager, error)
 }
@@ -95,6 +97,18 @@ func (e *Env) SetContext(ctx context.Context) {
 func (e *Env) SetDataDir(dir string) {
 	e.dataDir = dir
 }
+
+// SourceDir returns the global source directory override.
+func (e *Env) SourceDir() string { return e.sourceDir }
+
+// SetSourceDir sets the global source directory override.
+func (e *Env) SetSourceDir(v string) { e.sourceDir = v }
+
+// Model returns the global model override.
+func (e *Env) Model() string { return e.model }
+
+// SetModel sets the global model override.
+func (e *Env) SetModel(v string) { e.model = v }
 
 // NoProxy reports whether the proxy container is disabled.
 func (e *Env) NoProxy() bool { return e.noProxy }

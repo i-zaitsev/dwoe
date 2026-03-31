@@ -53,16 +53,21 @@ func testEnv() (*Env, *bytes.Buffer, *bytes.Buffer) {
 
 func TestParseGlobalFlags(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    []string
-		dataDir string
-		noProxy bool
-		rest    []string
+		name      string
+		args      []string
+		dataDir   string
+		sourceDir string
+		model     string
+		noProxy   bool
+		rest      []string
 	}{
-		{"no args", nil, defaultDataDir(), false, nil},
-		{"command only", []string{"list"}, defaultDataDir(), false, []string{"list"}},
-		{"datadir", []string{"--datadir", "/tmp", "run", "t.yaml"}, "/tmp", false, []string{"run", "t.yaml"}},
-		{"no-proxy", []string{"--no-proxy", "run", "t.yaml"}, defaultDataDir(), true, []string{"run", "t.yaml"}},
+		{"no args", nil, defaultDataDir(), "", "", false, nil},
+		{"command only", []string{"list"}, defaultDataDir(), "", "", false, []string{"list"}},
+		{"datadir", []string{"--datadir", "/tmp", "run", "t.yaml"}, "/tmp", "", "", false, []string{"run", "t.yaml"}},
+		{"no-proxy", []string{"--no-proxy", "run", "t.yaml"}, defaultDataDir(), "", "", true, []string{"run", "t.yaml"}},
+		{"sourceDir", []string{"--sourceDir", "/src", "batch", "tasks"}, defaultDataDir(), "/src", "", false, []string{"batch", "tasks"}},
+		{"model", []string{"--model", "claude-sonnet-4-6", "run", "t.yaml"}, defaultDataDir(), "", "claude-sonnet-4-6", false, []string{"run", "t.yaml"}},
+		{"sourceDir_and_model", []string{"--sourceDir", "/code", "--model", "m", "batch", "."}, defaultDataDir(), "/code", "m", false, []string{"batch", "."}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -72,6 +77,12 @@ func TestParseGlobalFlags(t *testing.T) {
 			}
 			if flags.dataDir != tt.dataDir {
 				t.Errorf("dataDir = %q, want %q", flags.dataDir, tt.dataDir)
+			}
+			if flags.sourceDir != tt.sourceDir {
+				t.Errorf("sourceDir = %q, want %q", flags.sourceDir, tt.sourceDir)
+			}
+			if flags.model != tt.model {
+				t.Errorf("model = %q, want %q", flags.model, tt.model)
 			}
 			if flags.noProxy != tt.noProxy {
 				t.Errorf("noProxy = %v, want %v", flags.noProxy, tt.noProxy)

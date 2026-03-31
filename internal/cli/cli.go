@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sort"
 	"text/tabwriter"
 
@@ -85,6 +86,14 @@ func Run(env *Env, args []string) error {
 
 	env.dataDir = global.dataDir // location with the metadata and results from workspaces
 	env.noProxy = global.noProxy
+	env.model = global.model
+	if global.sourceDir != "" {
+		abs, errAbs := filepath.Abs(global.sourceDir)
+		if errAbs != nil {
+			return fmt.Errorf("resolve --sourceDir: %w", errAbs)
+		}
+		env.sourceDir = abs
+	}
 	env.newManager = func() (*workspace.Manager, error) {
 		// creates a new workspace manager in the provided directory
 		return workspace.NewManager(global.dataDir)
@@ -158,6 +167,8 @@ func buildUsage() string {
 	buf.WriteString("\t--logfile <path>    Write JSON logs to file\n")
 	buf.WriteString("\t--loglevel <level>  Log level: debug, info, warn, error (default: warn)\n")
 	buf.WriteString("\t--logfmt <format>   Log format: text, json (default: json)\n")
+	buf.WriteString("\t--sourceDir <path>  Default source directory for tasks\n")
+	buf.WriteString("\t--model <model>     Default model for tasks\n")
 	buf.WriteString("\t--no-proxy          Disable proxy container\n")
 	buf.WriteString("\nCommands:\n")
 
