@@ -28,9 +28,7 @@ import (
 func TestNewManager(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	if ts.manager == nil {
-		t.Fatal("expected manager, got nil")
-	}
+	assert.NotNil(t, ts.manager)
 }
 
 func TestManager_Create(t *testing.T) {
@@ -62,9 +60,7 @@ func TestManager_Create(t *testing.T) {
 		t.Errorf("workspace config file %q should exist", path)
 	}
 
-	if ts.state.Data[ws.ID] == nil {
-		t.Error("state not saved")
-	}
+	assert.NotNil(t, ts.state.Data[ws.ID])
 }
 
 func TestManager_Get(t *testing.T) {
@@ -143,14 +139,7 @@ func TestManager_List(t *testing.T) {
 func TestManager_Start(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp")
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:       "ws-1",
-		Name:     "test",
-		Status:   "pending",
-		BasePath: basePath,
-	}
+	ts.setWorkspace(t, "ws-1", "pending")
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
@@ -179,14 +168,7 @@ func TestManager_Start(t *testing.T) {
 func TestManager_Start_Templates(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp")
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:       "ws-1",
-		Name:     "test",
-		Status:   "pending",
-		BasePath: basePath,
-	}
+	basePath := ts.setWorkspace(t, "ws-1", "pending")
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
@@ -282,14 +264,8 @@ func TestManager_Start_WithProxy(t *testing.T) {
 func TestManager_Start_WithoutProxy(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
+	basePath := ts.setWorkspace(t, "ws-1", "pending")
 	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp\nno_proxy: true")
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:       "ws-1",
-		Name:     "test",
-		Status:   "pending",
-		BasePath: basePath,
-	}
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
@@ -302,15 +278,8 @@ func TestManager_Start_WithoutProxy(t *testing.T) {
 func TestManager_Stop_WithProxy(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp")
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-agent", "proxy": "ctr-proxy"},
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-agent", "proxy": "ctr-proxy"}
 
 	err := ts.manager.Stop(context.Background(), "ws-1", time.Minute)
 
@@ -325,15 +294,8 @@ func TestManager_Stop_WithProxy(t *testing.T) {
 func TestManager_Stop(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp")
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1"},
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1"}
 
 	err := ts.manager.Stop(context.Background(), "ws-1", time.Minute)
 
@@ -349,22 +311,13 @@ func TestManager_Stop(t *testing.T) {
 func TestManager_Logs(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp")
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1"},
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1"}
 
 	rc, err := ts.manager.Logs(context.Background(), "ws-1", true)
 
 	assert.NotErr(t, err)
-	if rc == nil {
-		t.Fatal("expected logs reader, got nil")
-	}
+	assert.NotNil(t, rc)
 	_ = rc.Close()
 	want := []string{"ContainerLogs"}
 	got := ts.docker.Calls
@@ -376,19 +329,11 @@ func TestManager_Logs(t *testing.T) {
 func TestManager_Wait(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1"},
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1"}
 
-	if _, err := ts.manager.Wait(context.Background(), "ws-1"); err != nil {
-		t.Fatal(err)
-	}
+	_, err := ts.manager.Wait(context.Background(), "ws-1")
+	assert.NotErr(t, err)
 
 	want := []string{"WaitContainer"}
 	got := ts.docker.Calls
@@ -396,40 +341,25 @@ func TestManager_Wait(t *testing.T) {
 		t.Errorf("(-want, +got):\n%s", diff)
 	}
 	assert.Equal(t, ts.state.Data["ws-1"].Status, "completed")
-	if ts.state.Data["ws-1"].FinishedAt == nil {
-		t.Error("FinishedAt should be set after Wait")
-	}
+	assert.NotNil(t, ts.state.Data["ws-1"].FinishedAt)
 }
 
 func TestManager_Sync_ContainerExited(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1", "proxy": "ctr-2"},
-		NetworkID:    "net-1",
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1", "proxy": "ctr-2"}
+	ts.state.Data["ws-1"].NetworkID = "net-1"
 	ts.docker.InspectContainerFn = func(context.Context, string) (docker.ContainerInfo, error) {
 		return docker.ContainerInfo{Status: "exited", ExitCode: 0}, nil
 	}
 
-	if err := ts.manager.Sync(context.Background(), "ws-1"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, ts.manager.Sync(context.Background(), "ws-1"))
 
 	ws := ts.state.Data["ws-1"]
 	assert.Equal(t, ws.Status, "completed")
-	if ws.FinishedAt == nil {
-		t.Error("FinishedAt should be set")
-	}
-	if ws.ContainerIDs != nil {
-		t.Error("ContainerIDs should be cleared")
-	}
+	assert.NotNil(t, ws.FinishedAt)
+	assert.Nil(t, ws.ContainerIDs)
 	assert.Zero(t, ws.NetworkID)
 	wantCalls := []string{"InspectContainer", "ContainerLogs", "RemoveContainer", "RemoveContainer", "RemoveNetwork"}
 	if diff := cmp.Diff(wantCalls, ts.docker.Calls); diff != "" {
@@ -440,32 +370,19 @@ func TestManager_Sync_ContainerExited(t *testing.T) {
 func TestManager_Sync_ContainerFailed(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1", "proxy": "ctr-2"},
-		NetworkID:    "net-1",
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1", "proxy": "ctr-2"}
+	ts.state.Data["ws-1"].NetworkID = "net-1"
 	ts.docker.InspectContainerFn = func(context.Context, string) (docker.ContainerInfo, error) {
 		return docker.ContainerInfo{Status: "exited", ExitCode: 1}, nil
 	}
 
-	if err := ts.manager.Sync(context.Background(), "ws-1"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, ts.manager.Sync(context.Background(), "ws-1"))
 
 	ws := ts.state.Data["ws-1"]
 	assert.Equal(t, ws.Status, "failed")
-	if ws.FinishedAt == nil {
-		t.Error("FinishedAt should be set")
-	}
-	if ws.ContainerIDs != nil {
-		t.Error("ContainerIDs should be cleared")
-	}
+	assert.NotNil(t, ws.FinishedAt)
+	assert.Nil(t, ws.ContainerIDs)
 	assert.Zero(t, ws.NetworkID)
 	wantCalls := []string{"InspectContainer", "ContainerLogs", "RemoveContainer", "RemoveContainer", "RemoveNetwork"}
 	if diff := cmp.Diff(wantCalls, ts.docker.Calls); diff != "" {
@@ -476,32 +393,19 @@ func TestManager_Sync_ContainerFailed(t *testing.T) {
 func TestManager_Sync_ContainerGone(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1", "proxy": "ctr-2"},
-		NetworkID:    "net-1",
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1", "proxy": "ctr-2"}
+	ts.state.Data["ws-1"].NetworkID = "net-1"
 	ts.docker.InspectContainerFn = func(context.Context, string) (docker.ContainerInfo, error) {
 		return docker.ContainerInfo{}, errors.New("container not found")
 	}
 
-	if err := ts.manager.Sync(context.Background(), "ws-1"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, ts.manager.Sync(context.Background(), "ws-1"))
 
 	ws := ts.state.Data["ws-1"]
 	assert.Equal(t, ws.Status, "failed")
-	if ws.FinishedAt == nil {
-		t.Error("FinishedAt should be set")
-	}
-	if ws.ContainerIDs != nil {
-		t.Error("ContainerIDs should be cleared")
-	}
+	assert.NotNil(t, ws.FinishedAt)
+	assert.Nil(t, ws.ContainerIDs)
 	assert.Zero(t, ws.NetworkID)
 	wantCalls := []string{"InspectContainer", "ContainerLogs", "RemoveContainer", "RemoveContainer", "RemoveNetwork"}
 	if diff := cmp.Diff(wantCalls, ts.docker.Calls); diff != "" {
@@ -512,43 +416,22 @@ func TestManager_Sync_ContainerGone(t *testing.T) {
 func TestManager_Sync_StillRunning(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:           "ws-1",
-		Name:         "test",
-		Status:       "running",
-		BasePath:     basePath,
-		ContainerIDs: map[string]string{"agent": "ctr-1"},
-	}
+	ts.setWorkspace(t, "ws-1", "running")
+	ts.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": "ctr-1"}
 
-	if err := ts.manager.Sync(context.Background(), "ws-1"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, ts.manager.Sync(context.Background(), "ws-1"))
 
 	ws := ts.state.Data["ws-1"]
 	assert.Equal(t, ws.Status, "running")
-	if ws.FinishedAt != nil {
-		t.Error("FinishedAt should not be set")
-	}
+	assert.Nil(t, ws.FinishedAt)
 }
 
 func TestManager_Sync_NotRunning(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:       "ws-1",
-		Name:     "test",
-		Status:   "completed",
-		BasePath: basePath,
-	}
+	ts.setWorkspace(t, "ws-1", "completed")
 
-	if err := ts.manager.Sync(context.Background(), "ws-1"); err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NotErr(t, ts.manager.Sync(context.Background(), "ws-1"))
 	assert.Zero(t, len(ts.docker.Calls))
 }
 
@@ -578,18 +461,14 @@ func TestManager_Destroy(t *testing.T) {
 				DestroyOpts{KeepDir: keepDir},
 			)
 
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NotErr(t, err)
 
 			want := []string{"RemoveContainer", "RemoveContainer", "RemoveNetwork"}
 			got := ts.docker.Calls
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("(-want, +got):\n%s", diff)
 			}
-			if ts.state.Data["ws-1"] != nil {
-				t.Error("workspace should be deleted from state")
-			}
+			assert.Nil(t, ts.state.Data["ws-1"])
 
 			if !keepDir {
 				if _, errDel := os.Stat(basePath); !os.IsNotExist(errDel) {
@@ -623,12 +502,8 @@ func TestManager_Cleanup(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("(-want, +got):\n%s", diff)
 	}
-	if ts.state.Data["ws-1"] == nil {
-		t.Fatal("state entry should be preserved")
-	}
-	if ts.state.Data["ws-1"].ContainerIDs != nil {
-		t.Error("ContainerIDs should be cleared")
-	}
+	assert.NotNil(t, ts.state.Data["ws-1"])
+	assert.Nil(t, ts.state.Data["ws-1"].ContainerIDs)
 	assert.Zero(t, ts.state.Data["ws-1"].NetworkID)
 	if _, err := os.Stat(basePath); os.IsNotExist(err) {
 		t.Error("workspace directory should be preserved")
@@ -684,33 +559,6 @@ func TestManager_Logs_FallbackToFile(t *testing.T) {
 	data, err := io.ReadAll(rc)
 	assert.NotErr(t, err)
 	assert.Equal(t, string(data), "saved output\n")
-}
-
-type testSetup struct {
-	docker  *testfake.FakeDocker
-	state   *testfake.FakeState
-	manager *Manager
-}
-
-func newTestSetup(t *testing.T) *testSetup {
-	t.Helper()
-	fd := new(testfake.FakeDocker)
-	fs := testfake.NewFakeState()
-	manager, err := newManager(t.TempDir(), fd, fs)
-	assert.NotErr(t, err)
-	return &testSetup{
-		docker:  fd,
-		state:   fs,
-		manager: manager,
-	}
-}
-
-func writeConfig(t *testing.T, basePath, content string) {
-	t.Helper()
-	path := filepath.Join(basePath, "config.yaml")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestManager_CreateDuplicateName(t *testing.T) {
@@ -777,9 +625,7 @@ func TestManager_ResolveCompleted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ts.manager.UpdateStatus(ws.ID, tt.status); err != nil {
-				t.Fatal(err)
-			}
+			assert.NotErr(t, ts.manager.UpdateStatus(ws.ID, tt.status))
 			got, err := ts.manager.ResolveCompleted(ws.ID)
 			if tt.wantErr {
 				if err == nil {
@@ -790,9 +636,7 @@ func TestManager_ResolveCompleted(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if got.ID != ws.ID {
-				t.Errorf("ID = %q, want %q", got.ID, ws.ID)
-			}
+			assert.Equal(t, got.ID, ws.ID)
 		})
 	}
 }
@@ -836,7 +680,7 @@ func TestManager_ResolvePrefix_Ambiguous(t *testing.T) {
 	}
 
 	_, err := ts.manager.ResolvePrefix("abc")
-	testutil.WantErrAs[*state.AmbiguousMatchError](t, err)
+	assert.ErrAs[*state.AmbiguousMatchError](t, err)
 }
 
 func TestManager_ResolvePrefix_NotFound(t *testing.T) {
@@ -844,7 +688,7 @@ func TestManager_ResolvePrefix_NotFound(t *testing.T) {
 	ts := newTestSetup(t)
 
 	_, err := ts.manager.ResolvePrefix("zzz")
-	testutil.WantErrAs[*state.NotFoundError](t, err)
+	assert.ErrAs[*state.NotFoundError](t, err)
 }
 
 func TestManager_Resolve_PrefixFallback(t *testing.T) {
@@ -888,8 +732,7 @@ func TestStatusConstants(t *testing.T) {
 func TestManager_Diff(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
-	basePath := t.TempDir()
-	writeConfig(t, basePath, "name: test\nsource:\n  local_path: /tmp")
+	basePath := ts.setWorkspace(t, "ws-1", "completed")
 
 	wsDir := filepath.Join(basePath, "workspace")
 	testutil.MkdirAll(t, wsDir)
@@ -899,16 +742,7 @@ func TestManager_Diff(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(wsDir, "base.txt"), "base")
 	mustGit(t, "-C", wsDir, "add", ".")
 	mustGit(t, "-C", wsDir, "commit", "-m", "initial")
-	testutil.WriteFile(t, filepath.Join(wsDir, "feature.go"), "package main")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "add feature")
-
-	ts.state.Data["ws-1"] = &state.Workspace{
-		ID:       "ws-1",
-		Name:     "test",
-		Status:   "completed",
-		BasePath: basePath,
-	}
+	addCommit(t, wsDir, "feature.go", "package main", "add feature")
 
 	info, err := ts.manager.Diff("ws-1")
 	assert.NotErr(t, err)
@@ -916,4 +750,42 @@ func TestManager_Diff(t *testing.T) {
 	assert.Equal(t, info.Commits[0].Message, "add feature")
 	assert.Contains(t, info.Stat, "feature.go")
 	assert.Contains(t, info.Diff, "package main")
+}
+
+type testSetup struct {
+	docker  *testfake.FakeDocker
+	state   *testfake.FakeState
+	manager *Manager
+}
+
+func newTestSetup(t *testing.T) *testSetup {
+	t.Helper()
+	fd := new(testfake.FakeDocker)
+	fs := testfake.NewFakeState()
+	manager, err := newManager(t.TempDir(), fd, fs)
+	assert.NotErr(t, err)
+	return &testSetup{
+		docker:  fd,
+		state:   fs,
+		manager: manager,
+	}
+}
+
+func writeConfig(t *testing.T, basePath, content string) {
+	t.Helper()
+	path := filepath.Join(basePath, "config.yaml")
+	assert.NotErr(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func (ts *testSetup) setWorkspace(t *testing.T, id, status string) string {
+	t.Helper()
+	basePath := t.TempDir()
+	writeConfig(t, basePath, "name: test\nsource:\n  local_path: "+t.TempDir())
+	ts.state.Data[id] = &state.Workspace{
+		ID:       id,
+		Name:     "test",
+		Status:   status,
+		BasePath: basePath,
+	}
+	return basePath
 }
