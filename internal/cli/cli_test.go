@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 type stubCmd struct {
@@ -64,29 +64,21 @@ func TestParseGlobalFlags(t *testing.T) {
 		{"no args", nil, defaultDataDir(), "", "", false, nil},
 		{"command only", []string{"list"}, defaultDataDir(), "", "", false, []string{"list"}},
 		{"datadir", []string{"--datadir", "/tmp", "run", "t.yaml"}, "/tmp", "", "", false, []string{"run", "t.yaml"}},
-		{"no-proxy", []string{"--no-proxy", "run", "t.yaml"}, defaultDataDir(), "", "", true, []string{"run", "t.yaml"}},
-		{"sourceDir", []string{"--sourceDir", "/src", "batch", "tasks"}, defaultDataDir(), "/src", "", false, []string{"batch", "tasks"}},
+		{"noproxy", []string{"--noproxy", "run", "t.yaml"}, defaultDataDir(), "", "", true, []string{"run", "t.yaml"}},
+		{"sourcedir", []string{"--sourcedir", "/src", "batch", "tasks"}, defaultDataDir(), "/src", "", false, []string{"batch", "tasks"}},
 		{"model", []string{"--model", "claude-sonnet-4-6", "run", "t.yaml"}, defaultDataDir(), "", "claude-sonnet-4-6", false, []string{"run", "t.yaml"}},
-		{"sourceDir_and_model", []string{"--sourceDir", "/code", "--model", "m", "batch", "."}, defaultDataDir(), "/code", "m", false, []string{"batch", "."}},
+		{"sourcedir_and_model", []string{"--sourcedir", "/code", "--model", "m", "batch", "."}, defaultDataDir(), "/code", "m", false, []string{"batch", "."}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			flags, rest, err := parseGlobalFlags(tt.args)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if flags.dataDir != tt.dataDir {
-				t.Errorf("dataDir = %q, want %q", flags.dataDir, tt.dataDir)
-			}
-			if flags.sourceDir != tt.sourceDir {
-				t.Errorf("sourceDir = %q, want %q", flags.sourceDir, tt.sourceDir)
-			}
-			if flags.model != tt.model {
-				t.Errorf("model = %q, want %q", flags.model, tt.model)
-			}
-			if flags.noProxy != tt.noProxy {
-				t.Errorf("noProxy = %v, want %v", flags.noProxy, tt.noProxy)
-			}
+
+			assert.NotErr(t, err)
+			assert.Equal(t, flags.dataDir, tt.dataDir)
+			assert.Equal(t, flags.sourceDir, tt.sourceDir)
+			assert.Equal(t, flags.model, tt.model)
+			assert.Equal(t, flags.noProxy, tt.noProxy)
+
 			if diff := cmp.Diff(tt.rest, rest); diff != "" {
 				t.Fatalf("rest mismatch (-want, +got):\n%s", diff)
 			}
@@ -96,36 +88,31 @@ func TestParseGlobalFlags(t *testing.T) {
 
 func TestRunNoArgs(t *testing.T) {
 	e, stdout, _ := testEnv()
-	if err := Run(e, nil); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !strings.Contains(stdout.String(), "Usage:") {
-		t.Error("expected usage output")
-	}
+
+	err := Run(e, nil)
+
+	assert.NotErr(t, err)
+	assert.Contains(t, stdout.String(), "Usage:")
 }
 
 func TestRunUnknownCommand(t *testing.T) {
 	e, _, _ := testEnv()
+
 	err := Run(e, []string{"bogus"})
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	testutil.WantErr(t, err, ErrUnknownCommand)
+
+	assert.Err(t, err)
+	assert.ErrIs(t, err, ErrUnknownCommand)
 }
 
 func TestRunHelp(t *testing.T) {
 	for _, arg := range []string{"help", "--help", "-h"} {
 		t.Run(arg, func(t *testing.T) {
 			e, stdout, _ := testEnv()
-			if err := Run(e, []string{arg}); err != nil {
-				t.Fatal(err)
-			}
+			err := Run(e, []string{arg})
+			assert.NotErr(t, err)
+
 			out := stdout.String()
-			for _, want := range []string{"Usage:", "Flags:", "Commands:"} {
-				if !strings.Contains(out, want) {
-					t.Errorf("output missing %q", want)
-				}
-			}
+			assert.ContainsAll(t, out, "Usage:", "Flags:", "Commands:")
 		})
 	}
 }
@@ -142,9 +129,7 @@ func TestBuildUsage(t *testing.T) {
 	out := buildUsage()
 
 	for _, want := range []string{"Commands:", "alpha", "beta", "First command", "Second command", "<file>"} {
-		if !strings.Contains(out, want) {
-			t.Errorf("output missing %q", want)
-		}
+		assert.Contains(t, out, want)
 	}
 
 	alphaIdx := strings.Index(out, "alpha")
@@ -164,14 +149,8 @@ func TestDispatchCmdHelp(t *testing.T) {
 
 	e, stdout, _ := testEnv()
 	err := dispatchCmd(e, "test", []string{"-h"})
-	if err != nil {
-		t.Fatalf("expected nil error, got: %v", err)
-	}
+	assert.NotErr(t, err)
 	out := stdout.String()
-	if !strings.Contains(out, "A test command") {
-		t.Errorf("output missing description, got: %s", out)
-	}
-	if !strings.Contains(out, "Usage:") {
-		t.Errorf("output missing Usage:, got: %s", out)
-	}
+	assert.Contains(t, out, "A test command")
+	assert.Contains(t, out, "Usage:")
 }

@@ -42,9 +42,9 @@ func parseGlobalFlags(args []string) (*GlobalFlags, []string, error) {
 	fs.StringVar(&flags.logFile, "logfile", "", "write JSON logs to file")
 	fs.Var(&flags.logLevel, "loglevel", "log level (debug, info, warn, Error)")
 	fs.Var(&flags.logFormat, "logfmt", "log output format (JSON or text)")
-	fs.StringVar(&flags.sourceDir, "sourceDir", "", "default source directory for tasks")
+	fs.StringVar(&flags.sourceDir, "sourcedir", "", "default source directory for tasks")
 	fs.StringVar(&flags.model, "model", "", "default model for tasks")
-	fs.BoolVar(&flags.noProxy, "no-proxy", false, "disable proxy container")
+	fs.BoolVar(&flags.noProxy, "noproxy", false, "disable proxy container")
 	fs.BoolVar(&help, "h", false, "show help")
 
 	if err := fs.Parse(args); err != nil {

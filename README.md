@@ -38,7 +38,7 @@ Flags:
 	--logfile <path>    Write JSON logs to file
 	--loglevel <level>  Log level: debug, info, warn, error (default: warn)
 	--logfmt <format>   Log format: text, json (default: json)
-	--no-proxy          Disable proxy container
+	--noproxy           Disable proxy container
 
 Commands:
   batch    <dir>                      Run all task files in parallel

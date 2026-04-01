@@ -16,6 +16,7 @@ import (
 	"sort"
 	"text/tabwriter"
 
+	"github.com/i-zaitsev/dwoe/internal/config"
 	logpkg "github.com/i-zaitsev/dwoe/internal/log"
 	"github.com/i-zaitsev/dwoe/internal/version"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
@@ -84,13 +85,22 @@ func Run(env *Env, args []string) error {
 
 	slog.Debug("cli: init", "datadir", global.dataDir)
 
-	env.dataDir = global.dataDir // location with the metadata and results from workspaces
+	env.dataDir = global.dataDir
+	configPath, errInit := config.InitConfig(global.dataDir)
+	switch {
+	case errors.Is(errInit, config.ErrConfigExists):
+		env.Print("Reading global config: %s\n", configPath)
+	case errInit != nil:
+		slog.Warn("cli: init config", "err", errInit)
+	default:
+		env.Print("Created config: %s\n", configPath)
+	}
 	env.noProxy = global.noProxy
 	env.model = global.model
 	if global.sourceDir != "" {
 		abs, errAbs := filepath.Abs(global.sourceDir)
 		if errAbs != nil {
-			return fmt.Errorf("resolve --sourceDir: %w", errAbs)
+			return fmt.Errorf("resolve --sourcedir: %w", errAbs)
 		}
 		env.sourceDir = abs
 	}
@@ -167,9 +177,9 @@ func buildUsage() string {
 	buf.WriteString("\t--logfile <path>    Write JSON logs to file\n")
 	buf.WriteString("\t--loglevel <level>  Log level: debug, info, warn, error (default: warn)\n")
 	buf.WriteString("\t--logfmt <format>   Log format: text, json (default: json)\n")
-	buf.WriteString("\t--sourceDir <path>  Default source directory for tasks\n")
+	buf.WriteString("\t--sourcedir <path>  Default source directory for tasks\n")
 	buf.WriteString("\t--model <model>     Default model for tasks\n")
-	buf.WriteString("\t--no-proxy          Disable proxy container\n")
+	buf.WriteString("\t--noproxy           Disable proxy container\n")
 	buf.WriteString("\nCommands:\n")
 
 	names := make([]string, 0, len(registry))

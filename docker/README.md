@@ -2,7 +2,7 @@
 
 Example Dockerfiles for `dwoe` agents to work with Python and/or Go codebases using Claude Code agent.
 
-Proxy image gives basic web isolation for workers running in containers. (Required unless `--no-proxy` is used.)
+Proxy image gives basic web isolation for workers running in containers. (Required unless `--noproxy` is used.)
 
 ## Build
 
@@ -16,7 +16,7 @@ docker build -f docker/Dockerfile.claude-go -t dwoe-agent:go docker/
 # Python-only
 docker build -f docker/Dockerfile.claude-python -t dwoe-agent:python docker/
 
-# Proxy (required unless --no-proxy is used)
+# Proxy (required unless --noproxy is used)
 docker build -f docker/Dockerfile.proxy -t dwoe-proxy:latest docker/
 ```
 
