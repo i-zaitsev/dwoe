@@ -45,12 +45,8 @@ func TestGit_CloneAndCopy(t *testing.T) {
 	cloneDir := t.TempDir()
 	copyDir := t.TempDir()
 
-	if err := CloneRepo("https://github.com/i-zaitsev/url.git", cloneDir, "main"); err != nil {
-		t.Fatal(err)
-	}
-	if err := CopyLocalDir(cloneDir, copyDir); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, CloneRepo("https://github.com/i-zaitsev/url.git", cloneDir, "main"))
+	assert.NotErr(t, CopyLocalDir(cloneDir, copyDir))
 
 	if _, err := os.Stat(filepath.Join(cloneDir, ".git")); err != nil {
 		t.Fatal("clone missing .git")
@@ -91,9 +87,7 @@ func TestGit_CloneCopyErrors(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
-			if err := testFn(tmpDir); err == nil {
-				t.Fatal("expected error")
-			}
+			assert.Err(t, testFn(tmpDir))
 		})
 	}
 }
@@ -105,9 +99,7 @@ func TestGit_InitRepo(t *testing.T) {
 		"user.name":  "Test User",
 		"user.email": "test@example.com",
 	}
-	if err := InitRepo(dir, cfg["user.name"], cfg["user.email"]); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, InitRepo(dir, cfg["user.name"], cfg["user.email"]))
 	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
 		t.Fatal("missing .git")
 	}
@@ -122,29 +114,11 @@ func TestGit_InitRepo(t *testing.T) {
 func TestCollect(t *testing.T) {
 	t.Parallel()
 
-	// Set up a "workspace" repo simulating agent work.
-	wsDir := t.TempDir()
-	mustGit(t, "init", wsDir, "--initial-branch", "main")
-	mustGit(t, "-C", wsDir, "config", "user.name", "Agent")
-	mustGit(t, "-C", wsDir, "config", "user.email", "agent@test.dev")
-	testutil.WriteFile(t, filepath.Join(wsDir, "file.txt"), "original")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Initial commit")
-	testutil.WriteFile(t, filepath.Join(wsDir, "feature.go"), "package main")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Add feature")
-	testutil.WriteFile(t, filepath.Join(wsDir, "feature_test.go"), "package main")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Add tests")
+	wsDir := initTestRepo(t, "Agent", "agent@test.dev")
+	addCommit(t, wsDir, "feature.go", "package main", "Add feature")
+	addCommit(t, wsDir, "feature_test.go", "package main", "Add tests")
 
-	// Set up a "target" repo (the source repo to collect into).
-	targetDir := t.TempDir()
-	mustGit(t, "init", targetDir, "--initial-branch", "main")
-	mustGit(t, "-C", targetDir, "config", "user.name", "Owner")
-	mustGit(t, "-C", targetDir, "config", "user.email", "owner@test.dev")
-	testutil.WriteFile(t, filepath.Join(targetDir, "file.txt"), "original")
-	mustGit(t, "-C", targetDir, "add", ".")
-	mustGit(t, "-C", targetDir, "commit", "-m", "Initial")
+	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 
 	n, err := Collect(wsDir, targetDir, "agent/feature")
 	assert.NotErr(t, err)
@@ -163,21 +137,8 @@ func TestCollect(t *testing.T) {
 func TestCollect_NoAgentCommits(t *testing.T) {
 	t.Parallel()
 
-	wsDir := t.TempDir()
-	mustGit(t, "init", wsDir, "--initial-branch", "main")
-	mustGit(t, "-C", wsDir, "config", "user.name", "Agent")
-	mustGit(t, "-C", wsDir, "config", "user.email", "agent@test.dev")
-	testutil.WriteFile(t, filepath.Join(wsDir, "file.txt"), "original")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Initial commit")
-
-	targetDir := t.TempDir()
-	mustGit(t, "init", targetDir, "--initial-branch", "main")
-	mustGit(t, "-C", targetDir, "config", "user.name", "Owner")
-	mustGit(t, "-C", targetDir, "config", "user.email", "owner@test.dev")
-	testutil.WriteFile(t, filepath.Join(targetDir, "file.txt"), "original")
-	mustGit(t, "-C", targetDir, "add", ".")
-	mustGit(t, "-C", targetDir, "commit", "-m", "Initial")
+	wsDir := initTestRepo(t, "Agent", "agent@test.dev")
+	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 
 	n, err := Collect(wsDir, targetDir, "agent/empty")
 	assert.NotErr(t, err)
@@ -187,24 +148,10 @@ func TestCollect_NoAgentCommits(t *testing.T) {
 func TestCollect_BranchExists(t *testing.T) {
 	t.Parallel()
 
-	wsDir := t.TempDir()
-	mustGit(t, "init", wsDir, "--initial-branch", "main")
-	mustGit(t, "-C", wsDir, "config", "user.name", "Agent")
-	mustGit(t, "-C", wsDir, "config", "user.email", "agent@test.dev")
-	testutil.WriteFile(t, filepath.Join(wsDir, "file.txt"), "original")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Initial commit")
-	testutil.WriteFile(t, filepath.Join(wsDir, "f.go"), "package f")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Work")
+	wsDir := initTestRepo(t, "Agent", "agent@test.dev")
+	addCommit(t, wsDir, "f.go", "package f", "Work")
 
-	targetDir := t.TempDir()
-	mustGit(t, "init", targetDir, "--initial-branch", "main")
-	mustGit(t, "-C", targetDir, "config", "user.name", "Owner")
-	mustGit(t, "-C", targetDir, "config", "user.email", "owner@test.dev")
-	testutil.WriteFile(t, filepath.Join(targetDir, "file.txt"), "original")
-	mustGit(t, "-C", targetDir, "add", ".")
-	mustGit(t, "-C", targetDir, "commit", "-m", "Initial")
+	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 	mustGit(t, "-C", targetDir, "checkout", "-b", "taken")
 	mustGit(t, "-C", targetDir, "checkout", "main")
 
@@ -212,27 +159,11 @@ func TestCollect_BranchExists(t *testing.T) {
 	assert.Err(t, err)
 }
 
-func mustGit(t *testing.T, args ...string) {
-	t.Helper()
-	out, err := exec.Command("git", args...).CombinedOutput()
-	if err != nil {
-		t.Fatalf("git %v: %v\n%s", args, err, out)
-	}
-}
-
 func TestEnsureRepoReady_AlreadyInit(t *testing.T) {
 	t.Parallel()
-	dir := t.TempDir()
-	mustGit(t, "init", dir, "--initial-branch", "main")
-	mustGit(t, "-C", dir, "config", "user.name", "Test")
-	mustGit(t, "-C", dir, "config", "user.email", "test@test.dev")
-	testutil.WriteFile(t, filepath.Join(dir, "file.txt"), "hello")
-	mustGit(t, "-C", dir, "add", ".")
-	mustGit(t, "-C", dir, "commit", "-m", "existing")
+	dir := initTestRepo(t, "Test", "test@test.dev")
 
-	if err := EnsureRepoReady(dir, "Test", "test@test.dev"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, EnsureRepoReady(dir, "Test", "test@test.dev"))
 
 	out, _ := exec.Command("git", "-C", dir, "log", "--oneline").CombinedOutput()
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
@@ -244,45 +175,29 @@ func TestEnsureRepoReady_NewRepo(t *testing.T) {
 	dir := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(dir, "main.go"), "package main")
 
-	if err := EnsureRepoReady(dir, "Test", "test@test.dev"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, EnsureRepoReady(dir, "Test", "test@test.dev"))
 
 	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
 		t.Fatal("expected .git to exist")
 	}
 
 	out, _ := exec.Command("git", "-C", dir, "log", "--oneline").CombinedOutput()
-	if !strings.Contains(string(out), "initial") {
-		t.Fatalf("expected 'initial' commit, got: %s", out)
-	}
+	assert.Contains(t, string(out), "initial")
 }
 
 func TestMergeBranches(t *testing.T) {
 	t.Parallel()
-	dir := t.TempDir()
-	mustGit(t, "init", dir, "--initial-branch", "main")
-	mustGit(t, "-C", dir, "config", "user.name", "Test")
-	mustGit(t, "-C", dir, "config", "user.email", "test@test.dev")
-	testutil.WriteFile(t, filepath.Join(dir, "base.txt"), "base")
-	mustGit(t, "-C", dir, "add", ".")
-	mustGit(t, "-C", dir, "commit", "-m", "initial")
+	dir := initTestRepo(t, "Test", "test@test.dev")
 
 	mustGit(t, "-C", dir, "checkout", "-b", "branch-a")
-	testutil.WriteFile(t, filepath.Join(dir, "a.txt"), "a")
-	mustGit(t, "-C", dir, "add", ".")
-	mustGit(t, "-C", dir, "commit", "-m", "add a")
+	addCommit(t, dir, "a.txt", "a", "add a")
 	mustGit(t, "-C", dir, "checkout", "main")
 
 	mustGit(t, "-C", dir, "checkout", "-b", "branch-b")
-	testutil.WriteFile(t, filepath.Join(dir, "b.txt"), "b")
-	mustGit(t, "-C", dir, "add", ".")
-	mustGit(t, "-C", dir, "commit", "-m", "add b")
+	addCommit(t, dir, "b.txt", "b", "add b")
 	mustGit(t, "-C", dir, "checkout", "main")
 
-	if err := MergeBranches(dir, []string{"branch-a", "branch-b"}, "merge features"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, MergeBranches(dir, []string{"branch-a", "branch-b"}, "merge features"))
 
 	for _, f := range []string{"a.txt", "b.txt"} {
 		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
@@ -293,27 +208,15 @@ func TestMergeBranches(t *testing.T) {
 
 func TestMergeBranches_Empty(t *testing.T) {
 	t.Parallel()
-	if err := MergeBranches("/nonexistent", nil, "msg"); err != nil {
-		t.Fatalf("expected nil for empty branches, got: %v", err)
-	}
+	assert.NotErr(t, MergeBranches("/nonexistent", nil, "msg"))
 }
 
 func TestExportPatches(t *testing.T) {
 	t.Parallel()
 
-	wsDir := t.TempDir()
-	mustGit(t, "init", wsDir, "--initial-branch", "main")
-	mustGit(t, "-C", wsDir, "config", "user.name", "Agent")
-	mustGit(t, "-C", wsDir, "config", "user.email", "agent@test.dev")
-	testutil.WriteFile(t, filepath.Join(wsDir, "file.txt"), "original")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Initial commit")
-	testutil.WriteFile(t, filepath.Join(wsDir, "feature.go"), "package main")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Add feature")
-	testutil.WriteFile(t, filepath.Join(wsDir, "feature_test.go"), "package main")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Add tests")
+	wsDir := initTestRepo(t, "Agent", "agent@test.dev")
+	addCommit(t, wsDir, "feature.go", "package main", "Add feature")
+	addCommit(t, wsDir, "feature_test.go", "package main", "Add tests")
 
 	outDir := filepath.Join(t.TempDir(), "patches")
 	n, err := ExportPatches(wsDir, outDir)
@@ -337,13 +240,7 @@ func TestExportPatches(t *testing.T) {
 func TestExportPatches_NoAgentCommits(t *testing.T) {
 	t.Parallel()
 
-	wsDir := t.TempDir()
-	mustGit(t, "init", wsDir, "--initial-branch", "main")
-	mustGit(t, "-C", wsDir, "config", "user.name", "Agent")
-	mustGit(t, "-C", wsDir, "config", "user.email", "agent@test.dev")
-	testutil.WriteFile(t, filepath.Join(wsDir, "file.txt"), "original")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Initial commit")
+	wsDir := initTestRepo(t, "Agent", "agent@test.dev")
 
 	outDir := filepath.Join(t.TempDir(), "patches")
 	n, err := ExportPatches(wsDir, outDir)
@@ -354,29 +251,15 @@ func TestExportPatches_NoAgentCommits(t *testing.T) {
 func TestExportPatches_PatchesApplyCleanly(t *testing.T) {
 	t.Parallel()
 
-	wsDir := t.TempDir()
-	mustGit(t, "init", wsDir, "--initial-branch", "main")
-	mustGit(t, "-C", wsDir, "config", "user.name", "Agent")
-	mustGit(t, "-C", wsDir, "config", "user.email", "agent@test.dev")
-	testutil.WriteFile(t, filepath.Join(wsDir, "file.txt"), "original")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Initial commit")
-	testutil.WriteFile(t, filepath.Join(wsDir, "new.go"), "package new")
-	mustGit(t, "-C", wsDir, "add", ".")
-	mustGit(t, "-C", wsDir, "commit", "-m", "Add new file")
+	wsDir := initTestRepo(t, "Agent", "agent@test.dev")
+	addCommit(t, wsDir, "new.go", "package new", "Add new file")
 
 	outDir := filepath.Join(t.TempDir(), "patches")
 	n, err := ExportPatches(wsDir, outDir)
 	assert.NotErr(t, err)
 	assert.Equal(t, n, 1)
 
-	targetDir := t.TempDir()
-	mustGit(t, "init", targetDir, "--initial-branch", "main")
-	mustGit(t, "-C", targetDir, "config", "user.name", "Owner")
-	mustGit(t, "-C", targetDir, "config", "user.email", "owner@test.dev")
-	testutil.WriteFile(t, filepath.Join(targetDir, "file.txt"), "original")
-	mustGit(t, "-C", targetDir, "add", ".")
-	mustGit(t, "-C", targetDir, "commit", "-m", "Initial")
+	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 
 	patches, _ := filepath.Glob(filepath.Join(outDir, "*.patch"))
 	args := append([]string{"-C", targetDir, "am"}, patches...)
@@ -501,9 +384,34 @@ func TestGit_InitRepoErrors(t *testing.T) {
 	for _, tc := range emptyCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			t.Parallel()
-			if err := InitRepo(t.TempDir(), tc.userName, tc.userEmail); err == nil {
-				t.Fatal("expected error")
-			}
+			assert.Err(t, InitRepo(t.TempDir(), tc.userName, tc.userEmail))
 		})
 	}
+}
+
+func mustGit(t *testing.T, args ...string) {
+	t.Helper()
+	out, err := exec.Command("git", args...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+func initTestRepo(t *testing.T, name, email string) string {
+	t.Helper()
+	dir := t.TempDir()
+	mustGit(t, "init", dir, "--initial-branch", "main")
+	mustGit(t, "-C", dir, "config", "user.name", name)
+	mustGit(t, "-C", dir, "config", "user.email", email)
+	testutil.WriteFile(t, filepath.Join(dir, "file.txt"), "original")
+	mustGit(t, "-C", dir, "add", ".")
+	mustGit(t, "-C", dir, "commit", "-m", "Initial commit")
+	return dir
+}
+
+func addCommit(t *testing.T, dir, file, content, msg string) {
+	t.Helper()
+	testutil.WriteFile(t, filepath.Join(dir, file), content)
+	mustGit(t, "-C", dir, "add", ".")
+	mustGit(t, "-C", dir, "commit", "-m", msg)
 }
