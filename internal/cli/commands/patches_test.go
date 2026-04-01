@@ -7,9 +7,9 @@ package commands
 import (
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/state"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
 func TestPatchesCmd_Parse(t *testing.T) {
@@ -37,15 +37,9 @@ func TestPatchesCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdPatches)
-			if err := cmd.Parse(tc.args); err != nil {
-				t.Fatal(err)
-			}
-			if cmd.nameOrID != tc.wantID {
-				t.Errorf("nameOrID = %q, want %q", cmd.nameOrID, tc.wantID)
-			}
-			if cmd.dir != tc.wantDir {
-				t.Errorf("dir = %q, want %q", cmd.dir, tc.wantDir)
-			}
+			assert.NotErr(t, cmd.Parse(tc.args))
+			assert.Equal(t, cmd.nameOrID, tc.wantID)
+			assert.Equal(t, cmd.dir, tc.wantDir)
 		})
 	}
 }
@@ -53,15 +47,9 @@ func TestPatchesCmd_Parse(t *testing.T) {
 func TestPatchesCmd_Parse_Batch(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdPatches)
-	if err := cmd.Parse([]string{"--batch", "abc-123", "--dir", "/tmp/out"}); err != nil {
-		t.Fatal(err)
-	}
-	if cmd.batchID != "abc-123" {
-		t.Errorf("batchID = %q, want %q", cmd.batchID, "abc-123")
-	}
-	if cmd.dir != "/tmp/out" {
-		t.Errorf("dir = %q, want %q", cmd.dir, "/tmp/out")
-	}
+	assert.NotErr(t, cmd.Parse([]string{"--batch", "abc-123", "--dir", "/tmp/out"}))
+	assert.Equal(t, cmd.batchID, "abc-123")
+	assert.Equal(t, cmd.dir, "/tmp/out")
 }
 
 func TestPatchesCmd_Parse_Errors(t *testing.T) {
@@ -71,12 +59,12 @@ func TestPatchesCmd_Parse_Errors(t *testing.T) {
 
 func TestPatchesCmd_Parse_MissingDir(t *testing.T) {
 	t.Parallel()
-	testutil.WantErrAs[*cli.ArgMissingError](t, new(cmdPatches).Parse([]string{"ws-1"}))
+	assert.ErrAs[*cli.ArgMissingError](t, new(cmdPatches).Parse([]string{"ws-1"}))
 }
 
 func TestPatchesCmd_Parse_MissingNameOrID(t *testing.T) {
 	t.Parallel()
-	testutil.WantErrAs[*cli.ArgMissingError](t, new(cmdPatches).Parse([]string{"--dir", "/tmp"}))
+	assert.ErrAs[*cli.ArgMissingError](t, new(cmdPatches).Parse([]string{"--dir", "/tmp"}))
 }
 
 func TestPatchesCmd_Run_Single(t *testing.T) {
@@ -90,10 +78,8 @@ func TestPatchesCmd_Run_Single(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, setup.stdout.String(), "Exported 5 patch(es)")
+	assert.NotErr(t, err)
+	assert.ContainsAll(t, setup.stdout.String(), "Exported 5 patch(es)")
 }
 
 func TestPatchesCmd_Run_NotFound(t *testing.T) {
@@ -103,7 +89,7 @@ func TestPatchesCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	testutil.WantErrAs[*state.NotFoundError](t, err)
+	assert.ErrAs[*state.NotFoundError](t, err)
 }
 
 func TestPatchesCmd_Run_Running(t *testing.T) {
@@ -112,9 +98,5 @@ func TestPatchesCmd_Run_Running(t *testing.T) {
 	setup.state.Data["ws-1"] = createWorkspace(t, t.TempDir(), "ws-1", "running", nil)
 	cmd := &cmdPatches{nameOrID: "ws-1", dir: t.TempDir()}
 
-	err := cmd.Run(setup.env)
-
-	if err == nil {
-		t.Fatal("expected error for running workspace")
-	}
+	assert.Err(t, cmd.Run(setup.env))
 }

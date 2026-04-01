@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func TestParseBuildOutput(t *testing.T) {
@@ -19,16 +19,8 @@ func TestParseBuildOutput(t *testing.T) {
 {"stream":"Successfully built abc123\n"}
 `
 	var buf bytes.Buffer
-	err := parseBuildOutput(strings.NewReader(input), &buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := buf.String()
-	for _, want := range []string{"Step 1/3", "Step 2/3", "Successfully built"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("output = %q, want substring %q", got, want)
-		}
-	}
+	assert.NotErr(t, parseBuildOutput(strings.NewReader(input), &buf))
+	assert.ContainsAll(t, buf.String(), "Step 1/3", "Step 2/3", "Successfully built")
 }
 
 func TestParseBuildOutput_Error(t *testing.T) {
@@ -38,5 +30,5 @@ func TestParseBuildOutput_Error(t *testing.T) {
 `
 	var buf bytes.Buffer
 	err := parseBuildOutput(strings.NewReader(input), &buf)
-	testutil.WantErrAs[*BuildError](t, err)
+	assert.ErrAs[*BuildError](t, err)
 }

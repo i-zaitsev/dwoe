@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func checkErr(t *testing.T, err error, wantErr string) {
@@ -125,14 +127,10 @@ func TestTask_ApplyDefaults(t *testing.T) {
 	}
 
 	for _, tc := range testFields {
-		if tc.want != tc.got {
-			t.Errorf("want %s\ngot  %s", tc.want, tc.got)
-		}
+		assert.Equal(t, tc.want, tc.got)
 	}
 
-	if len(task.Agent.Permissions) != len(DefaultPermissions) {
-		t.Errorf("permissions = %v, want %v", task.Agent.Permissions, DefaultPermissions)
-	}
+	assert.Equal(t, len(task.Agent.Permissions), len(DefaultPermissions))
 }
 
 func TestTask_ApplyDefaults_LanguageImage(t *testing.T) {
@@ -141,9 +139,7 @@ func TestTask_ApplyDefaults_LanguageImage(t *testing.T) {
 	task := &Task{Agent: Agent{Language: "go"}}
 	task.ApplyDefaults()
 
-	if task.Agent.Image != "dwoe-agent:go" {
-		t.Errorf("image = %q, want %q", task.Agent.Image, "dwoe-agent:go")
-	}
+	assert.Equal(t, task.Agent.Image, "dwoe-agent:go")
 }
 
 func TestTask_ApplyDefaults_ExplicitPermissions(t *testing.T) {
@@ -174,8 +170,6 @@ func TestTask_ResolvePaths(t *testing.T) {
 		{filepath.Join(testDir, "spec.md"), task.Source.SpecFile},
 		{filepath.Join(testDir, "prompt.txt"), task.Source.PromptFile},
 	} {
-		if tc.want != tc.got {
-			t.Errorf("want %s\ngot  %s", tc.want, tc.got)
-		}
+		assert.Equal(t, tc.want, tc.got)
 	}
 }

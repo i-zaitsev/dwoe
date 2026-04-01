@@ -43,24 +43,21 @@ func TestBatch_SaveRecord(t *testing.T) {
 		},
 	}
 	dataDir := t.TempDir()
-	if err := SaveRecord(dataDir, rec); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, SaveRecord(dataDir, rec))
+
 	got, err := LoadRecord(dataDir, "batch-1")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
+
 	if diff := cmp.Diff(rec, got); diff != "" {
-		t.Errorf("roundtrip mismatch (-want +got):\n%s", diff)
+		t.Errorf("round-trip mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestBatch_LoadRecord(t *testing.T) {
 	t.Parallel()
 	got, err := LoadRecord("testdata", "test-batch")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
+
 	want := &Record{
 		ID:        "test-batch",
 		SourceDir: "/tmp/source",
@@ -82,34 +79,20 @@ func TestLoadOrCreate(t *testing.T) {
 
 	t.Run("creates_when_missing", func(t *testing.T) {
 		rec, err := LoadOrCreate(dir, id, "/some/repo")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if rec.ID != id {
-			t.Errorf("want ID %s, got %s", id, rec.ID)
-		}
-		if rec.SourceDir != "/some/repo" {
-			t.Errorf("want source /some/repo, got %s", rec.SourceDir)
-		}
-		if len(rec.Entries) != 0 {
-			t.Errorf("want 0 entries, got %d", len(rec.Entries))
-		}
+		assert.NotErr(t, err)
+		assert.Equal(t, id, rec.ID)
+		assert.Equal(t, rec.SourceDir, "/some/repo")
+		assert.Zero(t, len(rec.Entries))
 	})
 
 	t.Run("loads_existing", func(t *testing.T) {
 		rec, _ := LoadOrCreate(dir, id, "/some/repo")
 		rec.Entries = append(rec.Entries, Entry{WorkspaceID: "ws-1"})
-		if err := SaveRecord(dir, rec); err != nil {
-			t.Fatal(err)
-		}
+		assert.NotErr(t, SaveRecord(dir, rec))
 
 		loaded, err := LoadOrCreate(dir, id, "/some/repo")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(loaded.Entries) != 1 {
-			t.Errorf("want 1 entry, got %d", len(loaded.Entries))
-		}
+		assert.NotErr(t, err)
+		assert.Equal(t, len(loaded.Entries), 1)
 	})
 }
 

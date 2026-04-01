@@ -12,6 +12,8 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func TestSetup_DefaultLevel(t *testing.T) {
@@ -25,15 +27,11 @@ func TestSetup_DefaultLevel(t *testing.T) {
 	slog.Debug("hidden")
 
 	out := buf.String()
-	if !strings.Contains(out, "visible") {
-		t.Error("expected Info message in output")
-	}
+	assert.Contains(t, out, "visible")
 	if strings.Contains(out, "hidden") {
 		t.Error("Debug message should not appear at Info level")
 	}
-	if !strings.Contains(out, "source=") {
-		t.Error("expected source location in output")
-	}
+	assert.Contains(t, out, "source=")
 }
 
 func TestSetup_VerboseLevel(t *testing.T) {
@@ -45,9 +43,7 @@ func TestSetup_VerboseLevel(t *testing.T) {
 
 	slog.Debug("shown")
 
-	if !strings.Contains(buf.String(), "shown") {
-		t.Error("expected Debug message in verbose mode")
-	}
+	assert.Contains(t, buf.String(), "shown")
 }
 
 func TestSetup_JSONFormat(t *testing.T) {
@@ -63,12 +59,8 @@ func TestSetup_JSONFormat(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
 		t.Fatalf("output is not valid JSON: %v\n%s", err, buf.String())
 	}
-	if m["msg"] != "test: hello" {
-		t.Errorf("msg = %q, want %q", m["msg"], "test: hello")
-	}
-	if m["key"] != "value" {
-		t.Errorf("key = %q, want %q", m["key"], "value")
-	}
+	assert.Equal(t, m["msg"], "test: hello")
+	assert.Equal(t, m["key"], "value")
 	if m["source"] == nil {
 		t.Error("expected source field in JSON output")
 	}
@@ -76,12 +68,8 @@ func TestSetup_JSONFormat(t *testing.T) {
 
 func TestDefaultOpts(t *testing.T) {
 	opts := DefaultOpts()
-	if opts.Level != slog.LevelInfo {
-		t.Errorf("Level = %v, want %v", opts.Level, slog.LevelInfo)
-	}
-	if opts.Format != FormatJSON {
-		t.Errorf("Format = %v, want %v", opts.Format, FormatJSON)
-	}
+	assert.Equal(t, opts.Level, slog.LevelInfo)
+	assert.Equal(t, opts.Format, FormatJSON)
 	if opts.Writer == nil {
 		t.Error("Writer should not be nil")
 	}
@@ -135,8 +123,6 @@ func TestFormat_String(t *testing.T) {
 		{Format(99), ""},
 	}
 	for _, tt := range tests {
-		if got := tt.f.String(); got != tt.want {
-			t.Errorf("Format(%d).String() = %q, want %q", tt.f, got, tt.want)
-		}
+		assert.Equal(t, tt.f.String(), tt.want)
 	}
 }

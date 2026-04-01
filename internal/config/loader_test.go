@@ -11,53 +11,35 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func TestLoadTaskConfig(t *testing.T) {
 	path := "testdata/task_valid.yaml"
 	task, err := LoadTaskConfig(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if task.Resources.CPU != "" {
-		t.Errorf("Expected CPU to be empty (not merged), got '%s'", task.Resources.CPU)
-	}
-	if task.Resources.Memory != "16G" {
-		t.Errorf("Expected memory to be '16G', got '%s'", task.Resources.Memory)
-	}
+	assert.NotErr(t, err)
+	assert.Zero(t, task.Resources.CPU)
+	assert.Equal(t, task.Resources.Memory, "16G")
 }
 
 func TestLoadGlobalConfig(t *testing.T) {
 	globalDir := "testdata/global"
 	config, err := LoadGlobalConfig(globalDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "16"
-	if got := config.Defaults.Resources.CPU; got != want {
-		t.Errorf("want %s\ngot  %s", want, got)
-	}
+	assert.NotErr(t, err)
+	assert.Equal(t, config.Defaults.Resources.CPU, "16")
 }
 
 func TestLoadGlobalConfig_MissingFileReturnsDefaults(t *testing.T) {
 	tmpDir := t.TempDir()
 	config, err := LoadGlobalConfig(tmpDir)
-	if err != nil {
-		t.Fatalf("expected no error loading default config, got %v", err)
-	}
-	testCases := []struct {
-		want string
-		got  string
-	}{
+	assert.NotErr(t, err)
+	for _, tc := range []struct{ want, got string }{
 		{config.Defaults.Agent.Model, DefaultModel},
 		{fmt.Sprintf("%d", config.Defaults.Agent.MaxTurns), fmt.Sprintf("%d", DefaultMaxTurns)},
 		{config.Defaults.Resources.CPU, DefaultCPUs},
 		{config.Defaults.Resources.Memory, DefaultMemory},
-	}
-	for _, tc := range testCases {
-		if tc.want != tc.got {
-			t.Errorf("want %s\ngot  %s", tc.want, tc.got)
-		}
+	} {
+		assert.Equal(t, tc.want, tc.got)
 	}
 }
 
@@ -66,22 +48,14 @@ func TestLoadMergedConfig(t *testing.T) {
 	globalDir := "testdata/global"
 
 	cfg, err := LoadMergedConfig(taskPath, globalDir)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	testFields := []struct {
-		got, want string
-	}{
+	assert.NotErr(t, err)
+	for _, tc := range []struct{ got, want string }{
 		{cfg.Resources.CPU, "16"},
 		{cfg.Resources.Memory, "16G"},
 		{cfg.Agent.Model, "test-model"},
 		{fmt.Sprintf("%d", cfg.Agent.MaxTurns), fmt.Sprintf("%d", 9999)},
-	}
-	for _, tc := range testFields {
-		if tc.want != tc.got {
-			t.Errorf("want %s\ngot  %s", tc.want, tc.got)
-		}
+	} {
+		assert.Equal(t, tc.got, tc.want)
 	}
 }
 
@@ -90,23 +64,15 @@ func TestLoadMergedConfig_GitAndProxy(t *testing.T) {
 	globalDir := "testdata/global"
 
 	cfg, err := LoadMergedConfig(taskPath, globalDir)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	testFields := []struct {
-		got, want string
-	}{
+	assert.NotErr(t, err)
+	for _, tc := range []struct{ got, want string }{
 		{cfg.Git.Name, "Global User"},
 		{cfg.Git.Email, "global@test.com"},
 		{fmt.Sprintf("%d", cfg.Network.Proxy.Port), fmt.Sprintf("%d", 3128)},
 		{fmt.Sprintf("%d", len(cfg.Network.Proxy.AllowList)), fmt.Sprintf("%d", 2)},
 		{cfg.Agent.Image, DefaultImage},
-	}
-	for _, tc := range testFields {
-		if tc.want != tc.got {
-			t.Errorf("want %s, got '%s'", tc.want, tc.got)
-		}
+	} {
+		assert.Equal(t, tc.got, tc.want)
 	}
 }
 
@@ -136,9 +102,7 @@ func TestMergeWithGlobal(t *testing.T) {
 			{fmt.Sprintf("%d", len(task.Network.Proxy.AllowList)), "1"},
 		}
 		for _, f := range fields {
-			if f.got != f.want {
-				t.Errorf("want %s, got %s", f.want, f.got)
-			}
+			assert.Equal(t, f.got, f.want)
 		}
 	})
 
@@ -164,9 +128,7 @@ func TestMergeWithGlobal(t *testing.T) {
 			{task.Network.Proxy.AllowList[0], ".custom.dev"},
 		}
 		for _, f := range fields {
-			if f.got != f.want {
-				t.Errorf("want %s, got %s", f.want, f.got)
-			}
+			assert.Equal(t, f.got, f.want)
 		}
 	})
 }
@@ -175,14 +137,10 @@ func TestLoadAllowListFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "allowlist.txt")
 	content := "example.com\n# comment\n\n  *.go.dev  \nnpmjs.org\n"
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, os.WriteFile(path, []byte(content), 0o644))
 
 	got, err := loadAllowListFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	want := []string{"example.com", "*.go.dev", "npmjs.org"}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("(-want, +got):\n%s", diff)
@@ -193,7 +151,47 @@ func TestSaveGlobalConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	var config Global
 	config.Defaults.Agent.Model = "test_model"
-	if err := SaveGlobalConfig(tmpDir, &config); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, SaveGlobalConfig(tmpDir, &config))
+}
+
+func TestInitConfig_CreatesFile(t *testing.T) {
+	dir := t.TempDir()
+
+	path, err := InitConfig(dir)
+	assert.NotErr(t, err)
+	assert.Equal(t, path, filepath.Join(dir, "config.yaml"))
+
+	cfg, errLoad := LoadGlobalConfig(dir)
+	assert.NotErr(t, errLoad)
+	assert.Equal(t, cfg.Defaults.Agent.Model, DefaultModel)
+	assert.Equal(t, cfg.Defaults.Resources.CPU, DefaultCPUs)
+}
+
+func TestInitConfig_ExistingFile(t *testing.T) {
+	dir := t.TempDir()
+	original := &Global{}
+	original.Defaults.Agent.Model = "custom-model"
+	assert.NotErr(t, SaveGlobalConfig(dir, original))
+
+	path, err := InitConfig(dir)
+	assert.ErrIs(t, err, ErrConfigExists)
+	assert.Equal(t, path, filepath.Join(dir, "config.yaml"))
+
+	cfg, errLoad := LoadGlobalConfig(dir)
+	assert.NotErr(t, errLoad)
+	assert.Equal(t, cfg.Defaults.Agent.Model, "custom-model")
+}
+
+func TestInitConfig_PopulatesGitIdentity(t *testing.T) {
+	dir := t.TempDir()
+
+	_, err := InitConfig(dir)
+	assert.NotErr(t, err)
+
+	cfg, errLoad := LoadGlobalConfig(dir)
+	assert.NotErr(t, errLoad)
+
+	name, email := gitGlobalIdentity()
+	assert.Equal(t, cfg.GitUser.Name, name)
+	assert.Equal(t, cfg.GitUser.Email, email)
 }

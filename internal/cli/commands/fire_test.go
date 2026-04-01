@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
@@ -34,24 +35,12 @@ func TestFireCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdFire)
-			if err := cmd.Parse(tc.args); err != nil {
-				t.Fatal(err)
-			}
-			if cmd.repo != tc.wantRepo {
-				t.Errorf("repo = %q, want %q", cmd.repo, tc.wantRepo)
-			}
-			if cmd.work != tc.wantWork {
-				t.Errorf("work = %q, want %q", cmd.work, tc.wantWork)
-			}
-			if cmd.do != tc.wantDo {
-				t.Errorf("do = %q, want %q", cmd.do, tc.wantDo)
-			}
-			if cmd.model != tc.wantModel {
-				t.Errorf("model = %q, want %q", cmd.model, tc.wantModel)
-			}
-			if cmd.batchID != tc.wantBatch {
-				t.Errorf("batchID = %q, want %q", cmd.batchID, tc.wantBatch)
-			}
+			assert.NotErr(t, cmd.Parse(tc.args))
+			assert.Equal(t, cmd.repo, tc.wantRepo)
+			assert.Equal(t, cmd.work, tc.wantWork)
+			assert.Equal(t, cmd.do, tc.wantDo)
+			assert.Equal(t, cmd.model, tc.wantModel)
+			assert.Equal(t, cmd.batchID, tc.wantBatch)
 		})
 	}
 }
@@ -59,10 +48,7 @@ func TestFireCmd_Parse(t *testing.T) {
 func TestFireCmd_Parse_DoAndWorkConflict(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdFire)
-	err := cmd.Parse([]string{"-r", "/tmp/repo", "--do", "fix", "-w", "task.md"})
-	if err == nil {
-		t.Fatal("expected error when both --do and --work are set")
-	}
+	assert.Err(t, cmd.Parse([]string{"-r", "/tmp/repo", "--do", "fix", "-w", "task.md"}))
 }
 
 func TestFireCmd_Parse_Errors(t *testing.T) {
@@ -81,12 +67,8 @@ func TestFireCmd_Run(t *testing.T) {
 		testutil.WriteFile(t, workFile, "do the thing")
 
 		cmd := &cmdFire{repo: srcDir, work: workFile}
-		err := cmd.Run(setup.env)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		testutil.ContainsAll(t, setup.stdout.String(), "Started workspace:", "View logs:")
+		assert.NotErr(t, cmd.Run(setup.env))
+		assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "View logs:")
 	})
 
 	t.Run("with_do", func(t *testing.T) {
@@ -95,12 +77,8 @@ func TestFireCmd_Run(t *testing.T) {
 		srcDir := t.TempDir()
 
 		cmd := &cmdFire{repo: srcDir, do: "just do it"}
-		err := cmd.Run(setup.env)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		testutil.ContainsAll(t, setup.stdout.String(), "Started workspace:", "View logs:")
+		assert.NotErr(t, cmd.Run(setup.env))
+		assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "View logs:")
 	})
 
 	t.Run("with_batch", func(t *testing.T) {
@@ -111,12 +89,8 @@ func TestFireCmd_Run(t *testing.T) {
 		testutil.WriteFile(t, workFile, "do the thing")
 
 		cmd := &cmdFire{repo: srcDir, work: workFile, batchID: "test-batch"}
-		err := cmd.Run(setup.env)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		testutil.ContainsAll(t, setup.stdout.String(), "Started workspace:", "Batch: test-batch")
+		assert.NotErr(t, cmd.Run(setup.env))
+		assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "Batch: test-batch")
 	})
 }
 
@@ -130,13 +104,9 @@ func TestFireCmd_ResolveWork(t *testing.T) {
 		testutil.WriteFile(t, f, "do the thing")
 
 		got, err := resolveWork(f)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NotErr(t, err)
 		data, _ := os.ReadFile(got)
-		if string(data) != "do the thing" {
-			t.Errorf("content = %q, want %q", string(data), "do the thing")
-		}
+		assert.Equal(t, string(data), "do the thing")
 	})
 
 	t.Run("directory", func(t *testing.T) {
@@ -146,12 +116,10 @@ func TestFireCmd_ResolveWork(t *testing.T) {
 		testutil.WriteFile(t, filepath.Join(dir, "b.md"), "second")
 
 		got, err := resolveWork(dir)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NotErr(t, err)
 		data, _ := os.ReadFile(got)
 		content := string(data)
-		testutil.ContainsAll(t, content, "a.md", "first", "b.md", "second")
+		assert.ContainsAll(t, content, "a.md", "first", "b.md", "second")
 	})
 }
 
@@ -171,9 +139,7 @@ func TestFireCmd_IsRepoURL(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			t.Parallel()
-			if got := isRepoURL(tc.input); got != tc.want {
-				t.Errorf("isRepoURL(%q) = %v, want %v", tc.input, got, tc.want)
-			}
+			assert.Equal(t, isRepoURL(tc.input), tc.want)
 		})
 	}
 }

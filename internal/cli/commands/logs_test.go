@@ -10,22 +10,16 @@ import (
 	"io"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
 func TestLogsCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdLogs)
-	if err := cmd.Parse([]string{"-f", "ws-test"}); err != nil {
-		t.Fatal(err)
-	}
-	if cmd.nameOrID != "ws-test" {
-		t.Errorf("nameOrID = %q, want %q", cmd.nameOrID, "ws-test")
-	}
-	if !cmd.follow {
-		t.Error("follow should be true")
-	}
+	assert.NotErr(t, cmd.Parse([]string{"-f", "ws-test"}))
+	assert.Equal(t, cmd.nameOrID, "ws-test")
+	assert.Equal(t, cmd.follow, true)
 }
 
 func TestLogsCmd_Parse_Errors(t *testing.T) {
@@ -47,21 +41,12 @@ func TestLogsCmd_Run_Follow(t *testing.T) {
 	go func() {
 		_, _ = fmt.Fprintf(pw, "line1\nline2\n")
 		_, _ = fmt.Fprintf(pw, "line3\n")
-		pw.Close()
+		_ = pw.Close()
 	}()
 
 	cmd := &cmdLogs{nameOrID: "ws-test", follow: true}
-	err := cmd.Run(setup.env)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := setup.stdout.String()
-	want := "line1\nline2\nline3\n"
-	if got != want {
-		t.Errorf("output = %q, want %q", got, want)
-	}
+	assert.NotErr(t, cmd.Run(setup.env))
+	assert.Equal(t, setup.stdout.String(), "line1\nline2\nline3\n")
 }
 
 func TestLogsCmd_Run_SentinelInContent(t *testing.T) {
@@ -79,19 +64,11 @@ func TestLogsCmd_Run_SentinelInContent(t *testing.T) {
 	}
 
 	cmd := &cmdLogs{nameOrID: "ws-test", follow: true}
-	err := cmd.Run(setup.env)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := setup.stdout.String()
-	want := "before\n" +
-		"{\"content\":\"Write exactly <promise>DONE</promise> as your final output\"}\n" +
-		"after\n"
-	if got != want {
-		t.Errorf("output = %q, want %q", got, want)
-	}
+	assert.NotErr(t, cmd.Run(setup.env))
+	assert.Equal(t, setup.stdout.String(),
+		"before\n"+
+			"{\"content\":\"Write exactly <promise>DONE</promise> as your final output\"}\n"+
+			"after\n")
 }
 
 func TestLogsCmd_Run_NotFound(t *testing.T) {
@@ -101,5 +78,5 @@ func TestLogsCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	testutil.WantErrAs[*state.NotFoundError](t, err)
+	assert.ErrAs[*state.NotFoundError](t, err)
 }

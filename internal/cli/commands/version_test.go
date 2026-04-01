@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/version"
 )
@@ -18,13 +19,8 @@ func TestVersionCmd_Run(t *testing.T) {
 	e := cli.NewEnv(&stdout, &stderr)
 	cmd := &cmdVersion{}
 
-	err := cmd.Run(e)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, cmd.Run(e))
 
 	want := version.Get() + "\n"
-	if got := stdout.String(); got != want {
-		t.Errorf("output = %q, want %q", got, want)
-	}
+	assert.Equal(t, stdout.String(), want)
 }

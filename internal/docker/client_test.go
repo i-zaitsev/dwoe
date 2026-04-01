@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 var (
@@ -35,22 +37,16 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_Ping(t *testing.T) {
-	if err := testClient.Ping(context.Background()); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, testClient.Ping(context.Background()))
 }
 
 func TestClient_BuildImage(t *testing.T) {
 	dir := t.TempDir()
 	dockerfile := filepath.Join(dir, "Dockerfile")
-	if err := os.WriteFile(dockerfile, []byte("FROM alpine\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, os.WriteFile(dockerfile, []byte("FROM alpine\n"), 0644))
 
 	tag := "test-build-" + time.Now().Format("150405")
-	if err := testClient.BuildImage(context.Background(), dockerfile, tag, io.Discard); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, testClient.BuildImage(context.Background(), dockerfile, tag, io.Discard))
 }
 
 func TestClient_ContainerLifecycle(t *testing.T) {
@@ -71,9 +67,7 @@ func TestClient_ContainerLifecycle(t *testing.T) {
 			t.Fatal(errRemove)
 		}
 	}
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 }
 
 func TestClient_NetworkLifecycle(t *testing.T) {
@@ -88,9 +82,7 @@ func TestClient_NetworkLifecycle(t *testing.T) {
 		GetNetworkID(name),
 		RemoveNetwork(),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	if state.NetworkID == "" {
 		t.Fatal("expected network ID")
 	}
@@ -104,20 +96,11 @@ func TestClient_NetworkAlreadyExists(t *testing.T) {
 	}
 
 	id1, err := testClient.CreateNetwork(ctx, cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	id2, err := testClient.CreateNetwork(ctx, cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if id1 != id2 {
-		t.Fatalf("expected same network ID, got %s and %s", id1, id2)
-	}
-	err = testClient.RemoveNetwork(ctx, id1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
+	assert.Equal(t, id1, id2)
+	assert.NotErr(t, testClient.RemoveNetwork(ctx, id1))
 }
 
 func TestClient_ContainerNetworkLifecycle(t *testing.T) {
@@ -140,9 +123,7 @@ func TestClient_ContainerNetworkLifecycle(t *testing.T) {
 		RemoveContainer(true),
 		RemoveNetwork(),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	if state.NetworkID == "" {
 		t.Fatal("expected network ID")
 	}

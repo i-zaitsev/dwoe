@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
@@ -32,12 +32,8 @@ func TestListCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdList)
-			if err := cmd.Parse(tc.args); err != nil {
-				t.Fatal(err)
-			}
-			if cmd.format != tc.wantFormat {
-				t.Errorf("format = %q, want %q", cmd.format, tc.wantFormat)
-			}
+			assert.NotErr(t, cmd.Parse(tc.args))
+			assert.Equal(t, cmd.format, tc.wantFormat)
 		})
 	}
 }
@@ -46,7 +42,7 @@ func TestListCmd_Parse_InvalidFormat(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdList)
 	err := cmd.Parse([]string{"-format", "xml"})
-	testutil.WantErrAs[*cli.ArgInvalidError](t, err)
+	assert.ErrAs[*cli.ArgInvalidError](t, err)
 }
 
 func TestListCmd_Run_Table(t *testing.T) {
@@ -63,11 +59,7 @@ func TestListCmd_Run_Table(t *testing.T) {
 			setup := newListTestSetup(t, false)
 			cmd := &cmdList{format: tc.format}
 
-			err := cmd.Run(setup.env)
-
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NotErr(t, cmd.Run(setup.env))
 			want := strings.Join([]string{
 				"NAME       ID    STATUS   EXIT         CREATED              STARTED              FINISHED",
 				"ws-1 name  ws-1  running  pending      2001-01-01 00:00:00                       ",
@@ -100,26 +92,13 @@ func TestListCmd_Run_JSON(t *testing.T) {
 
 			setup := newListTestSetup(t, tc.empty)
 			cmd := &cmdList{format: "json"}
-			err := cmd.Run(setup.env)
-
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NotErr(t, cmd.Run(setup.env))
 
 			var wss []*workspace.Workspace
 			buf := strings.NewReader(setup.stdout.String())
 			dec := json.NewDecoder(buf)
-			err = dec.Decode(&wss)
-
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			want := tc.want
-			got := len(wss)
-			if got != want {
-				t.Fatalf("len(workspaces) = %d, want %d", got, want)
-			}
+			assert.NotErr(t, dec.Decode(&wss))
+			assert.Equal(t, len(wss), tc.want)
 		})
 	}
 }
@@ -130,14 +109,9 @@ func TestListCmd_Run_TableEmpty(t *testing.T) {
 	cmd := &cmdList{format: "table"}
 
 	err := cmd.Run(setup.env)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	output := setup.stdout.String()
-	if !strings.Contains(output, "No workspaces found") {
-		t.Fatalf("output = %q, want substring %q", output, "No workspaces found")
-	}
+	assert.NotErr(t, err)
+	assert.Contains(t, setup.stdout.String(), "No workspaces found")
 }
 
 func newListTestSetup(t *testing.T, empty bool) *cmdTestSetup {

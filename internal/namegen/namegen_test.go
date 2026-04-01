@@ -7,15 +7,15 @@ package namegen
 import (
 	"strings"
 	"testing"
+
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func TestGenerate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		name := Generate()
 		parts := strings.Split(name, "-")
-		if len(parts) != 3 {
-			t.Fatalf("expected 3 parts, got %d: %q", len(parts), name)
-		}
+		assert.Equal(t, len(parts), 3)
 		if parts[0] == parts[1] {
 			t.Errorf("adjectives should be distinct: %q", name)
 		}

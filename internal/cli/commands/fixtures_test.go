@@ -16,6 +16,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testfake"
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
@@ -74,15 +75,15 @@ func checkParseFails(t *testing.T, cmd cli.Command) {
 	t.Helper()
 	t.Run("nil_args", func(t *testing.T) {
 		t.Parallel()
-		testutil.WantErrAs[*cli.ArgMissingError](t, cmd.Parse(nil))
+		assert.ErrAs[*cli.ArgMissingError](t, cmd.Parse(nil))
 	})
 	t.Run("empty_args", func(t *testing.T) {
 		t.Parallel()
-		testutil.WantErrAs[*cli.ArgMissingError](t, cmd.Parse([]string{}))
+		assert.ErrAs[*cli.ArgMissingError](t, cmd.Parse([]string{}))
 	})
 	t.Run("bad_flag", func(t *testing.T) {
 		t.Parallel()
-		testutil.WantErrAs[*cli.FlagParseError](t, cmd.Parse([]string{"-badflag"}))
+		assert.ErrAs[*cli.FlagParseError](t, cmd.Parse([]string{"-badflag"}))
 	})
 }
 

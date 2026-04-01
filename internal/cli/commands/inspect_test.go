@@ -8,19 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
 func TestInspectCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdInspect)
-	if err := cmd.Parse([]string{"ws-1"}); err != nil {
-		t.Fatal(err)
-	}
-	if cmd.nameOrID != "ws-1" {
-		t.Errorf("nameOrID = %q, want %q", cmd.nameOrID, "ws-1")
-	}
+	assert.NotErr(t, cmd.Parse([]string{"ws-1"}))
+	assert.Equal(t, cmd.nameOrID, "ws-1")
 }
 
 func TestInspectCmd_Parse_Errors(t *testing.T) {
@@ -40,10 +36,8 @@ func TestInspectCmd_Run(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, setup.stdout.String(),
+	assert.NotErr(t, err)
+	assert.ContainsAll(t, setup.stdout.String(),
 		"Name:       ws-1 name",
 		"ID:         ws-1",
 		"Status:     running",
@@ -66,10 +60,8 @@ func TestInspectCmd_Run_NilContainerIDs(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, setup.stdout.String(),
+	assert.NotErr(t, err)
+	assert.ContainsAll(t, setup.stdout.String(),
 		"Agent:      (none)",
 		"Proxy:      (none)",
 	)
@@ -82,7 +74,7 @@ func TestInspectCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	testutil.WantErrAs[*state.NotFoundError](t, err)
+	assert.ErrAs[*state.NotFoundError](t, err)
 }
 
 func TestInspectCmd_Run_AmbiguousPrefix(t *testing.T) {
@@ -96,7 +88,7 @@ func TestInspectCmd_Run_AmbiguousPrefix(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	testutil.WantErrAs[*state.AmbiguousMatchError](t, err)
+	assert.ErrAs[*state.AmbiguousMatchError](t, err)
 }
 
 func TestInspectCmd_Run_UniquePrefix(t *testing.T) {
@@ -110,10 +102,8 @@ func TestInspectCmd_Run_UniquePrefix(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, setup.stdout.String(),
+	assert.NotErr(t, err)
+	assert.ContainsAll(t, setup.stdout.String(),
 		"ID:         abc-111",
 		"Status:     running",
 	)

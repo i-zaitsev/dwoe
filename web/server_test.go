@@ -4,11 +4,13 @@
 
 package web
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/i-zaitsev/dwoe/internal/assert"
+)
 
 func TestServer_New(t *testing.T) {
 	serv := NewServer(addr)
-	if serv.addr != addr {
-		t.Fatalf("wrong server address: %s", serv.addr)
-	}
+	assert.Equal(t, serv.addr, addr)
 }

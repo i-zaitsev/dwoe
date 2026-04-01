@@ -7,19 +7,15 @@ package commands
 import (
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
 func TestStartCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdStart)
-	if err := cmd.Parse([]string{"ws-1"}); err != nil {
-		t.Fatal(err)
-	}
-	if cmd.nameOrID != "ws-1" {
-		t.Errorf("nameOrID = %q, want %q", cmd.nameOrID, "ws-1")
-	}
+	assert.NotErr(t, cmd.Parse([]string{"ws-1"}))
+	assert.Equal(t, cmd.nameOrID, "ws-1")
 }
 
 func TestStartCmd_Parse_Errors(t *testing.T) {
@@ -33,12 +29,8 @@ func TestStartCmd_Run(t *testing.T) {
 	setup.state.Data["ws-1"] = createWorkspace(t, t.TempDir(), "ws-1", "pending", nil)
 	cmd := &cmdStart{nameOrID: "ws-1"}
 
-	err := cmd.Run(setup.env)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, setup.stdout.String(), "Started workspace:", "Status: running")
+	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "Status: running")
 }
 
 func TestStartCmd_Run_NotFound(t *testing.T) {
@@ -48,5 +40,5 @@ func TestStartCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	testutil.WantErrAs[*state.NotFoundError](t, err)
+	assert.ErrAs[*state.NotFoundError](t, err)
 }

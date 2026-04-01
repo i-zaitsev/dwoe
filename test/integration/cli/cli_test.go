@@ -15,12 +15,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/log"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
@@ -78,7 +77,7 @@ func TestCLI_RunAttached(t *testing.T) {
 	taskFile := writeTaskYAML(t, t.TempDir(), "run-attached", basicImage, t.TempDir())
 	out := runCLI(t, cliArgs(dataDir, "run", taskFile)...)
 
-	testutil.ContainsAll(t, out, "Started workspace:", "test ok", "completed", "exit code 0")
+	assert.ContainsAll(t, out, "Started workspace:", "test ok", "completed", "exit code 0")
 }
 
 // Exercises the full workspace lifecycle through individual CLI commands:
@@ -91,23 +90,23 @@ func TestCLI_CreateStartStopDestroy(t *testing.T) {
 	taskFile := writeTaskYAML(t, t.TempDir(), "lifecycle", basicImage, t.TempDir())
 
 	out := runCLI(t, cliArgs(dataDir, "create", taskFile)...)
-	testutil.ContainsAll(t, out, "Created workspace:", "Status: pending")
+	assert.ContainsAll(t, out, "Created workspace:", "Status: pending")
 	id := parseID(t, out)
 
 	out = runCLI(t, cliArgs(dataDir, "start", id)...)
-	testutil.ContainsAll(t, out, "Started workspace:", "Status: running")
+	assert.ContainsAll(t, out, "Started workspace:", "Status: running")
 
 	out = runCLI(t, cliArgs(dataDir, "status", id)...)
-	testutil.ContainsAll(t, out, "Status:")
+	assert.ContainsAll(t, out, "Status:")
 
 	out = runCLI(t, cliArgs(dataDir, "stop", "-f", id)...)
-	testutil.ContainsAll(t, out, "Workspace stopped.")
+	assert.ContainsAll(t, out, "Workspace stopped.")
 
 	out = runCLI(t, cliArgs(dataDir, "destroy", id)...)
-	testutil.ContainsAll(t, out, "Workspace destroyed.")
+	assert.ContainsAll(t, out, "Workspace destroyed.")
 
 	out = runCLI(t, cliArgs(dataDir, "list")...)
-	testutil.ContainsAll(t, out, "No workspaces found.")
+	assert.ContainsAll(t, out, "No workspaces found.")
 }
 
 // Places two task files in a directory and runs them as a batch.
@@ -125,7 +124,7 @@ func TestCLI_Batch(t *testing.T) {
 
 	out := runCLI(t, cliArgs(dataDir, "batch", batchDir)...)
 
-	testutil.ContainsAll(t, out, "discovered 2 task(s)", "Batch ID:", "Summary: 2 total, 2 completed, 0 failed")
+	assert.ContainsAll(t, out, "discovered 2 task(s)", "Batch ID:", "Summary: 2 total, 2 completed, 0 failed")
 }
 
 // Runs a task that produces commits inside the container, then uses
@@ -146,15 +145,11 @@ func TestCLI_CollectAfterRun(t *testing.T) {
 	ensureRepo(t, targetRepo)
 
 	out = runCLI(t, cliArgs(dataDir, "collect", "--repo", targetRepo, "--branch", "feat/test", id)...)
-	testutil.ContainsAll(t, out, "Collected", "commit(s)")
+	assert.ContainsAll(t, out, "Collected", "commit(s)")
 
 	branchOut, err := exec.Command("git", "-C", targetRepo, "branch", "--list", "feat/test").CombinedOutput()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(branchOut), "feat/test") {
-		t.Errorf("branch feat/test not found, got: %s", branchOut)
-	}
+	assert.NotErr(t, err)
+	assert.Contains(t, string(branchOut), "feat/test")
 }
 
 // Runs a task that produces commits, then exports them as patch files.
@@ -172,7 +167,7 @@ func TestCLI_PatchesAfterRun(t *testing.T) {
 
 	outDir := t.TempDir()
 	out = runCLI(t, cliArgs(dataDir, "patches", "--dir", outDir, id)...)
-	testutil.ContainsAll(t, out, "Exported", "patch(es)")
+	assert.ContainsAll(t, out, "Exported", "patch(es)")
 
 	patches, _ := filepath.Glob(filepath.Join(outDir, "*.patch"))
 	if len(patches) == 0 {
@@ -182,7 +177,5 @@ func TestCLI_PatchesAfterRun(t *testing.T) {
 
 func ensureRepo(t *testing.T, dir string) {
 	t.Helper()
-	if err := workspace.EnsureRepoReady(dir, "Test", "test@test.dev"); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, workspace.EnsureRepoReady(dir, "Test", "test@test.dev"))
 }

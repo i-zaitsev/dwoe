@@ -6,14 +6,18 @@ package config
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+var ErrConfigExists = errors.New("config already exists")
 
 // LoadTaskConfig loads a task configuration from a YAML file at the given path.
 // It parses the file, resolves relative paths against the task file's directory,
@@ -63,7 +67,9 @@ func LoadGlobalConfig(dataDir string) (*Global, error) {
 		}
 		return nil, fmt.Errorf("cannot open global config %s: %w", configPath, err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	slog.Debug("config: load-global", "message", "reading global config")
 	decoder := yaml.NewDecoder(f)
@@ -126,7 +132,9 @@ func SaveGlobalConfig(dataDir string, config *Global) error {
 	if err != nil {
 		return fmt.Errorf("cannot create config file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	slog.Debug("config: save-global", "message", "encoding global config to YAML")
 	encoder := yaml.NewEncoder(f)
@@ -144,7 +152,9 @@ func loadAllowListFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	slog.Debug("config: load-allowlist", "path", path)
 	var domains []string
@@ -159,6 +169,31 @@ func loadAllowListFile(path string) ([]string, error) {
 
 	slog.Debug("config: load-allowlist", "count", len(domains))
 	return domains, scanner.Err()
+}
+
+// InitConfig creates a default config.yaml in dataDir if it does not exist.
+// Always returns the config file path.
+// Returns nil error on creation, ErrConfigExists if the file already exists,
+// or another error if creation fails.
+func InitConfig(dataDir string) (string, error) {
+	configPath := filepath.Join(dataDir, "config.yaml")
+	if _, err := os.Stat(configPath); err == nil {
+		return configPath, ErrConfigExists
+	}
+	cfg := GlobalWithDefaults()
+	name, email := gitGlobalIdentity()
+	cfg.GitUser.Name = name
+	cfg.GitUser.Email = email
+	if err := SaveGlobalConfig(dataDir, cfg); err != nil {
+		return configPath, err
+	}
+	return configPath, nil
+}
+
+func gitGlobalIdentity() (string, string) {
+	name, _ := exec.Command("git", "config", "--global", "user.name").Output()
+	email, _ := exec.Command("git", "config", "--global", "user.email").Output()
+	return strings.TrimSpace(string(name)), strings.TrimSpace(string(email))
 }
 
 // ifZero returns val if it is not zero, otherwise it returns fallback.

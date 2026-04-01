@@ -7,8 +7,9 @@ package template
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func TestTemplate_SquidConf(t *testing.T) {
@@ -17,19 +18,9 @@ func TestTemplate_SquidConf(t *testing.T) {
 		ProxyPort: 3128,
 	}
 	out, err := SquidConf(&data)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	s := string(out)
-	for _, want := range []string{
-		"http_port 3128",
-		"acl allowlist dstdomain",
-		"http_access deny all",
-	} {
-		if !strings.Contains(s, want) {
-			t.Errorf("output missing %q", want)
-		}
-	}
+	assert.ContainsAll(t, s, "http_port 3128", "acl allowlist dstdomain", "http_access deny all")
 }
 
 func TestTemplate_SettingsJSON(t *testing.T) {
@@ -42,21 +33,11 @@ func TestTemplate_SettingsJSON(t *testing.T) {
 		},
 	}
 	out, err := SettingsJSON(&data)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	s := string(out)
-	for _, want := range data.Permissions {
-		if !strings.Contains(s, want) {
-			t.Errorf("output missing %q", want)
-		}
-	}
-	if !strings.Contains(s, `"permissions"`) {
-		t.Error("output missing permissions key")
-	}
-	if !strings.Contains(s, `"allow"`) {
-		t.Error("output missing allow key")
-	}
+	assert.ContainsAll(t, s, data.Permissions...)
+	assert.Contains(t, s, `"permissions"`)
+	assert.Contains(t, s, `"allow"`)
 }
 
 func TestTemplate_GuidelinesMD(t *testing.T) {
@@ -69,21 +50,11 @@ func TestTemplate_GuidelinesMD(t *testing.T) {
 		},
 	}
 	out, err := GuidelinesMD(&data)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	s := string(out)
-	for _, want := range data.AllowedDomains {
-		if !strings.Contains(s, want) {
-			t.Errorf("output missing %q", want)
-		}
-	}
-	if !strings.Contains(s, "Autonomous Operation Mode") {
-		t.Error("output missing header")
-	}
-	if !strings.Contains(s, "ALLOWLISTED DOMAINS") {
-		t.Error("output missing allowlisted domains section")
-	}
+	assert.ContainsAll(t, s, data.AllowedDomains...)
+	assert.Contains(t, s, "Autonomous Operation Mode")
+	assert.Contains(t, s, "ALLOWLISTED DOMAINS")
 }
 
 func TestTemplate_Allowlist(t *testing.T) {
@@ -96,15 +67,9 @@ func TestTemplate_Allowlist(t *testing.T) {
 		},
 	}
 	out, err := Allowlist(&data)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, err)
 	s := string(out)
-	for _, want := range data.AllowedDomains {
-		if !strings.Contains(s, want) {
-			t.Errorf("output missing %q", want)
-		}
-	}
+	assert.ContainsAll(t, s, data.AllowedDomains...)
 }
 
 func TestTemplate_WriteAll(t *testing.T) {
@@ -127,9 +92,7 @@ func TestTemplate_WriteAll(t *testing.T) {
 			"two": "2",
 		},
 	}
-	if err := WriteAll(tmpDir, &data); err != nil {
-		t.Fatal(err)
-	}
+	assert.NotErr(t, WriteAll(tmpDir, &data))
 	for _, name := range []string{
 		filepath.Join("proxy", "squid.conf"),
 		filepath.Join("proxy", "allowlist.txt"),

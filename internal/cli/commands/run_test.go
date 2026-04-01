@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
@@ -53,18 +54,10 @@ func TestRunCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdRun)
-			if err := cmd.Parse(tc.args); err != nil {
-				t.Fatal(err)
-			}
-			if cmd.taskPath != tc.wantPath {
-				t.Errorf("taskPath = %q, want %q", cmd.taskPath, tc.wantPath)
-			}
-			if cmd.name != tc.wantName {
-				t.Errorf("name = %q, want %q", cmd.name, tc.wantName)
-			}
-			if cmd.detach != tc.wantDetach {
-				t.Errorf("detach = %v, want %v", cmd.detach, tc.wantDetach)
-			}
+			assert.NotErr(t, cmd.Parse(tc.args))
+			assert.Equal(t, cmd.taskPath, tc.wantPath)
+			assert.Equal(t, cmd.name, tc.wantName)
+			assert.Equal(t, cmd.detach, tc.wantDetach)
 		})
 	}
 }
@@ -81,26 +74,16 @@ func TestRunCmd_Run(t *testing.T) {
 		t.Parallel()
 		ts, taskFile := createTestTask(t, "", 0)
 		cmd := &cmdRun{taskPath: taskFile, detach: true}
-
-		err := cmd.Run(ts.env)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:", "Status: running")
+		assert.NotErr(t, cmd.Run(ts.env))
+		assert.ContainsAll(t, ts.stdout.String(), "Started workspace:", "Status: running")
 	})
 
 	t.Run("attached_success", func(t *testing.T) {
 		t.Parallel()
 		ts, taskFile := createTestTask(t, "line1\nline2\n<promise>DONE</promise>\n", 0)
 		cmd := &cmdRun{taskPath: taskFile}
-
-		err := cmd.Run(ts.env)
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		testutil.ContainsAll(t, ts.stdout.String(), "line1", "line2", "completed")
+		assert.NotErr(t, cmd.Run(ts.env))
+		assert.ContainsAll(t, ts.stdout.String(), "line1", "line2", "completed")
 	})
 
 	t.Run("attached_fail", func(t *testing.T) {
@@ -114,10 +97,8 @@ func TestRunCmd_Run(t *testing.T) {
 		if !errors.As(err, &exitErr) {
 			t.Fatalf("err type = %T, want *exitError", err)
 		}
-		if exitErr.code != 1 {
-			t.Errorf("exitErr.code = %d, want 1", exitErr.code)
-		}
-		testutil.ContainsAll(t, ts.stdout.String(), "failed")
+		assert.Equal(t, exitErr.code, 1)
+		assert.ContainsAll(t, ts.stdout.String(), "failed")
 	})
 }
 
@@ -137,15 +118,14 @@ func TestRunCmd_Run_Interrupted(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	testutil.WantErr(t, err, errRunInterrupted)
-	testutil.ContainsAll(t, setup.stdout.String(), "Interrupted")
+	assert.ErrIs(t, err, errRunInterrupted)
+	assert.ContainsAll(t, setup.stdout.String(), "Interrupted")
 }
 
 func TestRunCmd_Run_SourceDirOverride(t *testing.T) {
 	t.Parallel()
 	ts := newCmdTestSetup(t)
-	srcDir := t.TempDir()
-	ts.env.SetSourceDir(srcDir)
+	ts.env.SetSourceDir(t.TempDir())
 
 	dir := t.TempDir()
 	taskFile := testutil.WriteTaskFile(t, filepath.Join(dir, "task.yaml"), &config.Task{
@@ -155,12 +135,9 @@ func TestRunCmd_Run_SourceDirOverride(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(dir, "prompt.md"), "do the thing")
 
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
-	err := cmd.Run(ts.env)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ContainsAll(t, ts.stdout.String(), "Started workspace:")
 }
 
 func TestRunCmd_Run_ModelOverride(t *testing.T) {
@@ -168,16 +145,10 @@ func TestRunCmd_Run_ModelOverride(t *testing.T) {
 	ts := newCmdTestSetup(t)
 	ts.env.SetModel("custom-model")
 
-	dir := t.TempDir()
-	taskFile := writeTaskFile(t, dir, "model-test")
-	cmd := &cmdRun{taskPath: taskFile, detach: true}
+	cmd := &cmdRun{taskPath: writeTaskFile(t, t.TempDir(), "model-test"), detach: true}
 
-	err := cmd.Run(ts.env)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ContainsAll(t, ts.stdout.String(), "Started workspace:")
 }
 
 func TestRunCmd_Run_SourceDirNotUsedWhenYAMLHasSource(t *testing.T) {
@@ -185,16 +156,10 @@ func TestRunCmd_Run_SourceDirNotUsedWhenYAMLHasSource(t *testing.T) {
 	ts := newCmdTestSetup(t)
 	ts.env.SetSourceDir("/should/not/be/used")
 
-	dir := t.TempDir()
-	taskFile := writeTaskFile(t, dir, "has-source")
-	cmd := &cmdRun{taskPath: taskFile, detach: true}
+	cmd := &cmdRun{taskPath: writeTaskFile(t, t.TempDir(), "has-source"), detach: true}
 
-	err := cmd.Run(ts.env)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	testutil.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ContainsAll(t, ts.stdout.String(), "Started workspace:")
 }
 
 func TestRunCmd_Run_MissingFile(t *testing.T) {
@@ -204,7 +169,7 @@ func TestRunCmd_Run_MissingFile(t *testing.T) {
 
 	err := cmd.Run(ts.env)
 
-	testutil.WantErr(t, err, os.ErrNotExist)
+	assert.ErrIs(t, err, os.ErrNotExist)
 }
 
 func createTestTask(t *testing.T, logs string, exitCode int) (*cmdTestSetup, string) {

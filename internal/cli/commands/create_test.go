@@ -8,22 +8,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
 func TestCreateCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdCreate)
-	err := cmd.Parse([]string{"-name", "custom", "/path/to/task.yaml"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cmd.taskPath != "/path/to/task.yaml" {
-		t.Errorf("taskPath = %q, want %q", cmd.taskPath, "/path/to/task.yaml")
-	}
-	if cmd.name != "custom" {
-		t.Errorf("name = %q, want %q", cmd.name, "custom")
-	}
+	assert.NotErr(t, cmd.Parse([]string{"-name", "custom", "/path/to/task.yaml"}))
+	assert.Equal(t, cmd.taskPath, "/path/to/task.yaml")
+	assert.Equal(t, cmd.name, "custom")
 }
 
 func TestCreateCmd_Parse_Errors(t *testing.T) {
@@ -38,16 +32,10 @@ func TestCreateCmd_Run(t *testing.T) {
 
 	err := cmd.Run(ts.env)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NotErr(t, err)
 	nDirs := testutil.DirCount(ts.env.DataDir(), "workspaces", "*", "workspace")
-	if nDirs != 1 {
-		t.Errorf("dir count = %d, want 1", nDirs)
-	}
-
-	testutil.ContainsAll(t, ts.stdout.String(), "Created workspace: test-task", "Status: pending")
+	assert.Equal(t, nDirs, 1)
+	assert.ContainsAll(t, ts.stdout.String(), "Created workspace: test-task", "Status: pending")
 }
 
 func TestCreateCmd_Run_MissingFile(t *testing.T) {
@@ -57,5 +45,5 @@ func TestCreateCmd_Run_MissingFile(t *testing.T) {
 
 	err := cmd.Run(ts.env)
 
-	testutil.WantErr(t, err, os.ErrNotExist)
+	assert.ErrIs(t, err, os.ErrNotExist)
 }

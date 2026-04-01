@@ -5,6 +5,8 @@
 package assert
 
 import (
+	"errors"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -41,4 +43,54 @@ func Contains(t *testing.T, got, want string) {
 	if !strings.Contains(got, want) {
 		t.Errorf("%q does not contain %q", got, want)
 	}
+}
+
+func ContainsAll(t *testing.T, got string, substrings ...string) {
+	t.Helper()
+	for _, want := range substrings {
+		if !strings.Contains(got, want) {
+			t.Errorf("output = %q, want substring %q", got, want)
+		}
+	}
+}
+
+func ErrIs(t *testing.T, got, target error) {
+	t.Helper()
+	if !errors.Is(got, target) {
+		t.Fatalf("err = %v, want %v", got, target)
+	}
+}
+
+func ErrAs[T error](t *testing.T, got error) {
+	t.Helper()
+	var target T
+	if !errors.As(got, &target) {
+		t.Fatalf("err type = %T, want %T", got, target)
+	}
+}
+
+func Nil(t *testing.T, got any) {
+	t.Helper()
+	if !isNil(got) {
+		t.Errorf("got: %v, want nil", got)
+	}
+}
+
+func NotNil(t *testing.T, got any) {
+	t.Helper()
+	if isNil(got) {
+		t.Fatalf("expected non-nil, got nil")
+	}
+}
+
+func isNil(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Chan, reflect.Func, reflect.Interface:
+		return rv.IsNil()
+	}
+	return false
 }

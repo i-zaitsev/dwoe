@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/dwoe/internal/assert"
 )
 
 func TestStore_Save(t *testing.T) {
@@ -41,16 +41,15 @@ func TestStore_Save(t *testing.T) {
 
 func TestStore_Load(t *testing.T) {
 	t.Parallel()
-	must := testutil.NewMust(t)
 
 	dir := t.TempDir()
 	store := NewStore(dir)
 
 	ws := &Workspace{ID: "test-1", Name: "test-ws", Status: "pending"}
-	must.NotErr(store.Save(ws))
+	assert.NotErr(t, store.Save(ws))
 
 	got, err := store.Load("test-1")
-	must.NotErr(err)
+	assert.NotErr(t, err)
 	if got.ID != ws.ID || got.Name != ws.Name || got.Status != ws.Status {
 		t.Errorf("Load() = %+v, want %+v", got, ws)
 	}
@@ -63,48 +62,38 @@ func TestStore_Load_NotFound(t *testing.T) {
 	store := NewStore(dir)
 
 	_, err := store.Load("nonexistent")
-	if err == nil {
-		t.Error("expected error for nonexistent workspace")
-	}
+	assert.Err(t, err)
 }
 
 func TestStore_List(t *testing.T) {
 	t.Parallel()
-	must := testutil.NewMust(t)
 
 	dir := t.TempDir()
 	store := NewStore(dir)
 
 	list, err := store.List()
-	must.NotErr(err)
-	if len(list) != 0 {
-		t.Errorf("len(list) = %d, want 0", len(list))
-	}
+	assert.NotErr(t, err)
+	assert.Equal(t, len(list), 0)
 
-	must.NotErr(store.Save(&Workspace{ID: "ws-1", Name: "first"}))
-	must.NotErr(store.Save(&Workspace{ID: "ws-2", Name: "second"}))
+	assert.NotErr(t, store.Save(&Workspace{ID: "ws-1", Name: "first"}))
+	assert.NotErr(t, store.Save(&Workspace{ID: "ws-2", Name: "second"}))
 
 	list, err = store.List()
-	must.NotErr(err)
-	if len(list) != 2 {
-		t.Errorf("len(list) = %d, want 2", len(list))
-	}
+	assert.NotErr(t, err)
+	assert.Equal(t, len(list), 2)
 }
 
 func TestStore_Delete(t *testing.T) {
 	t.Parallel()
-	must := testutil.NewMust(t)
 
 	dir := t.TempDir()
 	store := NewStore(dir)
 
-	must.NotErr(store.Save(&Workspace{ID: "ws-1", Name: "test"}))
-	must.NotErr(store.Delete("ws-1"))
+	assert.NotErr(t, store.Save(&Workspace{ID: "ws-1", Name: "test"}))
+	assert.NotErr(t, store.Delete("ws-1"))
 
 	_, err := store.Load("ws-1")
-	if err == nil {
-		t.Error("expected workspace to be deleted")
-	}
+	assert.Err(t, err)
 }
 
 func TestStore_Delete_Idempotent(t *testing.T) {
@@ -113,9 +102,7 @@ func TestStore_Delete_Idempotent(t *testing.T) {
 	dir := t.TempDir()
 	store := NewStore(dir)
 
-	if err := store.Delete("nonexistent"); err != nil {
-		t.Errorf("Delete() err = %v, want nil", err)
-	}
+	assert.NotErr(t, store.Delete("nonexistent"))
 }
 
 func TestWorkspace_ExitStatus(t *testing.T) {
@@ -134,9 +121,7 @@ func TestWorkspace_ExitStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.ws.ExitStatus(); got != tt.want {
-				t.Errorf("ExitStatus() = %q, want %q", got, tt.want)
-			}
+			assert.Equal(t, tt.ws.ExitStatus(), tt.want)
 		})
 	}
 }
@@ -146,7 +131,6 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 
 	dir := t.TempDir()
 	store := NewStore(dir)
-	must := testutil.NewMust(t)
 	n := 100
 
 	var wg sync.WaitGroup
@@ -154,16 +138,12 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
-			must.NotErr(store.Save(&Workspace{ID: fmt.Sprintf("ws-%d", id), Name: fmt.Sprintf("name-%d", id)}))
+			assert.NotErr(t, store.Save(&Workspace{ID: fmt.Sprintf("ws-%d", id), Name: fmt.Sprintf("name-%d", id)}))
 		}(i)
 	}
 	wg.Wait()
 
 	list, err := store.List()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(list) != n {
-		t.Errorf("len(list) = %d, want %d", len(list), n)
-	}
+	assert.NotErr(t, err)
+	assert.Equal(t, len(list), n)
 }
