@@ -1,12 +1,15 @@
 BINARY_NAME=dwoe
 GO=go
 
-.PHONY: all build test lint fmt vet clean dev
+.PHONY: all build install test lint fmt vet clean dev
 
 all: lint test build
 
 build:
 	$(GO) build -o bin/$(BINARY_NAME) ./cmd/dwoe
+
+install: build
+	sudo mv bin/$(BINARY_NAME) /usr/local/bin/
 
 test:
 	$(GO) test ./...
