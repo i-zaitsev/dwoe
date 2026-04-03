@@ -177,7 +177,7 @@ func TestBatchCmd_Run_WithSourceDir(t *testing.T) {
 		loadConfig: func(_, _ string) (*config.Task, error) {
 			return &config.Task{
 				Name:   "light-task",
-				Source: config.Source{LocalPath: srcDir},
+				Source: config.Source{},
 			}, nil
 		},
 		ensureRepo: func(_, _, _ string) error { return nil },

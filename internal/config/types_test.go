@@ -110,6 +110,28 @@ func TestTask_Validate(t *testing.T) {
 	}
 }
 
+func TestTask_FallbackSource(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		task     Task
+		dir      string
+		wantPath string
+	}{
+		{"sets_when_empty", Task{}, "/fallback", "/fallback"},
+		{"noop_when_local_path_set", Task{Source: Source{LocalPath: "/existing"}}, "/fallback", "/existing"},
+		{"noop_when_repo_set", Task{Source: Source{Repo: "org/repo", Branch: "main"}}, "/fallback", ""},
+		{"noop_when_dir_empty", Task{}, "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.task.FallbackSource(tt.dir)
+			assert.Equal(t, tt.task.Source.LocalPath, tt.wantPath)
+		})
+	}
+}
+
 func TestTask_ApplyDefaults(t *testing.T) {
 	t.Parallel()
 

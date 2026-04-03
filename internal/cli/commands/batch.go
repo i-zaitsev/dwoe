@@ -79,7 +79,7 @@ func (c *cmdBatch) Run(e *cli.Env) error {
 	e.Print("batch: discovered %d task(s) in %s\n", len(taskFiles), c.dir)
 
 	slog.Debug("cli: batch", "phase", "resolving source repo")
-	sourceDir, err := c.resolveBatchRepo(taskFiles, e.DataDir())
+	sourceDir, err := c.resolveBatchRepo(taskFiles, e.DataDir(), e.SourceDir())
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (c *cmdBatch) Run(e *cli.Env) error {
 
 // resolveBatchRepo ensures that the repo used by each batch task is ready.
 // It is assumed that all tasks in the batch use the same repo.
-func (c *cmdBatch) resolveBatchRepo(taskFiles []string, dataDir string) (string, error) {
+func (c *cmdBatch) resolveBatchRepo(taskFiles []string, dataDir, sourceDir string) (string, error) {
 	var (
 		repoPath string
 		gitUser  config.GitUser
@@ -126,6 +126,7 @@ func (c *cmdBatch) resolveBatchRepo(taskFiles []string, dataDir string) (string,
 		if err != nil {
 			return "", cli.CmdErr(c, "task file %s: %w", taskFile, err)
 		}
+		cfg.FallbackSource(sourceDir)
 		taskRepoPath := cfg.Source.LocalPath
 		gitUser.Name = cfg.Git.Name
 		gitUser.Email = cfg.Git.Email

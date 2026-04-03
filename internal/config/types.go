@@ -36,6 +36,13 @@ func (t *Task) Validate() error {
 	return t.Source.Validate()
 }
 
+// FallbackSource sets Source.LocalPath to dir when neither LocalPath nor Repo is configured.
+func (t *Task) FallbackSource(dir string) {
+	if dir != "" && t.Source.LocalPath == "" && t.Source.Repo == "" {
+		t.Source.LocalPath = dir
+	}
+}
+
 // ApplyDefaults fills in zero-valued fields with package-level defaults.
 // It sets default values for an agent model, max turns, CPU, and memory.
 func (t *Task) ApplyDefaults() *Task {
