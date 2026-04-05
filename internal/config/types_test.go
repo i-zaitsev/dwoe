@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
+	"gopkg.in/yaml.v3"
 )
 
 func checkErr(t *testing.T, err error, wantErr string) {
@@ -193,5 +194,33 @@ func TestTask_ResolvePaths(t *testing.T) {
 		{filepath.Join(testDir, "prompt.txt"), task.Source.PromptFile},
 	} {
 		assert.Equal(t, tc.want, tc.got)
+	}
+}
+
+func TestContinuePolicy_UnmarshalYAML(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		yaml    string
+		want    ContinuePolicy
+		wantErr bool
+	}{
+		{`continue_policy: ""`, ContinuePolicyDefault, false},
+		{`continue_policy: default`, ContinuePolicyDefault, false},
+		{`continue_policy: restart`, ContinuePolicyRestart, false},
+		{`continue_policy: continue`, ContinuePolicyContinue, false},
+		{`continue_policy: bogus`, 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.yaml, func(t *testing.T) {
+			t.Parallel()
+			var task Task
+			err := yaml.Unmarshal([]byte(tt.yaml), &task)
+			if tt.wantErr {
+				assert.Err(t, err)
+				return
+			}
+			assert.NotErr(t, err)
+			assert.Equal(t, task.ContinuePolicy, tt.want)
+		})
 	}
 }

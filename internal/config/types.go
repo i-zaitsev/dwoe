@@ -6,8 +6,37 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 )
+
+type ContinuePolicy int
+
+const (
+	ContinuePolicyDefault ContinuePolicy = iota
+	ContinuePolicyRestart
+	ContinuePolicyContinue
+)
+
+var continuePolicyNames = map[string]ContinuePolicy{
+	"":         ContinuePolicyDefault,
+	"default":  ContinuePolicyDefault,
+	"restart":  ContinuePolicyRestart,
+	"continue": ContinuePolicyContinue,
+}
+
+func (p *ContinuePolicy) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	v, ok := continuePolicyNames[s]
+	if !ok {
+		return fmt.Errorf("invalid continue_policy: %q", s)
+	}
+	*p = v
+	return nil
+}
 
 // Task defines the configuration for running a Claude agent in an isolated container.
 // It is typically loaded from a task.yaml file via LoadTaskConfig or LoadMergedConfig.
@@ -27,7 +56,8 @@ type Task struct {
 	Git         GitUser   `yaml:"git,omitempty"`
 	Network     Network   `yaml:"network,omitempty"`
 	Resources   Resources `yaml:"resources,omitempty"`
-	NoProxy     bool      `yaml:"no_proxy,omitempty"`
+	NoProxy        bool           `yaml:"no_proxy,omitempty"`
+	ContinuePolicy ContinuePolicy `yaml:"continue_policy,omitempty"`
 }
 
 // Validate checks that the task configuration is valid.
