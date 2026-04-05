@@ -77,7 +77,9 @@ func Run(env *Env, args []string) error {
 		if errOpen != nil {
 			return fmt.Errorf("cannot open log file: %w", errOpen)
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		opts.Writer = f
 	}
 
@@ -86,17 +88,22 @@ func Run(env *Env, args []string) error {
 	slog.Debug("cli: init", "datadir", global.dataDir)
 
 	env.dataDir = global.dataDir
-	configPath, errInit := config.InitConfig(global.dataDir)
-	switch {
-	case errors.Is(errInit, config.ErrConfigExists):
-		env.Print("Reading global config: %s\n", configPath)
-	case errInit != nil:
-		slog.Warn("cli: init config", "err", errInit)
-	default:
-		env.Print("Created config: %s\n", configPath)
-	}
 	env.noProxy = global.noProxy
 	env.model = global.model
+
+	configPath, errInit := config.InitConfig(env.dataDir)
+
+	if opts.Level == slog.LevelDebug {
+		switch {
+		case errors.Is(errInit, config.ErrConfigExists):
+			env.Print("Reading global config: %s\n", configPath)
+		case errInit != nil:
+			slog.Warn("cli: init config", "err", errInit)
+		default:
+			env.Print("Created config: %s\n", configPath)
+		}
+	}
+
 	if global.sourceDir != "" {
 		abs, errAbs := filepath.Abs(global.sourceDir)
 		if errAbs != nil {
@@ -104,6 +111,7 @@ func Run(env *Env, args []string) error {
 		}
 		env.sourceDir = abs
 	}
+
 	env.newManager = func() (*workspace.Manager, error) {
 		// creates a new workspace manager in the provided directory
 		return workspace.NewManager(global.dataDir)

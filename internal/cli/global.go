@@ -23,33 +23,34 @@ type GlobalFlags struct {
 	logFile   string        // logFile redirects logs to a file
 	logLevel  logLevelParam // logLevel specifies the logging level
 	logFormat logpkg.Format // logFormat specifies the log output format: JSON or text
-	sourceDir string        // sourceDir overrides source.local_path when not set in task
-	model     string        // model overrides agent.model when not set in task
+	sourceDir string        // sourceDir overrides source.local_path when not set in a task
+	model     string        // model overrides agent.model when not set in a task
 	noProxy   bool          // noProxy disables the proxy container
 }
 
 // parseGlobalFlags is executed before the subcommand is parsed.
 func parseGlobalFlags(args []string) (*GlobalFlags, []string, error) {
 	var flags GlobalFlags
-	flags.logLevel = logLevelParam(slog.LevelWarn)
-	var help bool
-
+	flags.logLevel = logLevelParam(slog.LevelInfo)
 	fs := flag.NewFlagSet(Prog, flag.ContinueOnError)
 
-	fs.Usage = func() { /* do not Print anything by default */ }
+	fs.Usage = func() { /* do not print anything by default */ }
 
 	fs.StringVar(&flags.dataDir, "datadir", defaultDataDir(), "directory with workspace metadata")
 	fs.StringVar(&flags.logFile, "logfile", "", "write JSON logs to file")
-	fs.Var(&flags.logLevel, "loglevel", "log level (debug, info, warn, Error)")
+	fs.Var(&flags.logLevel, "loglevel", "log level (debug, info, warn, error)")
 	fs.Var(&flags.logFormat, "logfmt", "log output format (JSON or text)")
 	fs.StringVar(&flags.sourceDir, "sourcedir", "", "default source directory for tasks")
 	fs.StringVar(&flags.model, "model", "", "default model for tasks")
 	fs.BoolVar(&flags.noProxy, "noproxy", false, "disable proxy container")
+
+	var help bool
 	fs.BoolVar(&help, "h", false, "show help")
 
 	if err := fs.Parse(args); err != nil {
 		return nil, nil, err
 	}
+
 	if help {
 		return nil, nil, flag.ErrHelp
 	}
@@ -74,7 +75,7 @@ type logLevelParam slog.Level
 func (l *logLevelParam) Set(value string) error {
 	var level slog.Level
 	if value == "" {
-		value = "debug"
+		value = "info"
 	}
 	switch strings.ToLower(value) {
 	case "dbg":
