@@ -6,40 +6,13 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/i-zaitsev/dwoe/internal/assert"
 )
-
-type stubCmd struct {
-	name string
-	desc string
-	args string
-}
-
-func (s *stubCmd) Name() string         { return s.name }
-func (s *stubCmd) Desc() string         { return s.desc }
-func (s *stubCmd) Args() string         { return s.args }
-func (s *stubCmd) Parse([]string) error { return nil }
-func (s *stubCmd) Run(*Env) error       { return nil }
-
-type helpableStubCmd struct {
-	name string
-	desc string
-	args string
-}
-
-func (s *helpableStubCmd) Name() string   { return s.name }
-func (s *helpableStubCmd) Desc() string   { return s.desc }
-func (s *helpableStubCmd) Args() string   { return s.args }
-func (s *helpableStubCmd) Run(*Env) error { return nil }
-
-func (s *helpableStubCmd) Parse(args []string) error {
-	_, err := ParseFlags(s, args, nil)
-	return err
-}
 
 func init() {
 	none := make(map[string]Command)
@@ -51,36 +24,64 @@ func testEnv() (*Env, *bytes.Buffer, *bytes.Buffer) {
 	return NewEnv(&stdout, &stderr), &stdout, &stderr
 }
 
-func TestParseGlobalFlags(t *testing.T) {
-	tests := []struct {
-		name      string
-		args      []string
-		dataDir   string
-		sourceDir string
-		model     string
-		noProxy   bool
-		rest      []string
+func TestParseGlobalFlags_FromArgs(t *testing.T) {
+	dataDir := defaultDataDir()
+
+	testCases := []struct {
+		args []string
+		want GlobalFlags
 	}{
-		{"no args", nil, defaultDataDir(), "", "", false, nil},
-		{"command only", []string{"list"}, defaultDataDir(), "", "", false, []string{"list"}},
-		{"datadir", []string{"--datadir", "/tmp", "run", "t.yaml"}, "/tmp", "", "", false, []string{"run", "t.yaml"}},
-		{"noproxy", []string{"--noproxy", "run", "t.yaml"}, defaultDataDir(), "", "", true, []string{"run", "t.yaml"}},
-		{"sourcedir", []string{"--sourcedir", "/src", "batch", "tasks"}, defaultDataDir(), "/src", "", false, []string{"batch", "tasks"}},
-		{"model", []string{"--model", "claude-sonnet-4-6", "run", "t.yaml"}, defaultDataDir(), "", "claude-sonnet-4-6", false, []string{"run", "t.yaml"}},
-		{"sourcedir_and_model", []string{"--sourcedir", "/code", "--model", "m", "batch", "."}, defaultDataDir(), "/code", "m", false, []string{"batch", "."}},
+		{
+			args: nil,
+			want: GlobalFlags{dataDir: dataDir},
+		},
+		{
+			args: []string{"list"},
+			want: GlobalFlags{dataDir: dataDir},
+		},
+		{
+			args: []string{"--datadir", "/tmp", "run", "task.yaml"},
+			want: GlobalFlags{dataDir: "/tmp"},
+		},
+		{
+			args: []string{"--noproxy", "run", "task.yaml"},
+			want: GlobalFlags{dataDir: dataDir, noProxy: true},
+		},
+		{
+			args: []string{"--sourcedir", "/src", "batch", "tasks"},
+			want: GlobalFlags{dataDir: dataDir, sourceDir: "/src"},
+		},
+		{
+			args: []string{"--model", "claude-sonnet-4-6", "run", "task.yaml"},
+			want: GlobalFlags{dataDir: dataDir, model: "claude-sonnet-4-6"},
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			flags, rest, err := parseGlobalFlags(tt.args)
-
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("args=%v", tc.args), func(t *testing.T) {
+			got, _, err := parseGlobalFlags(tc.args)
 			assert.NotErr(t, err)
-			assert.Equal(t, flags.dataDir, tt.dataDir)
-			assert.Equal(t, flags.sourceDir, tt.sourceDir)
-			assert.Equal(t, flags.model, tt.model)
-			assert.Equal(t, flags.noProxy, tt.noProxy)
+			if diff := cmp.Diff(tc.want, *got, cmp.AllowUnexported(GlobalFlags{})); diff != "" {
+				t.Fatalf("flags mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
-			if diff := cmp.Diff(tt.rest, rest); diff != "" {
-				t.Fatalf("rest mismatch (-want, +got):\n%s", diff)
+func TestParseGlobalFlags_RestArgs(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		args, rest []string
+	}{
+		{nil, nil},
+		{[]string{"--datadir", "/tmp"}, []string{}},
+		{[]string{"--noproxy", "run", "task.yaml"}, []string{"run", "task.yaml"}},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("args=%v", tc.args), func(t *testing.T) {
+			_, rest, err := parseGlobalFlags(tc.args)
+			assert.NotErr(t, err)
+			if diff := cmp.Diff(tc.rest, rest); diff != "" {
+				t.Fatalf("rest mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -153,4 +154,32 @@ func TestDispatchCmdHelp(t *testing.T) {
 	out := stdout.String()
 	assert.Contains(t, out, "A test command")
 	assert.Contains(t, out, "Usage:")
+}
+
+type stubCmd struct {
+	name string
+	desc string
+	args string
+}
+
+func (s *stubCmd) Name() string         { return s.name }
+func (s *stubCmd) Desc() string         { return s.desc }
+func (s *stubCmd) Args() string         { return s.args }
+func (s *stubCmd) Parse([]string) error { return nil }
+func (s *stubCmd) Run(*Env) error       { return nil }
+
+type helpableStubCmd struct {
+	name string
+	desc string
+	args string
+}
+
+func (s *helpableStubCmd) Name() string   { return s.name }
+func (s *helpableStubCmd) Desc() string   { return s.desc }
+func (s *helpableStubCmd) Args() string   { return s.args }
+func (s *helpableStubCmd) Run(*Env) error { return nil }
+
+func (s *helpableStubCmd) Parse(args []string) error {
+	_, err := ParseFlags(s, args, nil)
+	return err
 }
