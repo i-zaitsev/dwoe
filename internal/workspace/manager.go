@@ -52,13 +52,13 @@ func NewManager(dataDir string) (*Manager, error) {
 		return nil, fmt.Errorf("cannot create manager: %w", err)
 	}
 	if err := cli.Ping(context.Background()); err != nil {
-		cli.Close()
+		_ = cli.Close()
 		return nil, fmt.Errorf("cannot connect to Docker: %w", err)
 	}
 	store := state.NewStore(dataDir)
 	m, err := newManager(dataDir, cli, store)
 	if err != nil {
-		cli.Close()
+		_ = cli.Close()
 		return nil, err
 	}
 	return m, nil
@@ -69,7 +69,7 @@ func NewManagerWith(dataDir string, cli DockerClient, state StateStore) (*Manage
 	return newManager(dataDir, cli, state)
 }
 
-// Create provisions a new workspace from the given task configuration.
+// Create creates a new workspace from the given task configuration.
 // It generates a unique name, creates the directory structure, copies source files,
 // and persists both the config and initial state. On any error, the workspace
 // directory is cleaned up automatically.
@@ -127,22 +127,39 @@ func (m *Manager) Create(cfg *config.Task) (*Workspace, error) {
 // If the requested name is empty or already taken, a random name is generated.
 func (m *Manager) uniqueName(requested string) string {
 	if requested == "" {
-		requested = namegen.Generate()
-	}
-	existing, _ := m.state.List()
-	for {
-		taken := false
-		for _, ws := range existing {
-			if ws.Name == requested {
-				taken = true
-				break
+		// no name provided: generate a random one, with safety check
+		// to avoid (unlikely) collisions
+		uniq := namegen.Generate()
+		existing, _ := m.state.List()
+		for {
+			taken := false
+			for _, ws := range existing {
+				if ws.Name == requested {
+					taken = true
+					break
+				}
 			}
+			if !taken {
+				return uniq
+			}
+			uniq = namegen.Generate()
 		}
-		if !taken {
-			return requested
-		}
-		requested = namegen.Generate()
 	}
+
+	// the name coming from task file: do not generate but check
+	// if already taken, e.g., the task was executed before; append
+	// suffix to avoid name collision or naming into a random string
+	existing, _ := m.state.List()
+	var same []string
+	for _, ws := range existing {
+		if strings.HasPrefix(ws.Name, requested) {
+			same = append(same, ws.Name)
+		}
+	}
+	if len(same) > 0 {
+		return fmt.Sprintf("%s-%d", requested, len(same))
+	}
+	return requested
 }
 
 // initDirs creates the standard subdirectory layout under basePath:
