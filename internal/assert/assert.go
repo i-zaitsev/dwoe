@@ -6,9 +6,12 @@ package assert
 
 import (
 	"errors"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func Equal[T comparable](t *testing.T, got, want T) {
@@ -23,6 +26,14 @@ func Zero[T comparable](t *testing.T, got T) {
 	var zero T
 	if got != zero {
 		t.Errorf("got: %v, want zero value", got)
+	}
+}
+
+func NotZero[T comparable](t *testing.T, got T) {
+	t.Helper()
+	var zero T
+	if got == zero {
+		t.Errorf("got zero, want non zero value")
 	}
 }
 
@@ -83,6 +94,41 @@ func NotNil(t *testing.T, got any) {
 	}
 }
 
+func NoDiff(t *testing.T, want, got any, opts ...cmp.Option) {
+	t.Helper()
+	if diff := cmp.Diff(want, got, opts...); diff != "" {
+		t.Errorf("(-want, +got):\n%s", diff)
+	}
+}
+
+func HasKey[K comparable, V any](t *testing.T, m map[K]V, key K) {
+	t.Helper()
+	if _, ok := m[key]; !ok {
+		t.Errorf("map missing key %v", key)
+	}
+}
+
+func NoKey[K comparable, V any](t *testing.T, m map[K]V, key K) {
+	t.Helper()
+	if _, ok := m[key]; ok {
+		t.Errorf("map should not have key %v", key)
+	}
+}
+
+func PathExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		t.Errorf("path %q should exist", path)
+	}
+}
+
+func PathNotExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("path %q should not exist", path)
+	}
+}
+
 func isNil(v any) bool {
 	if v == nil {
 		return true
@@ -91,6 +137,7 @@ func isNil(v any) bool {
 	switch rv.Kind() {
 	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Chan, reflect.Func, reflect.Interface:
 		return rv.IsNil()
+	default:
+		return false
 	}
-	return false
 }
