@@ -207,7 +207,7 @@ func TestContinuePolicy_UnmarshalYAML(t *testing.T) {
 		{`continue_policy: ""`, ContinuePolicyDefault, false},
 		{`continue_policy: default`, ContinuePolicyDefault, false},
 		{`continue_policy: restart`, ContinuePolicyRestart, false},
-		{`continue_policy: continue`, ContinuePolicyContinue, false},
+		{`continue_policy: resume`, ContinuePolicyResume, false},
 		{`continue_policy: bogus`, 0, true},
 	}
 	for _, tt := range tests {
@@ -222,5 +222,21 @@ func TestContinuePolicy_UnmarshalYAML(t *testing.T) {
 			assert.NotErr(t, err)
 			assert.Equal(t, task.ContinuePolicy, tt.want)
 		})
+	}
+}
+
+func TestTask_PolicyRequiresNew(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		policy ContinuePolicy
+		want   bool
+	}{
+		{ContinuePolicyDefault, true},
+		{ContinuePolicyRestart, true},
+		{ContinuePolicyResume, false},
+	}
+	for _, tt := range tests {
+		task := &Task{ContinuePolicy: tt.policy}
+		assert.Equal(t, task.PolicyRequiresNew(), tt.want)
 	}
 }

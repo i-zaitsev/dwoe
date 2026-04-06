@@ -15,14 +15,14 @@ type ContinuePolicy int
 const (
 	ContinuePolicyDefault ContinuePolicy = iota
 	ContinuePolicyRestart
-	ContinuePolicyContinue
+	ContinuePolicyResume
 )
 
 var continuePolicyNames = map[string]ContinuePolicy{
-	"":         ContinuePolicyDefault,
-	"default":  ContinuePolicyDefault,
-	"restart":  ContinuePolicyRestart,
-	"continue": ContinuePolicyContinue,
+	"":        ContinuePolicyDefault,
+	"default": ContinuePolicyDefault,
+	"restart": ContinuePolicyRestart,
+	"resume":  ContinuePolicyResume,
 }
 
 func (p *ContinuePolicy) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -49,13 +49,13 @@ func (p *ContinuePolicy) UnmarshalYAML(unmarshal func(interface{}) error) error 
 //
 // Use Validate to check required fields and ApplyDefaults to fill in missing values.
 type Task struct {
-	Name        string    `yaml:"name"`
-	Description string    `yaml:"description,omitempty"`
-	Source      Source    `yaml:"source"`
-	Agent       Agent     `yaml:"agent,omitempty"`
-	Git         GitUser   `yaml:"git,omitempty"`
-	Network     Network   `yaml:"network,omitempty"`
-	Resources   Resources `yaml:"resources,omitempty"`
+	Name           string         `yaml:"name"`
+	Description    string         `yaml:"description,omitempty"`
+	Source         Source         `yaml:"source"`
+	Agent          Agent          `yaml:"agent,omitempty"`
+	Git            GitUser        `yaml:"git,omitempty"`
+	Network        Network        `yaml:"network,omitempty"`
+	Resources      Resources      `yaml:"resources,omitempty"`
 	NoProxy        bool           `yaml:"no_proxy,omitempty"`
 	ContinuePolicy ContinuePolicy `yaml:"continue_policy,omitempty"`
 }
@@ -71,6 +71,11 @@ func (t *Task) FallbackSource(dir string) {
 	if dir != "" && t.Source.LocalPath == "" && t.Source.Repo == "" {
 		t.Source.LocalPath = dir
 	}
+}
+
+// PolicyRequiresNew returns true if the task config requires restart instead of resuming.
+func (t *Task) PolicyRequiresNew() bool {
+	return t.ContinuePolicy != ContinuePolicyResume
 }
 
 // ApplyDefaults fills in zero-valued fields with package-level defaults.

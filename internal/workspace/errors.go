@@ -3,3 +3,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 package workspace
+
+import "errors"
+
+var (
+	errWorkspaceRunning     = errors.New("workspace is running")
+	errContinueRequiresName = errors.New("continue policy requires a task name")
+)
