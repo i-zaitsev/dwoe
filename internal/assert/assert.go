@@ -122,7 +122,7 @@ func PathExists(t *testing.T, path string) {
 	}
 }
 
-func PathNotExists(t *testing.T, path string) {
+func NoPathExists(t *testing.T, path string) {
 	t.Helper()
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Errorf("path %q should not exist", path)

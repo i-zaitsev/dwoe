@@ -355,7 +355,7 @@ func TestManager_Destroy(t *testing.T) {
 			assert.NoDiff(t, wantCalls, ts.docker.Calls)
 			assert.Nil(t, ts.state.Data["ws-1"])
 			if !keepDir {
-				assert.PathNotExists(t, basePath)
+				assert.NoPathExists(t, basePath)
 			}
 		})
 	}

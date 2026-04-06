@@ -818,9 +818,12 @@ func (m *Manager) saveContainerLogs(ctx context.Context, ws *state.Workspace) {
 		slog.Warn("cleanup: create log file", "path", logPath, "err", err)
 		return
 	}
-	defer f.Close()
-	if _, err := io.Copy(f, rc); err != nil {
-		slog.Warn("cleanup: write logs", "path", logPath, "err", err)
+	defer func() {
+		_ = f.Close()
+	}()
+
+	if _, errCopy := io.Copy(f, rc); errCopy != nil {
+		slog.Warn("cleanup: write logs", "path", logPath, "err", errCopy)
 	}
 }
 
