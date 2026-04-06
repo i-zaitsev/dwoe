@@ -21,6 +21,13 @@ func Equal[T comparable](t *testing.T, got, want T) {
 	}
 }
 
+func NotEqual[T comparable](t *testing.T, got, notWant T) {
+	t.Helper()
+	if got == notWant {
+		t.Errorf("got: %v, should not equal: %v", got, notWant)
+	}
+}
+
 func Zero[T comparable](t *testing.T, got T) {
 	t.Helper()
 	var zero T
