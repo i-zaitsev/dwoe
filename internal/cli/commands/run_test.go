@@ -7,6 +7,7 @@ package commands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/testfake"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
@@ -75,7 +77,7 @@ func TestRunCmd_Run(t *testing.T) {
 		ts, taskFile := createTestTask(t, "", 0)
 		cmd := &cmdRun{taskPath: taskFile, detach: true}
 		assert.NotErr(t, cmd.Run(ts.env))
-		assert.ContainsAll(t, ts.stdout.String(), "Started workspace:", "Status: running")
+		assert.ContainsAll(t, ts.stdout.String(), "started", "Status: running")
 	})
 
 	t.Run("attached_success", func(t *testing.T) {
@@ -137,7 +139,7 @@ func TestRunCmd_Run_SourceDirOverride(t *testing.T) {
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
 
 	assert.NotErr(t, cmd.Run(ts.env))
-	assert.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
 func TestRunCmd_Run_ModelOverride(t *testing.T) {
@@ -148,7 +150,7 @@ func TestRunCmd_Run_ModelOverride(t *testing.T) {
 	cmd := &cmdRun{taskPath: writeTaskFile(t, t.TempDir(), "model-test"), detach: true}
 
 	assert.NotErr(t, cmd.Run(ts.env))
-	assert.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
 func TestRunCmd_Run_SourceDirNotUsedWhenYAMLHasSource(t *testing.T) {
@@ -159,7 +161,7 @@ func TestRunCmd_Run_SourceDirNotUsedWhenYAMLHasSource(t *testing.T) {
 	cmd := &cmdRun{taskPath: writeTaskFile(t, t.TempDir(), "has-source"), detach: true}
 
 	assert.NotErr(t, cmd.Run(ts.env))
-	assert.ContainsAll(t, ts.stdout.String(), "Started workspace:")
+	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
 func TestRunCmd_Run_MissingFile(t *testing.T) {
@@ -184,4 +186,23 @@ func createTestTask(t *testing.T, logs string, exitCode int) (*cmdTestSetup, str
 	dir := t.TempDir()
 	taskFile := writeTaskFile(t, dir, "test-task")
 	return setup, taskFile
+}
+
+func TestRunCmd_Run_ContinuePolicy(t *testing.T) {
+	t.Parallel()
+	setup := newCmdTestSetup(t)
+
+	dir := t.TempDir()
+	srcDir := t.TempDir()
+	ws := testfake.CreateWorkspace(t, dir, "ws-cont", "continue-test", "completed")
+	setup.state.Data["ws-cont"] = ws
+
+	taskFile := filepath.Join(t.TempDir(), "task.yaml")
+	testutil.WriteFile(t, taskFile, fmt.Sprintf(
+		"name: continue-test\ncontinue_policy: resume\nsource:\n  local_path: %s\n", srcDir,
+	))
+
+	cmd := &cmdRun{taskPath: taskFile, detach: true}
+	assert.NotErr(t, cmd.Run(setup.env))
+	assert.Contains(t, setup.stdout.String(), "Workspace resumed: continue-test")
 }

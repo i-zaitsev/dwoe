@@ -99,7 +99,7 @@ func (c *cmdRun) Run(e *cli.Env) error {
 		return cli.CmdErr(c, "%w", err)
 	}
 
-	ws, err := manager.Create(taskCfg)
+	ws, err := manager.FindOrCreate(taskCfg)
 	if err != nil {
 		return cli.CmdErr(c, "%w", err)
 	}
@@ -111,7 +111,13 @@ func (c *cmdRun) Run(e *cli.Env) error {
 		return cli.CmdErr(c, "%w", err)
 	}
 
-	e.Print("Started workspace: %s\n", ws.Name)
+	var verb string
+	if taskCfg.PolicyRequiresNew() {
+		verb = "started"
+	} else {
+		verb = "resumed"
+	}
+	e.Print("Workspace %s: %s\n", verb, ws.Name)
 	e.Print("- ID: %s\n", ws.ID)
 	e.Print("- Status: running\n")
 	e.Print("- Path: %s\n", ws.BasePath)

@@ -69,6 +69,29 @@ func NewManagerWith(dataDir string, cli DockerClient, state StateStore) (*Manage
 	return newManager(dataDir, cli, state)
 }
 
+func (m *Manager) FindOrCreate(cfg *config.Task) (*Workspace, error) {
+	if cfg.PolicyRequiresNew() {
+		return m.Create(cfg)
+	}
+	if cfg.Name == "" {
+		return nil, fmt.Errorf("workspace: %w", errContinueRequiresName)
+	}
+	ws, err := m.GetByName(cfg.Name)
+	if err != nil {
+		return nil, fmt.Errorf("workspace: %w", err)
+	}
+	if ws.Status == StatusRunning {
+		return nil, fmt.Errorf("workspace %q: %w", ws.Name, errWorkspaceRunning)
+	}
+	if ws.Status == StatusCompleted || ws.Status == StatusFailed {
+		ws.Status = StatusStopped
+		if errSave := m.state.Save(ws.Workspace); errSave != nil {
+			return nil, fmt.Errorf("workspace %q: save state: %w", ws.Name, errSave)
+		}
+	}
+	return ws, nil
+}
+
 // Create creates a new workspace from the given task configuration.
 // It generates a unique name, creates the directory structure, copies source files,
 // and persists both the config and initial state. On any error, the workspace
@@ -805,12 +828,15 @@ func (m *Manager) saveContainerLogs(ctx context.Context, ws *state.Workspace) {
 	if !ok || agentID == "" {
 		return
 	}
+
 	rc, err := m.cli.ContainerLogs(ctx, agentID, false)
 	if err != nil {
 		slog.Warn("cleanup: save logs", "id", ws.ID, "err", err)
 		return
 	}
-	defer rc.Close()
+	defer func() {
+		_ = rc.Close()
+	}()
 
 	logPath := filepath.Join(ws.BasePath, "logs", "agent", savedLogFile)
 	f, err := os.Create(logPath)

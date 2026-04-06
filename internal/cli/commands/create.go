@@ -63,14 +63,21 @@ func (c *cmdCreate) Run(e *cli.Env) error {
 		return cli.CmdErr(c, "%w", err)
 	}
 
-	ws, err := manager.Create(taskCfg)
+	ws, err := manager.FindOrCreate(taskCfg)
 	if err != nil {
 		return cli.CmdErr(c, "%w", err)
 	}
 
-	slog.Info("workspace created", "name", ws.Name, "id", ws.ID)
+	var verb string
+	if taskCfg.PolicyRequiresNew() {
+		verb = "created"
+	} else {
+		verb = "resumed"
+	}
 
-	e.Print("Created workspace: %s\n", ws.Name)
+	slog.Info("workspace run", "name", ws.Name, "id", ws.ID, "verb", verb)
+
+	e.Print("Workspace %s: %s\n", verb, ws.Name)
 	e.Print("- ID: %s\n", ws.ID)
 	e.Print("- Status: %s\n", ws.Status)
 	e.Print("- Path: %s\n", ws.BasePath)

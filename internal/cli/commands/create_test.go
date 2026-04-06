@@ -35,7 +35,7 @@ func TestCreateCmd_Run(t *testing.T) {
 	assert.NotErr(t, err)
 	nDirs := testutil.DirCount(ts.env.DataDir(), "workspaces", "*", "workspace")
 	assert.Equal(t, nDirs, 1)
-	assert.ContainsAll(t, ts.stdout.String(), "Created workspace: test-task", "Status: pending")
+	assert.ContainsAll(t, ts.stdout.String(), "Workspace created: test-task", "Status: pending")
 }
 
 func TestCreateCmd_Run_MissingFile(t *testing.T) {

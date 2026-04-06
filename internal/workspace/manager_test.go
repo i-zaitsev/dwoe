@@ -560,3 +560,118 @@ func TestManager_Diff(t *testing.T) {
 	assert.Contains(t, info.Stat, "feature.go")
 	assert.Contains(t, info.Diff, "package main")
 }
+
+func TestManager_FindOrCreate_CreatesNew(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		policy config.ContinuePolicy
+	}{
+		{"default", config.ContinuePolicyDefault},
+		{"restart", config.ContinuePolicyRestart},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ts := newTestSetup(t)
+
+			ws, err := ts.manager.FindOrCreate(&config.Task{
+				Name:           "new-task",
+				ContinuePolicy: tt.policy,
+				Source:         config.Source{LocalPath: t.TempDir()},
+			})
+
+			assert.NotErr(t, err)
+			assert.Equal(t, ws.Status, StatusPending)
+		})
+	}
+}
+
+func TestManager_FindOrCreate_RestartWithExisting(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	ts.setWorkspace(t, "old-ws", StatusCompleted, withName("my-task"))
+
+	ws, err := ts.manager.FindOrCreate(&config.Task{
+		Name:           "my-task",
+		ContinuePolicy: config.ContinuePolicyRestart,
+		Source:         config.Source{LocalPath: t.TempDir()},
+	})
+
+	assert.NotErr(t, err)
+	assert.NotEqual(t, ws.ID, "old-ws")
+}
+
+func TestManager_FindOrCreate_Resume(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		status     string
+		wantStatus string
+	}{
+		{"completed", StatusCompleted, StatusStopped},
+		{"failed", StatusFailed, StatusStopped},
+		{"stopped", StatusStopped, StatusStopped},
+		{"pending", StatusPending, StatusPending},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ts := newTestSetup(t)
+			ts.setWorkspace(t, "ws-1", tt.status, withName("my-task"))
+
+			ws, err := ts.manager.FindOrCreate(&config.Task{
+				Name:           "my-task",
+				ContinuePolicy: config.ContinuePolicyResume,
+				Source:         config.Source{LocalPath: t.TempDir()},
+			})
+
+			assert.NotErr(t, err)
+			assert.Equal(t, ws.ID, "ws-1")
+			assert.Equal(t, ws.Status, tt.wantStatus)
+		})
+	}
+}
+
+func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
+	t.Parallel()
+
+	t.Run("not_found", func(t *testing.T) {
+		t.Parallel()
+		ts := newTestSetup(t)
+
+		_, err := ts.manager.FindOrCreate(&config.Task{
+			Name:           "nonexistent",
+			ContinuePolicy: config.ContinuePolicyResume,
+			Source:         config.Source{LocalPath: t.TempDir()},
+		})
+
+		assert.ErrAs[*state.NotFoundError](t, err)
+	})
+
+	t.Run("running", func(t *testing.T) {
+		t.Parallel()
+		ts := newTestSetup(t)
+		ts.setWorkspace(t, "ws-1", StatusRunning, withName("busy-task"))
+
+		_, err := ts.manager.FindOrCreate(&config.Task{
+			Name:           "busy-task",
+			ContinuePolicy: config.ContinuePolicyResume,
+			Source:         config.Source{LocalPath: t.TempDir()},
+		})
+
+		assert.ErrIs(t, err, errWorkspaceRunning)
+	})
+
+	t.Run("no_name", func(t *testing.T) {
+		t.Parallel()
+		ts := newTestSetup(t)
+
+		_, err := ts.manager.FindOrCreate(&config.Task{
+			ContinuePolicy: config.ContinuePolicyResume,
+			Source:         config.Source{LocalPath: t.TempDir()},
+		})
+
+		assert.ErrIs(t, err, errContinueRequiresName)
+	})
+}
