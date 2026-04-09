@@ -5,7 +5,6 @@
 package workspace
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -34,41 +33,26 @@ func newTestSetup(t *testing.T) *testSetup {
 	}
 }
 
+type wsOption func(t *testing.T, ws *state.Workspace)
+
 func (ts *testSetup) setWorkspace(t *testing.T, id, status string, opts ...wsOption) string {
 	t.Helper()
-	basePath := t.TempDir()
-	cfg := &wsConfig{}
-	ws := &state.Workspace{
-		ID:       id,
-		Name:     "test",
-		Status:   status,
-		BasePath: basePath,
-	}
+	dir := t.TempDir()
+	ws := testfake.CreateWorkspace(t, dir, id, "test", status)
 	for _, opt := range opts {
-		opt(t, ws, cfg)
+		opt(t, ws)
 	}
-	if cfg.yaml == "" {
-		cfg.yaml = "name: " + ws.Name + "\nsource:\n  local_path: " + t.TempDir()
-	}
-	writeConfig(t, basePath, cfg.yaml)
 	ts.state.Data[id] = ws
-	return basePath
+	return ws.BasePath
 }
 
 func writeConfig(t *testing.T, basePath, content string) {
 	t.Helper()
-	path := filepath.Join(basePath, "config.yaml")
-	assert.NotErr(t, os.WriteFile(path, []byte(content), 0o644))
-}
-
-type wsOption func(t *testing.T, ws *state.Workspace, cfg *wsConfig)
-
-type wsConfig struct {
-	yaml string
+	testutil.WriteFile(t, filepath.Join(basePath, "config.yaml"), content)
 }
 
 func withContainers(ids map[string]string) wsOption {
-	return func(_ *testing.T, ws *state.Workspace, _ *wsConfig) {
+	return func(_ *testing.T, ws *state.Workspace) {
 		ws.ContainerIDs = ids
 	}
 }
@@ -82,32 +66,32 @@ func withAgentAndProxy() wsOption {
 }
 
 func withNetwork(id string) wsOption {
-	return func(_ *testing.T, ws *state.Workspace, _ *wsConfig) {
+	return func(_ *testing.T, ws *state.Workspace) {
 		ws.NetworkID = id
 	}
 }
 
 func withFullDocker() wsOption {
-	return func(t *testing.T, ws *state.Workspace, cfg *wsConfig) {
-		withAgentAndProxy()(t, ws, cfg)
-		withNetwork("net-1")(t, ws, cfg)
+	return func(t *testing.T, ws *state.Workspace) {
+		withAgentAndProxy()(t, ws)
+		withNetwork("net-1")(t, ws)
 	}
 }
 
 func withName(name string) wsOption {
-	return func(_ *testing.T, ws *state.Workspace, _ *wsConfig) {
+	return func(_ *testing.T, ws *state.Workspace) {
 		ws.Name = name
 	}
 }
 
 func withConfig(yaml string) wsOption {
-	return func(_ *testing.T, _ *state.Workspace, cfg *wsConfig) {
-		cfg.yaml = yaml
+	return func(t *testing.T, ws *state.Workspace) {
+		writeConfig(t, ws.BasePath, yaml)
 	}
 }
 
 func withLogDir() wsOption {
-	return func(t *testing.T, ws *state.Workspace, _ *wsConfig) {
+	return func(t *testing.T, ws *state.Workspace) {
 		testutil.MkdirAll(t, filepath.Join(ws.BasePath, "logs", "agent"))
 	}
 }

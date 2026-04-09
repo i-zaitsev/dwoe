@@ -189,10 +189,14 @@ func CreateWorkspace(t *testing.T, dir, id, name, status string) *state.Workspac
 	if err := os.WriteFile(filepath.Join(wsDir, "config.yaml"), []byte(cfg), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return &state.Workspace{
+	ws := &state.Workspace{
 		ID:       id,
 		Name:     name,
 		Status:   status,
 		BasePath: wsDir,
 	}
+	if status == "running" {
+		ws.ContainerIDs = map[string]string{"agent": "fake-container"}
+	}
+	return ws
 }
