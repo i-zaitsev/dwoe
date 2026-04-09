@@ -63,3 +63,23 @@ The location of workspaces can be changed with `datadir` config option.
 
 * `fire` is the quick entry point requiring a repo and task file (`--work`) or an inline prompt (`--do`)
 * `run` takes a full `task.yaml` for complete control over image, model, resources, proxy, and environment
+
+## Resuming a Task
+
+By default, every `dwoe run` creates a fresh workspace. To resume a
+previous workspace instead, add `continue_policy: resume` to the task
+config:
+
+```yaml
+name: my-task
+continue_policy: resume
+source:
+  local_path: ./repo
+```
+
+When the policy is set to `resume`, `dwoe run` finds the existing
+workspace by name and relaunches fresh containers on the same
+filesystem. If no workspace with that name exists, the command fails.
+
+The `restart` policy always creates a new workspace, even when one
+with the same name already exists (the default behavior).

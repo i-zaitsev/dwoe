@@ -21,6 +21,12 @@ dwoe inspect <workspace-name>
 dwoe collect --repo ./repo --branch agent-work <workspace-name>
 ```
 
+## Resuming
+
+To resume the workspace instead of creating a new one each time, add
+`continue_policy: resume` to `task.yaml`. The agent picks up where
+it left off on the same filesystem.
+
 ## Files
 
 * `task.yaml` full task configuration
