@@ -136,6 +136,13 @@ func NoPathExists(t *testing.T, path string) {
 	}
 }
 
+func Condition(t *testing.T, val bool) {
+	t.Helper()
+	if !val {
+		t.Errorf("got %T flag, want %T", !val, val)
+	}
+}
+
 func isNil(v any) bool {
 	if v == nil {
 		return true
