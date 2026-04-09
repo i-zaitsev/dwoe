@@ -126,3 +126,20 @@ func TestFormat_String(t *testing.T) {
 		assert.Equal(t, tt.f.String(), tt.want)
 	}
 }
+
+func TestUseRelativeSourcePath(t *testing.T) {
+	trimSuffix := useRelativeSourcePath("/src/test/")
+
+	trimmedAttr := trimSuffix(nil, slog.Attr{
+		Key: slog.SourceKey,
+		Value: slog.AnyValue(&slog.Source{
+			Function: "test",
+			File:     "/src/test/test.go",
+			Line:     999,
+		}),
+	})
+	s, ok := trimmedAttr.Value.Any().(*slog.Source)
+
+	assert.Condition(t, ok)
+	assert.Equal(t, s.File, "test.go")
+}

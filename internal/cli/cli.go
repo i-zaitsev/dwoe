@@ -69,6 +69,7 @@ func Run(env *Env, args []string) error {
 	opts := logpkg.DefaultOpts()
 	opts.Level = global.logLevel.level()
 	opts.Format = global.logFormat
+	opts.SourceRoot = getSourceRoot()
 
 	if global.logFile == "" {
 		opts.Writer = env.stderr

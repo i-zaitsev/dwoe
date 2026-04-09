@@ -10,6 +10,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 )
 
 // Format selects the log output format.
@@ -47,9 +48,10 @@ func (f *Format) String() string {
 
 // Opts configures the global logger.
 type Opts struct {
-	Level  slog.Level
-	Format Format
-	Writer io.Writer
+	Level      slog.Level
+	Format     Format
+	Writer     io.Writer
+	SourceRoot string
 }
 
 // DefaultOpts returns Opts with info-level JSON logging to stderr.
@@ -70,7 +72,11 @@ func Setup(opts *Opts) {
 	if w == nil {
 		w = os.Stderr
 	}
-	hOpts := &slog.HandlerOptions{Level: opts.Level, AddSource: true}
+	hOpts := &slog.HandlerOptions{
+		Level:       opts.Level,
+		AddSource:   true,
+		ReplaceAttr: useRelativeSourcePath(opts.SourceRoot),
+	}
 	var h slog.Handler
 	switch opts.Format {
 	case FormatText:
@@ -94,4 +100,16 @@ func SetupJSON(level slog.Level) {
 // SetupVerboseText configures debug-level text logging to stderr.
 func SetupVerboseText() {
 	Setup(&Opts{Level: slog.LevelDebug, Format: FormatText, Writer: os.Stderr})
+}
+
+// useRelativeSourcePath used to replace source attr in slog.HandlerOptions for relative path logging.
+func useRelativeSourcePath(sourceRoot string) func(groups []string, a slog.Attr) slog.Attr {
+	return func(_ []string, a slog.Attr) slog.Attr {
+		if a.Key == slog.SourceKey {
+			if s, ok := a.Value.Any().(*slog.Source); ok {
+				s.File = strings.TrimPrefix(s.File, sourceRoot)
+			}
+		}
+		return a
+	}
 }

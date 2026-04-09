@@ -10,6 +10,9 @@ import (
 	"flag"
 	"io"
 	"log/slog"
+	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -42,12 +45,12 @@ func ScanLogs(ctx context.Context, logs io.ReadCloser, lines chan<- string) {
 	)
 
 	defer close(lines)
-	defer logs.Close()
+	defer func() { _ = logs.Close() }()
 
 	// AfterFunc closes the reader when the context is cancelled (e.g., SIGINT),
 	// unblocking the scanner. stop() cancels the callback if the scanner exits
 	// normally first, preventing a concurrent double-close with defer logs.Close().
-	stop := context.AfterFunc(ctx, func() { logs.Close() })
+	stop := context.AfterFunc(ctx, func() { _ = logs.Close() })
 	defer func() {
 		if stopped := stop(); !stopped {
 			slog.Debug("run: scanner: closed by context cancellation")
@@ -86,4 +89,24 @@ func FmtTime(t *time.Time) string {
 		return ""
 	}
 	return t.Format(time.DateTime)
+}
+
+// getSourceRoot returns the absolute path to the module's source root directory.
+func getSourceRoot() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info.Main.Path == "" {
+		return ""
+	}
+	pc, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return ""
+	}
+	fn := runtime.FuncForPC(pc)
+	rel := strings.TrimPrefix(fn.Name(), info.Main.Path+"/")
+	if rel == fn.Name() {
+		return ""
+	}
+	relDir := rel[:strings.LastIndex(rel, ".")]
+	suffix := relDir + "/" + filepath.Base(file)
+	return strings.TrimSuffix(file, suffix)
 }
