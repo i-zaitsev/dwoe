@@ -99,7 +99,7 @@ func (c *cmdRun) Run(e *cli.Env) error {
 		return cli.CmdErr(c, "%w", err)
 	}
 
-	ws, err := manager.FindOrCreate(taskCfg)
+	ws, err := manager.FindOrCreate(ctx, taskCfg)
 	if err != nil {
 		return cli.CmdErr(c, "%w", err)
 	}

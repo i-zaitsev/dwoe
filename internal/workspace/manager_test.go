@@ -561,6 +561,31 @@ func TestManager_Diff(t *testing.T) {
 	assert.Contains(t, info.Diff, "package main")
 }
 
+func TestManager_Sync_OrphanedRunning(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	ts.setWorkspace(t, "ws-1", StatusRunning)
+	ts.state.Data["ws-1"].ContainerIDs = nil // orphaned state: running w/o container
+
+	err := ts.manager.Sync(context.Background(), "ws-1")
+
+	assert.NotErr(t, err)
+	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusFailed)
+	assert.NotNil(t, ts.state.Data["ws-1"].FinishedAt)
+}
+
+func TestManager_Stop_MissingContainers(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	ts.setWorkspace(t, "ws-1", StatusRunning)
+	ts.state.Data["ws-1"].ContainerIDs = nil // orphaned state: running w/o container
+
+	err := ts.manager.Stop(context.Background(), "ws-1", time.Minute)
+
+	assert.NotErr(t, err)
+	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusStopped)
+}
+
 func TestManager_FindOrCreate_CreatesNew(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -575,7 +600,7 @@ func TestManager_FindOrCreate_CreatesNew(t *testing.T) {
 			t.Parallel()
 			ts := newTestSetup(t)
 
-			ws, err := ts.manager.FindOrCreate(&config.Task{
+			ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
 				Name:           "new-task",
 				ContinuePolicy: tt.policy,
 				Source:         config.Source{LocalPath: t.TempDir()},
@@ -592,7 +617,7 @@ func TestManager_FindOrCreate_RestartWithExisting(t *testing.T) {
 	ts := newTestSetup(t)
 	ts.setWorkspace(t, "old-ws", StatusCompleted, withName("my-task"))
 
-	ws, err := ts.manager.FindOrCreate(&config.Task{
+	ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
 		Name:           "my-task",
 		ContinuePolicy: config.ContinuePolicyRestart,
 		Source:         config.Source{LocalPath: t.TempDir()},
@@ -612,6 +637,7 @@ func TestManager_FindOrCreate_Resume(t *testing.T) {
 		{"completed", StatusCompleted, StatusStopped},
 		{"failed", StatusFailed, StatusStopped},
 		{"stopped", StatusStopped, StatusStopped},
+		{"running", StatusRunning, StatusStopped},
 		{"pending", StatusPending, StatusPending},
 	}
 	for _, tt := range tests {
@@ -620,7 +646,7 @@ func TestManager_FindOrCreate_Resume(t *testing.T) {
 			ts := newTestSetup(t)
 			ts.setWorkspace(t, "ws-1", tt.status, withName("my-task"))
 
-			ws, err := ts.manager.FindOrCreate(&config.Task{
+			ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
 				Name:           "my-task",
 				ContinuePolicy: config.ContinuePolicyResume,
 				Source:         config.Source{LocalPath: t.TempDir()},
@@ -640,7 +666,7 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 		t.Parallel()
 		ts := newTestSetup(t)
 
-		_, err := ts.manager.FindOrCreate(&config.Task{
+		_, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
 			Name:           "nonexistent",
 			ContinuePolicy: config.ContinuePolicyResume,
 			Source:         config.Source{LocalPath: t.TempDir()},
@@ -649,25 +675,11 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 		assert.ErrAs[*state.NotFoundError](t, err)
 	})
 
-	t.Run("running", func(t *testing.T) {
-		t.Parallel()
-		ts := newTestSetup(t)
-		ts.setWorkspace(t, "ws-1", StatusRunning, withName("busy-task"))
-
-		_, err := ts.manager.FindOrCreate(&config.Task{
-			Name:           "busy-task",
-			ContinuePolicy: config.ContinuePolicyResume,
-			Source:         config.Source{LocalPath: t.TempDir()},
-		})
-
-		assert.ErrIs(t, err, errWorkspaceRunning)
-	})
-
 	t.Run("no_name", func(t *testing.T) {
 		t.Parallel()
 		ts := newTestSetup(t)
 
-		_, err := ts.manager.FindOrCreate(&config.Task{
+		_, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
 			ContinuePolicy: config.ContinuePolicyResume,
 			Source:         config.Source{LocalPath: t.TempDir()},
 		})

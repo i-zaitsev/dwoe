@@ -69,7 +69,7 @@ func NewManagerWith(dataDir string, cli DockerClient, state StateStore) (*Manage
 	return newManager(dataDir, cli, state)
 }
 
-func (m *Manager) FindOrCreate(cfg *config.Task) (*Workspace, error) {
+func (m *Manager) FindOrCreate(ctx context.Context, cfg *config.Task) (*Workspace, error) {
 	if cfg.PolicyRequiresNew() {
 		return m.Create(cfg)
 	}
@@ -81,7 +81,16 @@ func (m *Manager) FindOrCreate(cfg *config.Task) (*Workspace, error) {
 		return nil, fmt.Errorf("workspace: %w", err)
 	}
 	if ws.Status == StatusRunning {
-		return nil, fmt.Errorf("workspace %q: %w", ws.Name, errWorkspaceRunning)
+		if errStop := m.Stop(ctx, ws.ID, 30*time.Second); errStop != nil {
+			return nil, fmt.Errorf("workspace %q: stop: %w", ws.Name, errStop)
+		}
+		if errCleanup := m.Cleanup(ctx, ws.ID); errCleanup != nil {
+			slog.Warn("workspace: cleanup after stop", "id", ws.ID, "err", errCleanup)
+		}
+		ws, err = m.Get(ws.ID)
+		if err != nil {
+			return nil, fmt.Errorf("workspace: %w", err)
+		}
 	}
 	if ws.Status == StatusCompleted || ws.Status == StatusFailed {
 		ws.Status = StatusStopped
@@ -427,7 +436,8 @@ func (m *Manager) Stop(ctx context.Context, id string, timeout time.Duration) er
 		return fmt.Errorf("stop: invalid status %q", ws.Status)
 	}
 	if ws.ContainerIDs == nil {
-		return fmt.Errorf("stop: container IDs not set")
+		markStopped(ws.Workspace)
+		return m.saveState(ws)
 	}
 
 	agentID, ok := ws.ContainerIDs["agent"]
@@ -443,10 +453,7 @@ func (m *Manager) Stop(ctx context.Context, id string, timeout time.Duration) er
 		}
 	}
 
-	now := time.Now()
-	ws.Status = StatusStopped
-	ws.FinishedAt = &now
-	ws.ErrorMsg = "stopped by user"
+	markStopped(ws.Workspace)
 	if errSave := m.saveState(ws); errSave != nil {
 		return fmt.Errorf("stop: save workspace state: %w", errSave)
 	}
@@ -493,13 +500,7 @@ func (m *Manager) Cleanup(ctx context.Context, id string) error {
 		return fmt.Errorf("workspace: cleanup: %w", errGet)
 	}
 
-	m.saveContainerLogs(ctx, ws.Workspace)
-
-	errs := m.removeDockerResources(ctx, ws.Workspace)
-
-	ws.ContainerIDs = nil
-	ws.NetworkID = ""
-
+	errs := m.teardownContainers(ctx, ws.Workspace)
 	errs = append(errs, m.state.Save(ws.Workspace))
 
 	if errAll := errors.Join(errs...); errAll != nil {
@@ -574,19 +575,15 @@ func (m *Manager) Sync(ctx context.Context, id string) error {
 
 	agentID, ok := ws.ContainerIDs["agent"]
 	if !ok || agentID == "" {
-		return nil
+		markFailed(ws)
+		return m.state.Save(ws)
 	}
 
 	info, err := m.cli.InspectContainer(ctx, agentID)
 	if err != nil {
 		slog.Warn("sync: inspect failed, marking as failed", "id", id, "err", err)
-		m.saveContainerLogs(ctx, ws)
-		m.removeDockerResources(ctx, ws)
-		now := time.Now()
-		ws.Status = StatusFailed
-		ws.FinishedAt = &now
-		ws.ContainerIDs = nil
-		ws.NetworkID = ""
+		m.teardownContainers(ctx, ws)
+		markFailed(ws)
 		return m.state.Save(ws)
 	}
 
@@ -595,10 +592,7 @@ func (m *Manager) Sync(ctx context.Context, id string) error {
 	}
 
 	setFinishedWithCode(ws, info.ExitCode)
-	m.saveContainerLogs(ctx, ws)
-	m.removeDockerResources(ctx, ws)
-	ws.ContainerIDs = nil
-	ws.NetworkID = ""
+	m.teardownContainers(ctx, ws)
 	return m.state.Save(ws)
 }
 
@@ -611,6 +605,19 @@ func setFinishedWithCode(ws *state.Workspace, code int) {
 	} else {
 		ws.Status = StatusFailed
 	}
+}
+
+func markFailed(ws *state.Workspace) {
+	now := time.Now()
+	ws.Status = StatusFailed
+	ws.FinishedAt = &now
+}
+
+func markStopped(ws *state.Workspace) {
+	now := time.Now()
+	ws.Status = StatusStopped
+	ws.FinishedAt = &now
+	ws.ErrorMsg = "stopped by user"
 }
 
 // SyncAll synchronizes the state of all running workspaces with Docker.
@@ -693,6 +700,11 @@ func (m *Manager) saveState(ws *Workspace) error {
 	return m.state.Save(ws.Workspace)
 }
 
+func (m *Manager) teardownContainers(ctx context.Context, ws *state.Workspace) []error {
+	m.saveContainerLogs(ctx, ws)
+	return m.removeDockerResources(ctx, ws)
+}
+
 // removeDockerResources force-removes all containers and the network associated
 // with a workspace. Returns any errors encountered during removal.
 func (m *Manager) removeDockerResources(ctx context.Context, ws *state.Workspace) []error {
@@ -705,17 +717,18 @@ func (m *Manager) removeDockerResources(ctx context.Context, ws *state.Workspace
 			errs = append(errs, err)
 		}
 	}
-	if ws.NetworkID == "" {
-		return errs
+	if ws.NetworkID != "" {
+		if err := m.cli.RemoveNetwork(ctx, ws.NetworkID); err != nil {
+			errs = append(errs, err)
+		}
 	}
-	if err := m.cli.RemoveNetwork(ctx, ws.NetworkID); err != nil {
-		errs = append(errs, err)
-	}
+	ws.ContainerIDs = nil
+	ws.NetworkID = ""
 	return errs
 }
 
 // startProxy creates and starts the squid proxy container on the given network.
-// Falls back to default image and port when not configured.
+// Falls back to the default image and port when not configured.
 func (m *Manager) startProxy(ctx context.Context, ws *Workspace, netID string) (string, error) {
 	proxy := ws.Config.Network.Proxy
 	proxyImage := proxy.Image

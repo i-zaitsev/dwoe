@@ -6,7 +6,4 @@ package workspace
 
 import "errors"
 
-var (
-	errWorkspaceRunning     = errors.New("workspace is running")
-	errContinueRequiresName = errors.New("continue policy requires a task name")
-)
+var errContinueRequiresName = errors.New("continue policy requires a task name")
