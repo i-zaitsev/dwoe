@@ -1,0 +1,40 @@
+# dwoe-agent:cpp is an image to work with C++ (C++20) using Claude Code.
+# Build: docker build -f docker/Dockerfile.claude-cpp -t dwoe-agent:cpp docker/
+# Uses Debian Trixie for GCC 14 which has full C++20 support.
+FROM debian:trixie-slim
+
+ARG USER_ID=9999
+ARG GROUP_ID=9999
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ca-certificates \
+    curl \
+    jq \
+    g++ \
+    libc6-dev \
+    libstdc++-14-dev \
+    make \
+    cmake \
+    pkg-config \
+    gdb \
+    valgrind \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd -g ${GROUP_ID} agent && \
+    useradd -m -u ${USER_ID} -g agent -s /bin/bash agent
+
+RUN mkdir -p /workspace /logs && \
+    chown -R agent:agent /workspace /logs
+
+USER agent
+WORKDIR /workspace
+
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV PATH="/home/agent/.local/bin:${PATH}"
+
+RUN mkdir -p /home/agent/.claude
+
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

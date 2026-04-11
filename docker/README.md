@@ -1,6 +1,6 @@
 # Default Agent Images
 
-Example Dockerfiles for `dwoe` agents to work with Python and/or Go codebases using Claude Code agent.
+Example Dockerfiles for `dwoe` agents to work with Python, Go, C, and C++ codebases using Claude Code agent.
 
 Proxy image gives basic web isolation for workers running in containers. (Required unless `--noproxy` is used.)
 
@@ -15,6 +15,12 @@ docker build -f docker/Dockerfile.claude-go -t dwoe-agent:go docker/
 
 # Python-only
 docker build -f docker/Dockerfile.claude-python -t dwoe-agent:python docker/
+
+# C-only (C23, gcc)
+docker build -f docker/Dockerfile.claude-c -t dwoe-agent:c docker/
+
+# C++-only (C++20, g++)
+docker build -f docker/Dockerfile.claude-cpp -t dwoe-agent:cpp docker/
 
 # Proxy (required unless --noproxy is used)
 docker build -f docker/Dockerfile.proxy -t dwoe-proxy:latest docker/
