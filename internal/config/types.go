@@ -10,34 +10,6 @@ import (
 	"path/filepath"
 )
 
-type ContinuePolicy int
-
-const (
-	ContinuePolicyDefault ContinuePolicy = iota
-	ContinuePolicyRestart
-	ContinuePolicyResume
-)
-
-var continuePolicyNames = map[string]ContinuePolicy{
-	"":        ContinuePolicyDefault,
-	"default": ContinuePolicyDefault,
-	"restart": ContinuePolicyRestart,
-	"resume":  ContinuePolicyResume,
-}
-
-func (p *ContinuePolicy) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var s string
-	if err := unmarshal(&s); err != nil {
-		return err
-	}
-	v, ok := continuePolicyNames[s]
-	if !ok {
-		return fmt.Errorf("invalid continue_policy: %q", s)
-	}
-	*p = v
-	return nil
-}
-
 // Task defines the configuration for running a Claude agent in an isolated container.
 // It is typically loaded from a task.yaml file via LoadTaskConfig or LoadMergedConfig.
 //
@@ -126,6 +98,43 @@ func (t *Task) ResolvePaths(taskDir string) {
 			*file = filepath.Clean(*file)
 		}
 	}
+}
+
+type ContinuePolicy int
+
+const (
+	ContinuePolicyDefault ContinuePolicy = iota
+	ContinuePolicyRestart
+	ContinuePolicyResume
+)
+
+var continuePolicyNames = map[string]ContinuePolicy{
+	"":        ContinuePolicyDefault,
+	"default": ContinuePolicyDefault,
+	"restart": ContinuePolicyRestart,
+	"resume":  ContinuePolicyResume,
+}
+
+func (p ContinuePolicy) MarshalYAML() (interface{}, error) {
+	for name, val := range continuePolicyNames {
+		if val == p && name != "" {
+			return name, nil
+		}
+	}
+	return "default", nil
+}
+
+func (p *ContinuePolicy) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	v, ok := continuePolicyNames[s]
+	if !ok {
+		return fmt.Errorf("invalid continue_policy: %q", s)
+	}
+	*p = v
+	return nil
 }
 
 // Source specifies where the task's code comes from.
