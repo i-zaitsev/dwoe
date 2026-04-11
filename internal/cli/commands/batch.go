@@ -6,6 +6,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -155,6 +156,9 @@ func (c *cmdBatch) startAll(e *cli.Env, taskFiles []string) ([]string, error) {
 	for _, tf := range taskFiles {
 		cmd := &cmdRun{taskPath: tf, detach: true}
 		if err := cmd.Run(e); err != nil {
+			if errors.Is(err, workspace.ErrWorkspaceDone) {
+				continue
+			}
 			return nil, cli.CmdErr(c, "%w", err)
 		}
 		ids = append(ids, cmd.createdID)

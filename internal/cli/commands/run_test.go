@@ -15,8 +15,10 @@ import (
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/sentinel"
 	"github.com/i-zaitsev/dwoe/internal/testfake"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
 func TestRunCmd_Parse(t *testing.T) {
@@ -174,20 +176,6 @@ func TestRunCmd_Run_MissingFile(t *testing.T) {
 	assert.ErrIs(t, err, os.ErrNotExist)
 }
 
-func createTestTask(t *testing.T, logs string, exitCode int) (*cmdTestSetup, string) {
-	t.Helper()
-	setup := newCmdTestSetup(t)
-	setup.docker.ContainerLogsFn = func(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
-		return logReader(logs), nil
-	}
-	setup.docker.WaitContainerFn = func(_ context.Context, _ string) (int, error) {
-		return exitCode, nil
-	}
-	dir := t.TempDir()
-	taskFile := writeTaskFile(t, dir, "test-task")
-	return setup, taskFile
-}
-
 func TestRunCmd_Run_ContinuePolicy(t *testing.T) {
 	t.Parallel()
 	setup := newCmdTestSetup(t)
@@ -205,4 +193,50 @@ func TestRunCmd_Run_ContinuePolicy(t *testing.T) {
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
 	assert.NotErr(t, cmd.Run(setup.env))
 	assert.Contains(t, setup.stdout.String(), "Workspace resumed: continue-test")
+}
+
+func TestCmdRun_Run_SkipStartIfDone(t *testing.T) {
+	t.Parallel()
+	setup := newCmdTestSetup(t)
+
+	srcDir := t.TempDir()
+	dir := t.TempDir()
+	ws := testfake.CreateWorkspace(t, dir, "ws-done", "done-task", "completed")
+	setup.state.Data["ws-done"] = ws
+
+	taskYAML := fmt.Sprintf(
+		"name: done-task\ncontinue_policy: resume\nsource:\n  local_path: %s\n", srcDir,
+	)
+	testutil.WriteFile(t, filepath.Join(ws.BasePath, "config.yaml"), taskYAML)
+
+	sen := sentinel.FromConfig(&config.Task{
+		Name:   "done-task",
+		Source: config.Source{LocalPath: srcDir},
+	})
+	assert.NotErr(t, sen.Write(ws.BasePath))
+
+	taskFile := filepath.Join(t.TempDir(), "task.yaml")
+	testutil.WriteFile(t, taskFile, taskYAML)
+
+	cmd := &cmdRun{taskPath: taskFile, detach: true}
+	err := cmd.Run(setup.env)
+
+	assert.ErrIs(t, err, workspace.ErrWorkspaceDone)
+	out := setup.stdout.String()
+	assert.Contains(t, out, "Workspace already done")
+	assert.Contains(t, out, ".dwoe-done")
+}
+
+func createTestTask(t *testing.T, logs string, exitCode int) (*cmdTestSetup, string) {
+	t.Helper()
+	setup := newCmdTestSetup(t)
+	setup.docker.ContainerLogsFn = func(_ context.Context, _ string, _ bool) (io.ReadCloser, error) {
+		return logReader(logs), nil
+	}
+	setup.docker.WaitContainerFn = func(_ context.Context, _ string) (int, error) {
+		return exitCode, nil
+	}
+	dir := t.TempDir()
+	taskFile := writeTaskFile(t, dir, "test-task")
+	return setup, taskFile
 }

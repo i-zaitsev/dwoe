@@ -103,6 +103,14 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	if err != nil {
 		return cli.CmdErr(c, "%w", err)
 	}
+	if ws.Done {
+		e.Print("Workspace already done: %s\n", ws.Name)
+		e.Print("- ID: %s\n", ws.ID)
+		e.Print("- Status: %s\n", ws.Status)
+		e.Print("- Path: %s\n", ws.BasePath)
+		e.Print("Delete the sentinel file to force resume:\n%s/.dwoe-done\n", ws.BasePath)
+		return workspace.ErrWorkspaceDone
+	}
 	c.createdID = ws.ID
 
 	slog.Debug("run: starting workspace", "id", ws.ID)

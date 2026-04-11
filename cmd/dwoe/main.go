@@ -6,12 +6,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/cli/commands"
+	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
 func main() {
@@ -28,6 +30,13 @@ func run() int {
 	env.SetContext(ctx)
 
 	if err := cli.Run(env, os.Args[1:]); err != nil {
+		// ErrWorkspaceDone signals that a workspace was already completed
+		// and does not need to be re-run. This is not a failure — the
+		// sentinel file (.dwoe-done) matched the current config, so the
+		// command exits successfully without starting a new run.
+		if errors.Is(err, workspace.ErrWorkspaceDone) {
+			return 0
+		}
 		env.Error("error: %v\n", err)
 		return 1
 	}

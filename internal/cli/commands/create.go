@@ -10,6 +10,7 @@ import (
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
 // cmdCreate creates a new workspace.
@@ -66,6 +67,13 @@ func (c *cmdCreate) Run(e *cli.Env) error {
 	ws, err := manager.FindOrCreate(e.Context(), taskCfg)
 	if err != nil {
 		return cli.CmdErr(c, "%w", err)
+	}
+	if ws.Done {
+		e.Print("Workspace already done: %s\n", ws.Name)
+		e.Print("- ID: %s\n", ws.ID)
+		e.Print("- Path: %s\n", ws.BasePath)
+		e.Print("Delete the sentinel file to force resume:\n%s/.dwoe-done\n", ws.BasePath)
+		return workspace.ErrWorkspaceDone
 	}
 
 	var verb string
