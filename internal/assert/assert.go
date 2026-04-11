@@ -24,7 +24,7 @@ func Equal[T comparable](t *testing.T, got, want T) {
 func NotEqual[T comparable](t *testing.T, got, notWant T) {
 	t.Helper()
 	if got == notWant {
-		t.Errorf("got: %v, should not equal: %v", got, notWant)
+		t.Errorf("should not equal to but got: %#v", got)
 	}
 }
 
@@ -139,7 +139,7 @@ func NoPathExists(t *testing.T, path string) {
 func Condition(t *testing.T, val bool) {
 	t.Helper()
 	if !val {
-		t.Errorf("got %T flag, want %T", !val, val)
+		t.Errorf("got %v flag, want %v", !val, val)
 	}
 }
 
