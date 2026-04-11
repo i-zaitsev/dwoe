@@ -23,6 +23,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/namegen"
+	"github.com/i-zaitsev/dwoe/internal/sentinel"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/template"
 	"gopkg.in/yaml.v3"
@@ -91,6 +92,10 @@ func (m *Manager) FindOrCreate(ctx context.Context, cfg *config.Task) (*Workspac
 		if err != nil {
 			return nil, fmt.Errorf("workspace: %w", err)
 		}
+	}
+	if ws.Status == StatusCompleted && markedAsDone(ws.BasePath) {
+		ws.Done = true
+		return ws, nil
 	}
 	if ws.Status == StatusCompleted || ws.Status == StatusFailed {
 		ws.Status = StatusStopped
@@ -556,6 +561,15 @@ func (m *Manager) Wait(ctx context.Context, id string) (int, error) {
 		slog.Error("wait: save state", "err", errSave)
 	}
 
+	if code == 0 {
+		if cfgTask, errCfg := loadConfig(ws.BasePath); errCfg == nil {
+			sen := sentinel.FromConfig(cfgTask)
+			if errWrite := sen.Write(ws.BasePath); errWrite != nil {
+				slog.Warn("wait: write sentinel", "err", errWrite)
+			}
+		}
+	}
+
 	return code, nil
 }
 
@@ -949,4 +963,13 @@ func loadConfig(basePath string) (*config.Task, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func markedAsDone(basePath string) bool {
+	sen := sentinel.FromDir(basePath)
+	cfg, err := loadConfig(basePath)
+	if err != nil {
+		return false
+	}
+	return sen.Match(cfg)
 }

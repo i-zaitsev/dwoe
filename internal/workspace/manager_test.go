@@ -19,6 +19,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/docker"
+	"github.com/i-zaitsev/dwoe/internal/sentinel"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
@@ -686,4 +687,97 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 
 		assert.ErrIs(t, err, errContinueRequiresName)
 	})
+}
+
+func TestManager_FindOrCreate_ResumeDone(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+
+	cfg := &config.Task{
+		Name:           "done-task",
+		ContinuePolicy: config.ContinuePolicyResume,
+		Source:         config.Source{LocalPath: srcDir},
+	}
+
+	basePath := ts.setWorkspace(t, "ws-done", StatusCompleted,
+		withName("done-task"),
+		withConfig("name: done-task\nsource:\n  local_path: "+srcDir+"\n"),
+	)
+
+	sen := sentinel.FromConfig(cfg)
+	assert.NotErr(t, sen.Write(basePath))
+
+	ws, err := ts.manager.FindOrCreate(context.Background(), cfg)
+
+	assert.NotErr(t, err)
+	assert.Condition(t, ws.Done)
+	assert.Equal(t, ws.ID, "ws-done")
+	assert.Equal(t, ws.Status, StatusCompleted)
+}
+
+func TestManager_FindOrCreate_ResumeNotDone(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+
+	basePath := ts.setWorkspace(t, "ws-no-done", StatusCompleted,
+		withName("not-done-task"),
+		withConfig("name: not-done-task\nsource:\n  local_path: "+srcDir+"\n"),
+	)
+
+	ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+		Name:           "not-done-task",
+		ContinuePolicy: config.ContinuePolicyResume,
+		Source:         config.Source{LocalPath: srcDir},
+	})
+
+	assert.NotErr(t, err)
+	assert.Condition(t, !ws.Done)
+	assert.Equal(t, ws.Status, StatusStopped)
+	assert.NoPathExists(t, filepath.Join(basePath, ".dwoe-done"))
+}
+
+func TestManager_Wait_WritesSentinel(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+	basePath := ts.setWorkspace(t, "ws-1", StatusRunning,
+		withAgent(),
+		withConfig("name: sentinel-task\nsource:\n  local_path: "+srcDir+"\n"),
+	)
+
+	code, err := ts.manager.Wait(context.Background(), "ws-1")
+
+	assert.NotErr(t, err)
+	assert.Zero(t, code)
+	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusCompleted)
+	assert.PathExists(t, filepath.Join(basePath, ".dwoe-done"))
+
+	cfg := &config.Task{
+		Name:   "sentinel-task",
+		Source: config.Source{LocalPath: srcDir},
+	}
+	sen := sentinel.FromDir(basePath)
+	assert.Condition(t, sen.Match(cfg))
+}
+
+func TestManager_Wait_NoSentinelOnFailure(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+	basePath := ts.setWorkspace(t, "ws-1", StatusRunning,
+		withAgent(),
+		withConfig("name: fail-task\nsource:\n  local_path: "+srcDir+"\n"),
+	)
+	ts.docker.WaitContainerFn = func(_ context.Context, _ string) (int, error) {
+		return 1, nil
+	}
+
+	code, err := ts.manager.Wait(context.Background(), "ws-1")
+
+	assert.NotErr(t, err)
+	assert.Equal(t, code, 1)
+	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusFailed)
+	assert.NoPathExists(t, filepath.Join(basePath, ".dwoe-done"))
 }

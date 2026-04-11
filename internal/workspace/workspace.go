@@ -26,6 +26,7 @@ import (
 type Workspace struct {
 	*state.Workspace
 	Config *config.Task
+	Done   bool
 }
 
 func New(ws *state.Workspace, cfg *config.Task) *Workspace {

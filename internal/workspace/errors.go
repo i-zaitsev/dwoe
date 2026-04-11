@@ -7,3 +7,5 @@ package workspace
 import "errors"
 
 var errContinueRequiresName = errors.New("continue policy requires a task name")
+
+var ErrWorkspaceDone = errors.New("workspace already done")
