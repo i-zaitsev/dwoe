@@ -39,3 +39,13 @@ func WriteBatchTaskFile(t *testing.T, dir string, task *config.Task) string {
 	path := filepath.Join(dir, "task-"+task.Name+".yaml")
 	return WriteTaskFile(t, path, task)
 }
+
+// ReadFile reads the content of a file at the path and returns it as a string.
+func ReadFile(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
