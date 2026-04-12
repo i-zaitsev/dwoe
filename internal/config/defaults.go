@@ -28,6 +28,10 @@ var DefaultAllowList = []string{
 	".github.com",
 	"developer.mozilla.org",
 	".anthropic.com",
+	".conan.io",
+	".vcpkg.io",
+	"apt.llvm.org",
+	".cppreference.com",
 }
 
 var DefaultPermissions = []string{
