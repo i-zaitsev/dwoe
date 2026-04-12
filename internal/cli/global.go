@@ -25,6 +25,7 @@ type GlobalFlags struct {
 	logFormat logpkg.Format // logFormat specifies the log output format: JSON or text
 	sourceDir string        // sourceDir overrides source.local_path when not set in a task
 	model     string        // model overrides agent.model when not set in a task
+	taskName  string        // taskName overrides the auto-generated workspace name
 	noProxy   bool          // noProxy disables the proxy container
 }
 
@@ -42,6 +43,7 @@ func parseGlobalFlags(args []string) (*GlobalFlags, []string, error) {
 	fs.Var(&flags.logFormat, "logfmt", "log output format (JSON or text)")
 	fs.StringVar(&flags.sourceDir, "sourcedir", "", "default source directory for tasks")
 	fs.StringVar(&flags.model, "model", "", "default model for tasks")
+	fs.StringVar(&flags.taskName, "taskname", "", "override workspace name")
 	fs.BoolVar(&flags.noProxy, "noproxy", false, "disable proxy container")
 
 	var help bool

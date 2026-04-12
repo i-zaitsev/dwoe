@@ -91,6 +91,7 @@ func Run(env *Env, args []string) error {
 	env.dataDir = global.dataDir
 	env.noProxy = global.noProxy
 	env.model = global.model
+	env.taskName = global.taskName
 
 	configPath, errInit := config.InitConfig(env.dataDir)
 
@@ -188,6 +189,7 @@ func buildUsage() string {
 	buf.WriteString("\t--logfmt <format>   Log format: text, json (default: json)\n")
 	buf.WriteString("\t--sourcedir <path>  Default source directory for tasks\n")
 	buf.WriteString("\t--model <model>     Default model for tasks\n")
+	buf.WriteString("\t--taskname <name>   Override workspace name\n")
 	buf.WriteString("\t--noproxy           Disable proxy container\n")
 	buf.WriteString("\nCommands:\n")
 

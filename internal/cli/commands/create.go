@@ -57,6 +57,8 @@ func (c *cmdCreate) Run(e *cli.Env) error {
 	}
 	if c.name != "" {
 		taskCfg.Name = c.name
+	} else if e.TaskName() != "" {
+		taskCfg.Name = e.TaskName()
 	}
 
 	manager, err := e.Manager()

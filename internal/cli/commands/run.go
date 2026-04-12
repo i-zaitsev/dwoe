@@ -91,6 +91,8 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	}
 	if c.name != "" {
 		taskCfg.Name = c.name
+	} else if e.TaskName() != "" {
+		taskCfg.Name = e.TaskName()
 	}
 
 	slog.Debug("run: creating workspace", "dataDir", e.DataDir())

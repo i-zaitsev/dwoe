@@ -111,6 +111,9 @@ func (c *cmdFire) Run(e *cli.Env) error {
 	if e.NoProxy() {
 		task.NoProxy = true
 	}
+	if e.TaskName() != "" {
+		task.Name = e.TaskName()
+	}
 	config.MergeWithGlobal(task, global)
 	task.ApplyDefaults()
 

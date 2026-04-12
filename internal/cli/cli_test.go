@@ -55,6 +55,10 @@ func TestParseGlobalFlags_FromArgs(t *testing.T) {
 			args: []string{"--model", "claude-sonnet-4-6", "run", "task.yaml"},
 			want: GlobalFlags{dataDir: dataDir, model: "claude-sonnet-4-6"},
 		},
+		{
+			args: []string{"--taskname", "my-task", "fire", "--repo", "https://example.com/repo"},
+			want: GlobalFlags{dataDir: dataDir, taskName: "my-task"},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("args=%v", tc.args), func(t *testing.T) {

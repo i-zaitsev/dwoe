@@ -30,6 +30,7 @@ type Env struct {
 	dataDir    string
 	sourceDir  string
 	model      string
+	taskName   string
 	noProxy    bool
 	newManager func() (*workspace.Manager, error)
 }
@@ -115,6 +116,12 @@ func (e *Env) NoProxy() bool { return e.noProxy }
 
 // SetNoProxy enables or disables the proxy container.
 func (e *Env) SetNoProxy(v bool) { e.noProxy = v }
+
+// TaskName returns the global task name override.
+func (e *Env) TaskName() string { return e.taskName }
+
+// SetTaskName sets the global task name override.
+func (e *Env) SetTaskName(v string) { e.taskName = v }
 
 // SetNewManager replaces the factory function used to create a workspace manager.
 func (e *Env) SetNewManager(fn func() (*workspace.Manager, error)) {
