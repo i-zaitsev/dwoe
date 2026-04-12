@@ -1,6 +1,6 @@
 # dwoe-agent:cpp is an image to work with C++ (C++20) using Claude Code.
 # Build: docker build -f docker/Dockerfile.claude-cpp -t dwoe-agent:cpp docker/
-# Uses Debian Trixie for GCC 14 which has full C++20 support.
+# Uses Debian Trixie for its modern GCC with full C++20 support.
 FROM debian:trixie-slim
 
 ARG USER_ID=9999
@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     g++ \
     libc6-dev \
-    libstdc++-14-dev \
     make \
     cmake \
     pkg-config \

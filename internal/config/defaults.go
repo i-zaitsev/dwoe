@@ -31,8 +31,7 @@ var DefaultAllowList = []string{
 	".conan.io",
 	".vcpkg.io",
 	"apt.llvm.org",
-	"cppreference.com",
-	"en.cppreference.com",
+	".cppreference.com",
 }
 
 var DefaultPermissions = []string{

@@ -1,6 +1,6 @@
 # dwoe-agent:c is an image to work with C (C23) using Claude Code.
 # Build: docker build -f docker/Dockerfile.claude-c -t dwoe-agent:c docker/
-# Uses Debian Trixie for GCC 14 which has full C23 support (-std=c23).
+# Uses Debian Trixie for its modern GCC with full C23 support (-std=c23).
 FROM debian:trixie-slim
 
 ARG USER_ID=9999
