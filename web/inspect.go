@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"gopkg.in/yaml.v3"
 )
 
 type workspaceInfo struct {
@@ -25,6 +26,7 @@ type workspaceInfo struct {
 	CreatedAt  *time.Time
 	StartedAt  *time.Time
 	FinishedAt *time.Time
+	TaskConfig string
 }
 
 func (w workspaceInfo) BatchDisplay() string {
@@ -43,6 +45,23 @@ func (w workspaceInfo) ShortTime() string {
 		return s[11:16]
 	}
 	return s
+}
+
+func (w workspaceInfo) Duration() string {
+	if w.StartedAt == nil {
+		return "not started"
+	}
+	if w.FinishedAt == nil {
+		return "running"
+	}
+	d := w.FinishedAt.Sub(*w.StartedAt)
+	if d < time.Minute {
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%dm %ds", int(d.Minutes()), int(d.Seconds())%60)
+	}
+	return fmt.Sprintf("%dh %dm %ds", int(d.Hours()), int(d.Minutes())%60, int(d.Seconds())%60)
 }
 
 func (s *Server) inspectWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +109,11 @@ func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
 	}
 	if ws.Config != nil {
 		info.Model = ws.Config.Agent.Model
+		if data, err := yaml.Marshal(ws.Config); err == nil {
+			info.TaskConfig = string(data)
+		} else {
+			info.TaskConfig = "failed to marshal task config"
+		}
 	}
 	return info
 }

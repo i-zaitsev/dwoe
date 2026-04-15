@@ -9,5 +9,12 @@
     <tr><td class="info-field">Created</td><td>{{.CreatedAt}}</td></tr>
     <tr><td class="info-field">Started</td><td>{{.StartedAt}}</td></tr>
     <tr><td class="info-field">Finished</td><td>{{.FinishedAt}}</td></tr>
+    <tr><td class="info-field">Duration</td><td>{{.Duration}}</td></tr>
 </table>
+{{if .TaskConfig }}
+<details class="task-yaml">
+    <summary>Task Config</summary>
+    <pre><code>{{.TaskConfig}}</code></pre>
+</details>
+{{end}}
 {{end}}

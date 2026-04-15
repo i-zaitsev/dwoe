@@ -175,3 +175,12 @@ tr[data-batch="4"] { border-left: 3px solid var(--batch-4); }
   text-decoration: none;
 }
 .theme-link:hover { background: var(--text); color: var(--bg); }
+
+.task-yaml { margin-top: 12px; }
+.task-yaml summary { cursor: pointer; font-size: 13px; color: var(--accent) }
+.task-yaml pre {
+  margin: 8px 0 0; padding: 12px; background: var(--bg-input);
+  border: 1px solid var(--border); border-radius: 4px;
+  font-size: 13px; overflow-x: auto;
+}
+.task-yaml code { color: var(--text); }
