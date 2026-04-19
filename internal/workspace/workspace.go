@@ -70,8 +70,8 @@ func (ws *Workspace) Env() []string {
 		{"GIT_USER_NAME", ws.Config.Git.Name},
 		{"GIT_USER_EMAIL", ws.Config.Git.Email},
 	}
-	if ws.Config.Agent.TaskPrompt != "" {
-		pairs = append(pairs, envPair{"TASK_PROMPT", ws.Config.Agent.TaskPrompt})
+	if prompt := ws.taskPrompt(); prompt != "" {
+		pairs = append(pairs, envPair{"TASK_PROMPT", prompt})
 	}
 	if !ws.Config.NoProxy {
 		url := ws.proxyURL()
@@ -85,6 +85,17 @@ func (ws *Workspace) Env() []string {
 		pairs = append(pairs, envPair{k, expanded})
 	}
 	return formatEnv(pairs)
+}
+
+func (ws *Workspace) taskPrompt() string {
+	if ws.Config.Agent.TaskPrompt != "" {
+		return ws.Config.Agent.TaskPrompt
+	}
+	if ws.Config.Source.PromptFile != "" {
+		return fmt.Sprintf("Follow the instructions in %s", ws.Config.Source.PromptFile)
+	}
+	slog.Warn("workspace: empty task prompt", "id", ws.ID, "name", ws.Name)
+	return ""
 }
 
 func (ws *Workspace) proxyURL() string {

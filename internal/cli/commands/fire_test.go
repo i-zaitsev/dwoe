@@ -94,33 +94,36 @@ func TestFireCmd_Run(t *testing.T) {
 	})
 }
 
-func TestFireCmd_ResolveWork(t *testing.T) {
+func TestFireCmd_ResolveWork_SingleFile(t *testing.T) {
+	dir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(dir, "task.md"), "do the thing")
+
+	// changing directory to test that resolveWork returns an absolute path
+	// when a relative task path is provided which avoid the issue of not being
+	// able to copy the prompt into workspace where containerized agent can
+	// access it
+	t.Chdir(dir)
+
+	got, err := resolveWork("./task.md")
+
+	assert.NotErr(t, err)
+	assert.Condition(t, filepath.IsAbs(got))
+	data, _ := os.ReadFile(got)
+	assert.Equal(t, string(data), "do the thing")
+}
+
+func TestFireCmd_ResolveWork_Directory(t *testing.T) {
 	t.Parallel()
+	dir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(dir, "a.md"), "first")
+	testutil.WriteFile(t, filepath.Join(dir, "b.md"), "second")
 
-	t.Run("single_file", func(t *testing.T) {
-		t.Parallel()
-		dir := t.TempDir()
-		f := filepath.Join(dir, "task.md")
-		testutil.WriteFile(t, f, "do the thing")
+	got, err := resolveWork(dir)
 
-		got, err := resolveWork(f)
-		assert.NotErr(t, err)
-		data, _ := os.ReadFile(got)
-		assert.Equal(t, string(data), "do the thing")
-	})
-
-	t.Run("directory", func(t *testing.T) {
-		t.Parallel()
-		dir := t.TempDir()
-		testutil.WriteFile(t, filepath.Join(dir, "a.md"), "first")
-		testutil.WriteFile(t, filepath.Join(dir, "b.md"), "second")
-
-		got, err := resolveWork(dir)
-		assert.NotErr(t, err)
-		data, _ := os.ReadFile(got)
-		content := string(data)
-		assert.ContainsAll(t, content, "a.md", "first", "b.md", "second")
-	})
+	assert.NotErr(t, err)
+	data, _ := os.ReadFile(got)
+	content := string(data)
+	assert.ContainsAll(t, content, "a.md", "first", "b.md", "second")
 }
 
 func TestFireCmd_IsRepoURL(t *testing.T) {

@@ -410,7 +410,7 @@ func TestManager_Logs_FallbackToFile(t *testing.T) {
 	assert.Equal(t, string(data), "saved output\n")
 }
 
-func TestManager_CreateDuplicateName(t *testing.T) {
+func TestManager_Create_DuplicateName(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
 	src := t.TempDir()
@@ -429,7 +429,7 @@ func TestManager_CreateDuplicateName(t *testing.T) {
 	assert.Equal(t, ws2.Name, "dup-test-1")
 }
 
-func TestManager_CreateCopiesPromptFile(t *testing.T) {
+func TestManager_Create_CopiesPromptFile(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
 	srcDir := t.TempDir()
@@ -448,6 +448,68 @@ func TestManager_CreateCopiesPromptFile(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(ws.BasePath, "workspace", "task-prompt.md"))
 	assert.NotErr(t, err)
 	assert.Equal(t, string(data), "Do the thing")
+	assert.Equal(t, ws.Config.Source.PromptFile, "task-prompt.md")
+}
+
+func TestManager_Create_StoresPromptFileAsBasename(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+	promptFile := filepath.Join(t.TempDir(), "outside.md")
+	testutil.WriteFile(t, promptFile, "task body")
+
+	ws, err := ts.manager.Create(&config.Task{
+		Name: "basename-test",
+		Source: config.Source{
+			LocalPath:  srcDir,
+			PromptFile: promptFile,
+		},
+	})
+
+	assert.NotErr(t, err)
+	cfg := testutil.ReadFile(t, filepath.Join(ws.BasePath, "config.yaml"))
+	assert.Contains(t, cfg, "prompt_file: outside.md")
+	assert.Condition(t, !strings.Contains(cfg, promptFile))
+}
+
+func TestManager_Create_PromptFileInsideRepo(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+	promptFile := filepath.Join(srcDir, "task.md")
+	testutil.WriteFile(t, promptFile, "inline task body")
+
+	ws, err := ts.manager.Create(&config.Task{
+		Name: "inside-repo",
+		Source: config.Source{
+			LocalPath:  srcDir,
+			PromptFile: promptFile,
+		},
+	})
+
+	assert.NotErr(t, err)
+	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "task.md"))
+	assert.Equal(t, ws.Config.Source.PromptFile, "task.md")
+}
+
+func TestManager_Create_SpecFileRewritten(t *testing.T) {
+	t.Parallel()
+	ts := newTestSetup(t)
+	srcDir := t.TempDir()
+	specFile := filepath.Join(t.TempDir(), "spec.md")
+	testutil.WriteFile(t, specFile, "the spec")
+
+	ws, err := ts.manager.Create(&config.Task{
+		Name: "spec-test",
+		Source: config.Source{
+			LocalPath: srcDir,
+			SpecFile:  specFile,
+		},
+	})
+
+	assert.NotErr(t, err)
+	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "spec.md"))
+	assert.Equal(t, ws.Config.Source.SpecFile, "spec.md")
 }
 
 func TestManager_ResolveCompleted(t *testing.T) {

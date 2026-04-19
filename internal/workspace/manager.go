@@ -227,18 +227,20 @@ func populateSource(cfg *config.Task, workspaceDir string) error {
 			return fmt.Errorf("clone source: %w", err)
 		}
 	}
-	for _, src := range []string{cfg.Source.PromptFile, cfg.Source.SpecFile} {
-		if src == "" {
+	for _, src := range []*string{&cfg.Source.PromptFile, &cfg.Source.SpecFile} {
+		if *src == "" {
 			continue
 		}
-		dst := filepath.Join(workspaceDir, filepath.Base(src))
-		data, err := os.ReadFile(src)
+		base := filepath.Base(*src)
+		dst := filepath.Join(workspaceDir, base)
+		data, err := os.ReadFile(*src)
 		if err != nil {
-			return fmt.Errorf("read %s: %w", src, err)
+			return fmt.Errorf("read %s: %w", *src, err)
 		}
-		if err := os.WriteFile(dst, data, 0o644); err != nil {
-			return fmt.Errorf("write %s: %w", dst, err)
+		if errWrite := os.WriteFile(dst, data, 0o644); errWrite != nil {
+			return fmt.Errorf("write %s: %w", dst, errWrite)
 		}
+		*src = base
 	}
 	return nil
 }

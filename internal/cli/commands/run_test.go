@@ -144,6 +144,32 @@ func TestRunCmd_Run_SourceDirOverride(t *testing.T) {
 	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
+func TestRunCmd_Run_PromptFileOutsideTaskDir(t *testing.T) {
+	t.Parallel()
+	ts := newCmdTestSetup(t)
+
+	dir := t.TempDir()
+	srcDir := t.TempDir()
+	testutil.WriteFile(t, filepath.Join(dir, "outside.md"), "external prompt body")
+	taskFile := testutil.WriteTaskFile(t, filepath.Join(dir, "tasks", "foo.yaml"), &config.Task{
+		Name: "outside-prompt",
+		Source: config.Source{
+			LocalPath:  srcDir,
+			PromptFile: "../outside.md",
+		},
+	})
+
+	cmd := &cmdRun{taskPath: taskFile, detach: true}
+	assert.NotErr(t, cmd.Run(ts.env))
+
+	ws := ts.state.Data[cmd.createdID]
+	assert.NotNil(t, ws)
+	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "outside.md"))
+
+	cfg := testutil.ReadFile(t, filepath.Join(ws.BasePath, "config.yaml"))
+	assert.Contains(t, cfg, "prompt_file: outside.md")
+}
+
 func TestRunCmd_Run_ModelOverride(t *testing.T) {
 	t.Parallel()
 	ts := newCmdTestSetup(t)

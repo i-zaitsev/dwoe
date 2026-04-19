@@ -170,7 +170,7 @@ func resolveWork(path string) (string, error) {
 		return "", fmt.Errorf("work path: %w", err)
 	}
 	if !info.IsDir() {
-		return path, nil
+		return filepath.Abs(path)
 	}
 
 	content, errCat := catFiles(path)
