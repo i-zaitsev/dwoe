@@ -49,13 +49,17 @@ func CopyLocalDir(src, dst string) error {
 			if errIn != nil {
 				return fmt.Errorf("copy: open: %w", errIn)
 			}
-			defer fIn.Close()
+			defer func() {
+				_ = fIn.Close()
+			}()
 			fOut, errOut := os.OpenFile(dstFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode())
 			if errOut != nil {
 				return fmt.Errorf("copy: open: %w", errOut)
 			}
 			if _, errCopy := io.Copy(fOut, fIn); errCopy != nil {
-				fOut.Close()
+				defer func() {
+					_ = fOut.Close()
+				}()
 				return fmt.Errorf("copy: %s -> %s: %w", srcFile, dstFile, errCopy)
 			}
 			return fOut.Close()
