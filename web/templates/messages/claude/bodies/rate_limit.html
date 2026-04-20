@@ -1,0 +1,9 @@
+{{define "body-rate-limit" -}}
+<span class="muted">rate_limit status=</span>{{.Status}}
+{{- if .Type}}
+<span class="muted">type=</span>{{.Type}}
+{{- end}}
+{{- if .Resets}}
+<span class="muted">resets=</span>{{.Resets}}
+{{- end}}
+{{- end}}

@@ -12,6 +12,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -41,9 +42,25 @@ func (s *Server) logsWorkspace(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Content-Type", "text/html")
 
+	matcher := newLineMatcher(r.URL.Query().Get("filter"))
+	render := lineRenderer(r)
 	scan(rc, func(text string) {
-		_, _ = fmt.Fprintf(w, "%s\n", renderLogLine(text))
+		if !matcher(text) {
+			return
+		}
+		_, _ = fmt.Fprintf(w, "%s\n", render(text))
 	})
+}
+
+func newLineMatcher(pattern string) func(string) bool {
+	if pattern == "" {
+		return func(string) bool { return true }
+	}
+	if re, err := regexp.Compile("(?i)" + pattern); err == nil {
+		return re.MatchString
+	}
+	lower := strings.ToLower(pattern)
+	return func(s string) bool { return strings.Contains(strings.ToLower(s), lower) }
 }
 
 func (s *Server) logsView(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +76,11 @@ func (s *Server) logsView(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	writeTemplate(w, "logs-page", logsPageData{
+	name := "logs-page"
+	if isPretty(r) {
+		name = "logs-page-pretty"
+	}
+	writeTemplate(w, name, logsPageData{
 		pageConfig: pageConfigFromRequest(r),
 		Info:       info,
 	})
@@ -99,12 +120,24 @@ func (s *Server) logsStream(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rc.Close()
 
+	render := lineRenderer(r)
 	scan(rc, func(text string) {
-		writeSSE(w, "log", renderLogLine(text))
+		writeSSE(w, "log", render(text))
 		flusher.Flush()
 	})
 	writeSSE(w, "done", "completed")
 	flusher.Flush()
+}
+
+func isPretty(r *http.Request) bool {
+	return r.URL.Query().Get("pretty") == "1"
+}
+
+func lineRenderer(r *http.Request) func(string) string {
+	if isPretty(r) {
+		return renderPrettyLogLine
+	}
+	return renderLogLine
 }
 
 func (s *Server) resolveWorkspace(w http.ResponseWriter, r *http.Request) (workspaceInfo, bool) {

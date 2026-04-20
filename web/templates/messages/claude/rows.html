@@ -1,0 +1,11 @@
+{{define "pretty-row" -}}
+<div class="row {{.KindClass}}"><span class="c"></span><span class="t">{{.Time}}</span><span class="k">{{.Kind}}</span><span class="body">{{.Body}}</span></div>
+{{- end}}
+
+{{define "pretty-row-expand" -}}
+<details class="expand {{.KindClass}}"{{if .Open}} open{{end}}><summary><span class="c caret"></span><span class="t">{{.Time}}</span><span class="k">{{.Kind}}</span><span class="body">{{.Body}}</span></summary><div class="expanded"><pre>{{.Pretty}}</pre></div></details>
+{{- end}}
+
+{{define "pretty-row-banner" -}}
+<div class="row banner">{{.}}</div>
+{{- end}}
