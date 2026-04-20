@@ -1,0 +1,7 @@
+
+   
+Initialized empty Git repository in /workspace/.git/
+{not json
+{"foo":"bar"}
+{"type":"future_event","x":1,"session_id":"s1"}
+{"type":"system","subtype":"future","session_id":"s1"}
