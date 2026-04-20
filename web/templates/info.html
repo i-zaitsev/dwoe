@@ -17,4 +17,10 @@
     <pre><code>{{.TaskConfig}}</code></pre>
 </details>
 {{end}}
+{{if .PromptContent }}
+<details class="task-prompt">
+    <summary>Task Prompt</summary>
+    <pre><code>{{.PromptContent}}</code></pre>
+</details>
+{{end}}
 {{end}}

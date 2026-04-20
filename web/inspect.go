@@ -7,6 +7,8 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/workspace"
@@ -14,19 +16,20 @@ import (
 )
 
 type workspaceInfo struct {
-	ID         string
-	Name       string
-	Status     string
-	Exit       string
-	Model      string
-	BasePath   string
-	WorkDir    string
-	BatchID    string
-	BatchColor int
-	CreatedAt  *time.Time
-	StartedAt  *time.Time
-	FinishedAt *time.Time
-	TaskConfig string
+	ID            string
+	Name          string
+	Status        string
+	Exit          string
+	Model         string
+	BasePath      string
+	WorkDir       string
+	BatchID       string
+	BatchColor    int
+	CreatedAt     *time.Time
+	StartedAt     *time.Time
+	FinishedAt    *time.Time
+	TaskConfig    string
+	PromptContent string
 }
 
 func (w workspaceInfo) BatchDisplay() string {
@@ -110,6 +113,25 @@ func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
 		} else {
 			info.TaskConfig = "failed to marshal task config"
 		}
+		info.PromptContent = resolvePromptContent(ws)
 	}
 	return info
+}
+
+// resolvePromptContent returns the task prompt text. It prefers the inline
+// TaskPrompt field; when that is empty it reads the prompt file from the
+// workspace directory.
+func resolvePromptContent(ws *workspace.Workspace) string {
+	if ws.Config.Agent.TaskPrompt != "" {
+		return ws.Config.Agent.TaskPrompt
+	}
+	if ws.Config.Source.PromptFile != "" {
+		p := filepath.Join(ws.BasePath, "workspace", ws.Config.Source.PromptFile)
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return ""
+		}
+		return string(data)
+	}
+	return ""
 }
