@@ -36,6 +36,7 @@ Thumbs.db
 # Binary files
 bin
 tmp
+dist
 
 # local settings
 .claude/
