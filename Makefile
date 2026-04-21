@@ -1,12 +1,14 @@
 BINARY_NAME=dwoe
 GO=go
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+LDFLAGS = -X github.com/i-zaitsev/dwoe/internal/version.version=$(VERSION)
 
 .PHONY: all build install test lint fmt vet clean dev
 
 all: lint test build
 
 build:
-	$(GO) build -o bin/$(BINARY_NAME) ./cmd/dwoe
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/$(BINARY_NAME) ./cmd/dwoe
 
 install: build
 	sudo mv bin/$(BINARY_NAME) /usr/local/bin/
