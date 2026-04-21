@@ -1,0 +1,15 @@
+{{define "body-task-progress" -}}
+{{- if .LastTool}}
+<span class="muted">last_tool=</span>{{.LastTool}}
+{{- end}}
+{{- if .ToolUses}}
+<span class="muted">tool_uses=</span>{{.ToolUses}}
+{{- end}}
+{{- if .TotalTokens}}
+<span class="muted">tokens=</span>{{.TotalTokens}}
+{{- end}}
+{{- if .Description}}
+<span class="muted">·</span>
+{{.Description}}
+{{- end}}
+{{- end}}

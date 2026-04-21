@@ -1,0 +1,11 @@
+{{define "body-api-retry" -}}
+<span class="muted">attempt=</span>{{.Attempt}}/{{.MaxRetries}}
+<span class="muted">delay=</span>{{printf "%.0f" .Delay}}ms
+{{- if .HasStatus}}
+<span class="muted">status=</span>{{.ErrorStatus}}
+{{- end}}
+{{- if .Error}}
+<span class="muted">·</span>
+{{.Error}}
+{{- end}}
+{{- end}}

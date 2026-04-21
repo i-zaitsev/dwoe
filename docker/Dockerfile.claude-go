@@ -1,6 +1,6 @@
 # dwoe-agent:go is an image to work with Go using Claude Code.
 # Build: docker build -f docker/Dockerfile.claude-go -t dwoe-agent:go docker/
-FROM golang:1.23-bookworm
+FROM golang:1.25-bookworm
 
 ARG USER_ID=9999
 ARG GROUP_ID=9999

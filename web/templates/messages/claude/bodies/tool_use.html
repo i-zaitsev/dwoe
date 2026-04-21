@@ -1,0 +1,7 @@
+{{define "body-tool-use" -}}
+<span class="verb">{{.Name}}</span>
+{{- if .Summary}}
+<span class="muted">·</span>
+<span class="fp">{{.Summary}}</span>
+{{- end}}
+{{- end}}

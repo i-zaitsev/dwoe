@@ -1,0 +1,155 @@
+{{define "logs-page-pretty"}}
+<!DOCTYPE html>
+<html lang="en"{{if eq .Theme "light"}} data-theme="light"{{end}}>
+<head>
+    <meta charset="utf-8">
+    <title>dwoe: logs - {{.Info.Name}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <div class="logs-header">
+        <a href="/">Back</a>
+        <h1>{{.Info.Name}}</h1>
+    </div>
+    <div id="ws-detail" class="workspace-detail">
+        {{template "workspace-info" .Info}}
+    </div>
+    <div class="tape-toolbar">
+        <button type="button" class="tape-btn" id="tape-collapse">Collapse All</button>
+        <button type="button" class="tape-btn tape-filter" data-filter="err" aria-pressed="false">Errors <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="tool" aria-pressed="false">Tools <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="ast" aria-pressed="false">Assistant <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="think" aria-pressed="false">Thinking <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="rate" aria-pressed="false">Rate-limit <span class="n">0</span></button>
+        <label class="tape-search">
+            <input type="text"
+                   name="filter"
+                   placeholder="filter… (regex)"
+                   hx-get="/workspaces/logs?q={{.Info.ID}}&amp;pretty=1"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#rows-inner"
+                   hx-swap="innerHTML">
+        </label>
+        <span class="tape-toolbar-sep"></span>
+        <a class="tape-btn" href="/workspaces/logs/view?q={{.Info.ID}}">Simple view</a>
+    </div>
+    {{if ne .Info.Status "running"}}
+    <details class="tape-changes"
+             hx-get="/workspaces/diff?q={{.Info.ID}}"
+             hx-trigger="toggle once"
+             hx-target="find .tape-changes-body"
+             hx-swap="innerHTML">
+        <summary class="tape-btn primary">Changes</summary>
+        <div class="tape-changes-body"></div>
+    </details>
+    {{end}}
+    <div class="tape-head">
+        <h2>Logs</h2>
+        <div class="sep"></div>
+    </div>
+    <div class="tape">
+        <div class="rows" id="rows">
+            {{if eq .Info.Status "running"}}
+            <div hx-ext="sse"
+                 sse-connect="/workspaces/logs/stream?q={{.Info.ID}}&amp;pretty=1"
+                 sse-close="done">
+                <div sse-swap="log" hx-swap="beforeend" hx-target="#rows-inner"></div>
+            </div>
+            <div style="display:none"
+                 hx-trigger="htmx:sseClose from:body"
+                 hx-get="/workspaces/inspect?q={{.Info.ID}}"
+                 hx-target="#ws-detail"
+                 hx-swap="innerHTML">
+            </div>
+            <div id="rows-inner"></div>
+            {{else}}
+            <div id="rows-inner"
+                 hx-get="/workspaces/logs?q={{.Info.ID}}&amp;pretty=1"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+<script src="/static/htmx.min.js"></script>
+<script src="/static/htmx-ext-sse.min.js"></script>
+<script>
+(function () {
+    var rows = document.getElementById('rows');
+    if (!rows) return;
+
+    var kinds = ['err', 'tool', 'ast', 'think', 'rate'];
+
+    function allRows() {
+        return rows.querySelectorAll('.row, details.expand');
+    }
+
+    function refreshCounts() {
+        var counts = {};
+        allRows().forEach(function (n) {
+            kinds.forEach(function (k) { if (n.classList.contains(k)) counts[k] = (counts[k] || 0) + 1; });
+        });
+        document.querySelectorAll('.tape-filter').forEach(function (btn) {
+            var k = btn.dataset.filter;
+            var badge = btn.querySelector('.n');
+            if (badge) badge.textContent = counts[k] || 0;
+        });
+    }
+
+    function applyFilters() {
+        var active = [];
+        document.querySelectorAll('.tape-filter').forEach(function (b) {
+            if (b.getAttribute('aria-pressed') === 'true') active.push(b.dataset.filter);
+        });
+        allRows().forEach(function (n) {
+            if (n.classList.contains('banner')) { n.style.display = ''; return; }
+            if (!active.length) { n.style.display = ''; return; }
+            var match = active.some(function (k) { return n.classList.contains(k); });
+            n.style.display = match ? '' : 'none';
+        });
+    }
+
+    document.querySelectorAll('.tape-filter').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var pressed = btn.getAttribute('aria-pressed') === 'true';
+            btn.setAttribute('aria-pressed', String(!pressed));
+            applyFilters();
+        });
+    });
+
+    var collapseBtn = document.getElementById('tape-collapse');
+
+    function refreshCollapseLabel() {
+        if (!collapseBtn) return;
+        var anyOpen = false;
+        rows.querySelectorAll('details.expand').forEach(function (d) {
+            if (d.open) anyOpen = true;
+        });
+        collapseBtn.textContent = anyOpen ? 'Expand All' : 'Collapse All';
+    }
+
+    if (collapseBtn) {
+        collapseBtn.addEventListener('click', function () {
+            var details = rows.querySelectorAll('details.expand');
+            var anyOpen = false;
+            details.forEach(function (d) { if (d.open) anyOpen = true; });
+            details.forEach(function (d) { d.open = !anyOpen; });
+            refreshCollapseLabel();
+        });
+    }
+
+    document.body.addEventListener('htmx:afterSwap', function () {
+        refreshCounts();
+        applyFilters();
+        refreshCollapseLabel();
+    });
+
+    refreshCounts();
+    refreshCollapseLabel();
+})();
+</script>
+</body>
+</html>
+{{end}}

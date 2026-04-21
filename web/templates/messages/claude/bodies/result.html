@@ -1,0 +1,23 @@
+{{define "body-result" -}}
+<strong>{{.Outcome}}</strong>
+<span class="muted">·</span>
+<strong>${{printf "%.2f" .Cost}}</strong>
+<span class="muted">·</span>
+<strong>{{.Mins}}m {{.Secs}}s</strong>
+<span class="muted">·</span>
+<strong>{{.Turns}} turns</strong>
+{{- if .HasUsage}}
+<span class="muted">· in</span>
+<strong>{{.InputTokens}}</strong>
+<span class="muted">out</span>
+<strong>{{.OutputTokens}}</strong>
+{{- end}}
+{{- if .CacheRead}}
+<span class="muted">cache-rd</span>
+<strong>{{.CacheRead}}</strong>
+{{- end}}
+{{- if .CacheWrite}}
+<span class="muted">cache-wr</span>
+<strong>{{.CacheWrite}}</strong>
+{{- end}}
+{{- end}}
