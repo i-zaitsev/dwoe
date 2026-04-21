@@ -17,18 +17,18 @@
     </div>
     <div class="tape-toolbar">
         <button type="button" class="tape-btn" id="tape-collapse">Collapse All</button>
-        <button type="button" class="tape-btn tape-filter" data-filter="err">Errors <span class="n">0</span></button>
-        <button type="button" class="tape-btn tape-filter" data-filter="tool">Tools <span class="n">0</span></button>
-        <button type="button" class="tape-btn tape-filter" data-filter="ast">Assistant <span class="n">0</span></button>
-        <button type="button" class="tape-btn tape-filter" data-filter="think">Thinking <span class="n">0</span></button>
-        <button type="button" class="tape-btn tape-filter" data-filter="rate">Rate-limit <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="err" aria-pressed="false">Errors <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="tool" aria-pressed="false">Tools <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="ast" aria-pressed="false">Assistant <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="think" aria-pressed="false">Thinking <span class="n">0</span></button>
+        <button type="button" class="tape-btn tape-filter" data-filter="rate" aria-pressed="false">Rate-limit <span class="n">0</span></button>
         <label class="tape-search">
             <input type="text"
                    name="filter"
                    placeholder="filter… (regex)"
                    hx-get="/workspaces/logs?q={{.Info.ID}}&amp;pretty=1"
                    hx-trigger="keyup changed delay:300ms"
-                   hx-target="#rows"
+                   hx-target="#rows-inner"
                    hx-swap="innerHTML">
         </label>
         <span class="tape-toolbar-sep"></span>
@@ -54,7 +54,7 @@
             <div hx-ext="sse"
                  sse-connect="/workspaces/logs/stream?q={{.Info.ID}}&amp;pretty=1"
                  sse-close="done">
-                <div sse-swap="log" hx-swap="beforeend" hx-target="#rows"></div>
+                <div sse-swap="log" hx-swap="beforeend" hx-target="#rows-inner"></div>
             </div>
             <div style="display:none"
                  hx-trigger="htmx:sseClose from:body"
@@ -62,8 +62,10 @@
                  hx-target="#ws-detail"
                  hx-swap="innerHTML">
             </div>
+            <div id="rows-inner"></div>
             {{else}}
-            <div hx-get="/workspaces/logs?q={{.Info.ID}}&amp;pretty=1"
+            <div id="rows-inner"
+                 hx-get="/workspaces/logs?q={{.Info.ID}}&amp;pretty=1"
                  hx-trigger="load"
                  hx-swap="innerHTML">
             </div>
@@ -118,22 +120,34 @@
     });
 
     var collapseBtn = document.getElementById('tape-collapse');
+
+    function refreshCollapseLabel() {
+        if (!collapseBtn) return;
+        var anyOpen = false;
+        rows.querySelectorAll('details.expand').forEach(function (d) {
+            if (d.open) anyOpen = true;
+        });
+        collapseBtn.textContent = anyOpen ? 'Expand All' : 'Collapse All';
+    }
+
     if (collapseBtn) {
         collapseBtn.addEventListener('click', function () {
             var details = rows.querySelectorAll('details.expand');
             var anyOpen = false;
             details.forEach(function (d) { if (d.open) anyOpen = true; });
             details.forEach(function (d) { d.open = !anyOpen; });
-            collapseBtn.textContent = anyOpen ? 'Expand All' : 'Collapse All';
+            refreshCollapseLabel();
         });
     }
 
     document.body.addEventListener('htmx:afterSwap', function () {
         refreshCounts();
         applyFilters();
+        refreshCollapseLabel();
     });
 
     refreshCounts();
+    refreshCollapseLabel();
 })();
 </script>
 </body>
