@@ -183,8 +183,8 @@ tr[data-batch="4"] { border-left: 3px solid var(--batch-4); }
   border: 1px solid var(--border); border-radius: 4px;
   font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
 }
-<<<<<<< HEAD
 .task-yaml code { color: var(--text); }
+.task-yaml code, .task-prompt code { color: var(--text); }
 
 /* ============ TAPE LOG VIEW (pretty=1) ============ */
 :root {
@@ -457,4 +457,3 @@ tr[data-batch="4"] { border-left: 3px solid var(--batch-4); }
 }
 .tape-changes-body { margin-top: 8px; }
 
-.task-yaml code, .task-prompt code { color: var(--text); }
