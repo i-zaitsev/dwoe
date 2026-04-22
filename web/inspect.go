@@ -36,15 +36,11 @@ func (w workspaceInfo) BatchDisplay() string {
 	return w.BatchID
 }
 
-func (w workspaceInfo) ShortTime() string {
+func (w workspaceInfo) StartedFmt() string {
 	if w.StartedAt == nil {
 		return "-"
 	}
-	s := w.StartedAt.Format("2006-01-02 15:04:05")
-	if len(s) >= 16 {
-		return s[11:16]
-	}
-	return s
+	return w.StartedAt.Format("15:04 Jan 02 2006")
 }
 
 func (w workspaceInfo) Duration() string {
