@@ -6,9 +6,11 @@ package web
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/workspace"
@@ -91,7 +93,11 @@ func (s *Server) buildWorkspaceInfo(q string) (workspaceInfo, error) {
 	if err != nil {
 		return workspaceInfo{}, err
 	}
-	return toWorkspaceInfo(ws), nil
+	info := toWorkspaceInfo(ws)
+	if ws.Config != nil {
+		info.PromptContent = resolvePromptContent(ws)
+	}
+	return info, nil
 }
 
 func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
@@ -113,25 +119,57 @@ func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
 		} else {
 			info.TaskConfig = "failed to marshal task config"
 		}
-		info.PromptContent = resolvePromptContent(ws)
 	}
 	return info
 }
 
-// resolvePromptContent returns the task prompt text. It prefers the inline
-// TaskPrompt field; when that is empty it reads the prompt file from the
-// workspace directory.
+// resolvePromptContent returns the task prompt text.
+// It prefers the inline TaskPrompt field; when empty, reads the prompt file.
+// Absolute paths and path traversal are rejected to keep reads scoped to the workspace.
 func resolvePromptContent(ws *workspace.Workspace) string {
-	if ws.Config.Agent.TaskPrompt != "" {
-		return ws.Config.Agent.TaskPrompt
+
+	strPrompt := ws.Config.Agent.TaskPrompt
+	if strPrompt != "" {
+		// prompt was provided as an inline string argument to the task running command
+		return strPrompt
 	}
-	if ws.Config.Source.PromptFile != "" {
-		p := filepath.Join(ws.BasePath, "workspace", ws.Config.Source.PromptFile)
-		data, err := os.ReadFile(p)
-		if err != nil {
-			return ""
-		}
-		return string(data)
+
+	// otherwise, the prompt comes from a workspace file
+	filePath := ws.Config.Source.PromptFile
+	if filePath == "" {
+		return ""
 	}
-	return ""
+
+	// Reject absolute paths to keep reads scoped to the workspace.
+	// This condition should not happen for a valid task config,
+	// but doing an extra check to avoid any potential failures
+	if filepath.IsAbs(filePath) {
+		slog.Warn("absolute prompt file path rejected", "path", filePath, "workspaceID", ws.ID)
+		return ""
+	}
+
+	// Reject a relative path that escapes the workspace directory.
+	// Another guard against a potentially misconfigured task path
+	// that cli should capture.
+	fullPath, ok := inWorkDir(ws.WorkDir(), filePath)
+	if !ok {
+		slog.Warn("prompt file path with parent dir rejected", "path", filePath, "workspaceID", ws.ID)
+		return ""
+	}
+
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return ""
+	}
+
+	return string(data)
+}
+
+func inWorkDir(workDir, filePath string) (string, bool) {
+	full := filepath.Join(workDir, filePath)
+	rel, err := filepath.Rel(workDir, full)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return full, true
 }
