@@ -36,7 +36,7 @@ func (w workspaceInfo) BatchDisplay() string {
 	return w.BatchID
 }
 
-func (w workspaceInfo) ShortTime() string {
+func (w workspaceInfo) StartedFmt() string {
 	if w.StartedAt == nil {
 		return "-"
 	}

@@ -6,11 +6,31 @@ package web
 
 import (
 	"testing"
+	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
+
+func TestStartedFmt(t *testing.T) {
+	ts := time.Date(2025, time.March, 15, 9, 30, 0, 0, time.UTC)
+	tests := []struct {
+		name string
+		info workspaceInfo
+		want string
+	}{
+		{"nil", workspaceInfo{}, "-"},
+		{"non_nil", workspaceInfo{StartedAt: &ts}, "09:30 Mar 15 2025"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.info.StartedFmt(); got != tt.want {
+				t.Errorf("StartedFmt() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestInspectWorkspace(t *testing.T) {
 	serv, source := newTestServer()
