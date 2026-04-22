@@ -176,14 +176,15 @@ tr[data-batch="4"] { border-left: 3px solid var(--batch-4); }
 }
 .theme-link:hover { background: var(--text); color: var(--bg); }
 
-.task-yaml { margin-top: 12px; }
-.task-yaml summary { cursor: pointer; font-size: 13px; color: var(--accent) }
-.task-yaml pre {
+.task-yaml, .task-prompt { margin-top: 12px; }
+.task-yaml summary, .task-prompt summary { cursor: pointer; font-size: 13px; color: var(--accent) }
+.task-yaml pre, .task-prompt pre {
   margin: 8px 0 0; padding: 12px; background: var(--bg-input);
   border: 1px solid var(--border); border-radius: 4px;
   font-size: 13px; overflow-x: auto;
 }
-.task-yaml code { color: var(--text); }
+.task-prompt pre { white-space: pre-wrap; word-break: break-word; }
+.task-yaml code, .task-prompt code { color: var(--text); }
 
 /* ============ TAPE LOG VIEW (pretty=1) ============ */
 :root {
@@ -455,3 +456,4 @@ tr[data-batch="4"] { border-left: 3px solid var(--batch-4); }
   background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink);
 }
 .tape-changes-body { margin-top: 8px; }
+

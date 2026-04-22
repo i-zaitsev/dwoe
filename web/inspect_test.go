@@ -5,11 +5,14 @@
 package web
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
@@ -28,6 +31,40 @@ func TestStartedFmt(t *testing.T) {
 			if got := tt.info.StartedFmt(); got != tt.want {
 				t.Errorf("StartedFmt() = %q, want %q", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestResolvePromptContent(t *testing.T) {
+	base := t.TempDir()
+	workDir := filepath.Join(base, "workspace")
+	testutil.WriteFile(t, filepath.Join(workDir, "prompt.md"), "file content")
+
+	tests := []struct {
+		name       string
+		taskPrompt string
+		promptFile string
+		want       string
+	}{
+		{"inline_prompt_wins", "inline body", "prompt.md", "inline body"},
+		{"reads_file", "", "prompt.md", "file content"},
+		{"missing_file", "", "missing.md", ""},
+		{"empty_when_none", "", "", ""},
+		{"absolute_rejected", "", "/etc/passwd", ""},
+		{"traversal_rejected", "", "../outside.md", ""},
+		{"nested_traversal_rejected", "", "sub/../../outside.md", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ws := workspace.New(
+				state.EmptyWorkspace("test-id", "test-ws"),
+				&config.Task{
+					Agent:  config.Agent{TaskPrompt: tt.taskPrompt},
+					Source: config.Source{PromptFile: tt.promptFile},
+				},
+			)
+			ws.BasePath = base
+			assert.Equal(t, resolvePromptContent(ws), tt.want)
 		})
 	}
 }
