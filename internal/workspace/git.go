@@ -27,8 +27,17 @@ func CloneRepo(repoURL, localPath, branch string) error {
 
 // CopyLocalDir copies all tracked files from src to dst, excluding .git.
 func CopyLocalDir(src, dst string) error {
-	slog.Info("git: copy", "src", src, "dst", dst)
-	files, err := walkDir(src, ".git")
+	return copyTree(src, dst, ".git")
+}
+
+// CopyTree copies all files from src to dst, including .git.
+func CopyTree(src, dst string) error {
+	return copyTree(src, dst)
+}
+
+func copyTree(src, dst string, excludes ...string) error {
+	slog.Info("git: copy", "src", src, "dst", dst, "excludes", excludes)
+	files, err := walkDir(src, excludes...)
 	if err != nil {
 		return fmt.Errorf("copy: %w", err)
 	}

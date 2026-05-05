@@ -70,6 +70,17 @@ func TestGit_CloneAndCopy(t *testing.T) {
 	}
 }
 
+func TestCopyTree_PreservesGit(t *testing.T) {
+	t.Parallel()
+	srcDir := t.TempDir()
+	dstDir := filepath.Join(t.TempDir(), "dest")
+
+	testutil.WriteFile(t, filepath.Join(srcDir, ".git", "HEAD"), "ref: refs/heads/main\n")
+
+	assert.NotErr(t, CopyTree(srcDir, dstDir))
+	assert.PathExists(t, filepath.Join(dstDir, ".git", "HEAD"))
+}
+
 func TestGit_CloneCopyErrors(t *testing.T) {
 	t.Parallel()
 	tests := map[string]func(dir string) error{

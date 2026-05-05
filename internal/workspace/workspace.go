@@ -38,6 +38,11 @@ func (ws *Workspace) WorkDir() string {
 	return filepath.Join(ws.BasePath, "workspace")
 }
 
+// WorkFile returns a path inside the workspace's working directory.
+func (ws *Workspace) WorkFile(parts ...string) string {
+	return filepath.Join(ws.WorkDir(), filepath.Join(parts...))
+}
+
 // TemplateData builds the template rendering context from workspace state and config.
 func (ws *Workspace) TemplateData() *template.Data {
 	domains := slices.Concat(ws.Config.Network.Proxy.AllowList, ws.Config.Network.AllowListExtra)
