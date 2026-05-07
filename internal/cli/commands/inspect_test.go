@@ -49,6 +49,21 @@ func TestInspectCmd_Run(t *testing.T) {
 	)
 }
 
+func TestInspectCmd_Run_ParentID(t *testing.T) {
+	t.Parallel()
+	setup := newCmdTestSetup(t)
+	now := time.Date(2001, time.January, 1, 0, 0, 0, 0, time.UTC)
+	ws := createWorkspace(t, t.TempDir(), "ws-child", "completed", &now)
+	ws.ParentID = "parent-xyz"
+	setup.state.Data["ws-child"] = ws
+	cmd := &cmdInspect{nameOrID: "ws-child"}
+
+	err := cmd.Run(setup.env)
+
+	assert.NotErr(t, err)
+	assert.Contains(t, setup.stdout.String(), "Parent:     parent-xyz")
+}
+
 func TestInspectCmd_Run_NilContainerIDs(t *testing.T) {
 	t.Parallel()
 	setup := newCmdTestSetup(t)
