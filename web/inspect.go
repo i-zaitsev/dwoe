@@ -25,6 +25,7 @@ type workspaceInfo struct {
 	Model         string
 	BasePath      string
 	WorkDir       string
+	ParentID      string
 	BatchID       string
 	BatchColor    int
 	CreatedAt     *time.Time
@@ -108,6 +109,7 @@ func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
 		Exit:       ws.ExitStatus(),
 		BasePath:   ws.BasePath,
 		WorkDir:    ws.WorkDir(),
+		ParentID:   ws.ParentID,
 		CreatedAt:  ws.CreatedAt,
 		StartedAt:  ws.StartedAt,
 		FinishedAt: ws.FinishedAt,

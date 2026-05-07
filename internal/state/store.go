@@ -31,6 +31,7 @@ type Workspace struct {
 	CreatedAt    *time.Time
 	StartedAt    *time.Time
 	FinishedAt   *time.Time
+	ParentID     string `json:"parent_id,omitempty"`
 }
 
 // EmptyWorkspace creates a placeholder structure with empty fields.
@@ -56,6 +57,11 @@ func (ws *Workspace) ExitStatus() string {
 		return ws.ErrorMsg
 	}
 	return fmt.Sprintf("exit code %d", *ws.ExitCode)
+}
+
+// WorkFile returns a file relative to the workspace base path for storing workspace-specific data.
+func (ws *Workspace) WorkFile(parts ...string) string {
+	return filepath.Join(ws.BasePath, "workspace", filepath.Join(parts...))
 }
 
 // File is the on-disk JSON structure containing all workspace states.
@@ -190,9 +196,11 @@ func (s *Store) withLock(fn func() error) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return err
+	defer func() {
+		_ = f.Close()
+	}()
+	if errLock := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); errLock != nil {
+		return errLock
 	}
 	defer func() {
 		errUnlock := syscall.Flock(int(f.Fd()), syscall.LOCK_UN)

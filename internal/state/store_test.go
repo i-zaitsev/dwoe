@@ -15,28 +15,12 @@ import (
 func TestStore_Save(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name    string
-		ws      *Workspace
-		wantErr bool
-	}{
-		{
-			name:    "save new workspace",
-			ws:      &Workspace{ID: "test-1", Name: "test-ws", Status: "pending"},
-			wantErr: false,
-		},
-	}
+	dir := t.TempDir()
+	store := NewStore(dir)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
-			store := NewStore(dir)
-			err := store.Save(tt.ws)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Save() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+	ws := &Workspace{ID: "test-1", Name: "test-ws", Status: "pending"}
+
+	assert.NotErr(t, store.Save(ws))
 }
 
 func TestStore_Load(t *testing.T) {
@@ -50,9 +34,9 @@ func TestStore_Load(t *testing.T) {
 
 	got, err := store.Load("test-1")
 	assert.NotErr(t, err)
-	if got.ID != ws.ID || got.Name != ws.Name || got.Status != ws.Status {
-		t.Errorf("Load() = %+v, want %+v", got, ws)
-	}
+	assert.Equal(t, got.ID, ws.ID)
+	assert.Equal(t, got.Name, ws.Name)
+	assert.Equal(t, got.Status, ws.Status)
 }
 
 func TestStore_Load_NotFound(t *testing.T) {
@@ -135,15 +119,35 @@ func TestStore_ConcurrentAccess(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			assert.NotErr(t, store.Save(&Workspace{ID: fmt.Sprintf("ws-%d", id), Name: fmt.Sprintf("name-%d", id)}))
-		}(i)
+		wg.Go(func() {
+			assert.NotErr(t, store.Save(&Workspace{
+				ID:   fmt.Sprintf("ws-%d", i),
+				Name: fmt.Sprintf("name-%d", i),
+			}))
+		})
 	}
-	wg.Wait()
 
+	wg.Wait()
 	list, err := store.List()
 	assert.NotErr(t, err)
 	assert.Equal(t, len(list), n)
+}
+
+func TestStore_ParentID(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	store := NewStore(dir)
+
+	ws := &Workspace{
+		ID:       "ws-2",
+		Name:     "test",
+		Status:   "pending",
+		ParentID: "ws-1",
+	}
+
+	assert.NotErr(t, store.Save(ws))
+	got, err := store.Load("ws-2")
+	assert.NotErr(t, err)
+	assert.Equal(t, got.ParentID, "ws-1")
 }

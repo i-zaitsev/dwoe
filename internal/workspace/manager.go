@@ -245,6 +245,63 @@ func populateSource(cfg *config.Task, workspaceDir string) error {
 	return nil
 }
 
+func (m *Manager) Refine(parentNameOrID, prompt, explicitName string) (*Workspace, error) {
+	if prompt == "" {
+		return nil, fmt.Errorf("refine: prompt cannot be empty")
+	}
+
+	parent, errRes := m.ResolveCompleted(parentNameOrID)
+	if errRes != nil {
+		return nil, fmt.Errorf("refine: %w", errRes)
+	}
+
+	newCfg := *parent.Config
+	newCfg.Agent.TaskPrompt = prompt
+	newCfg.Source.PromptFile = ""
+	if explicitName == "" {
+		newCfg.Name = parent.Name
+	} else {
+		newCfg.Name = explicitName
+	}
+
+	id := uuid.New().String()
+	basePath := filepath.Join(m.dataDir, "workspaces", id)
+
+	success := false
+	defer func() {
+		if !success {
+			_ = os.RemoveAll(basePath)
+		}
+	}()
+
+	var err error
+	if err = initDirs(basePath); err != nil {
+		return nil, fmt.Errorf("refine: init dirs: %w", err)
+	}
+	if err = CopyTree(parent.WorkDir(), filepath.Join(basePath, "workspace")); err != nil {
+		return nil, fmt.Errorf("refine: copy workspace: %w", err)
+	}
+	if err = storeConfig(basePath, &newCfg); err != nil {
+		return nil, fmt.Errorf("refine: store config: %w", err)
+	}
+
+	now := time.Now()
+	child := &state.Workspace{
+		ID:        id,
+		Name:      newCfg.Name,
+		Status:    StatusPending,
+		BasePath:  basePath,
+		CreatedAt: &now,
+		ParentID:  parent.ID,
+	}
+	if err = m.state.Save(child); err != nil {
+		return nil, fmt.Errorf("refine: save state: %w", err)
+	}
+
+	success = true
+	return &Workspace{Workspace: child, Config: &newCfg}, nil
+}
+
 // Get loads a workspace by ID, reading both its persisted state and config.
 // Defaults are applied to the config before returning.
 func (m *Manager) Get(id string) (*Workspace, error) {

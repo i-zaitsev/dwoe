@@ -46,6 +46,9 @@ func (c *cmdInspect) Run(e *cli.Env) error {
 	e.Print("Name:       %s\n", ws.Name)
 	e.Print("ID:         %s\n", ws.ID)
 	e.Print("Status:     %s\n", ws.Status)
+	if ws.ParentID != "" {
+		e.Print("Parent:     %s\n", ws.ParentID)
+	}
 	e.Print("BasePath:   %s\n", ws.BasePath)
 	e.Print("Agent:      %s\n", containerOrNone(ws.ContainerIDs, "agent"))
 	e.Print("Proxy:      %s\n", containerOrNone(ws.ContainerIDs, "proxy"))
