@@ -20,6 +20,7 @@ func Registry() map[string]cli.Command {
 		newCmdPatches(),
 		new(cmdCreate),
 		new(cmdInspect),
+		new(cmdRefine),
 		new(cmdRun),
 		new(cmdStart),
 		new(cmdStop),
