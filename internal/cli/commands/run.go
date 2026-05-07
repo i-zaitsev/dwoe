@@ -5,30 +5,13 @@
 package commands
 
 import (
-	"context"
-	"errors"
 	"flag"
-	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
-
-// exitError indicates that the workspace's agent container exited with a non-zero status.
-type exitError struct {
-	code int
-}
-
-// errRunInterrupted is returned when the run is cancelled by an OS signal.
-var errRunInterrupted = errors.New("interrupted")
-
-// Error returns a human-readable description of the exit failure.
-func (e *exitError) Error() string {
-	return fmt.Sprintf("workspace failed with exit code %d", e.code)
-}
 
 // cmdRun creates, starts, and optionally follows a workspace in one step.
 //
@@ -137,53 +120,8 @@ func (c *cmdRun) Run(e *cli.Env) error {
 		return nil
 	}
 
-	slog.Debug("run: reading worker logs", "id", ws.ID)
-	logs, err := manager.Logs(ctx, ws.ID, true)
-
-	if err != nil {
-		slog.Error("run: cannot read running job logs", "err", err)
-		errStop := manager.Stop(context.Background(), ws.ID, time.Minute)
-		e.Error("failed to read the logs from attached worker")
-		if errStop != nil {
-			return fmt.Errorf("fatal: cannot stop the workspace: %w", errStop)
-		}
+	if err := runAttached(e, manager, ws.ID, ws.Name); err != nil {
 		return cli.CmdErr(c, "%w", err)
 	}
-
-	lines := make(chan string)
-	logCtx, logCancel := context.WithCancel(ctx)
-	go cli.ScanLogs(logCtx, logs, lines)
-
-	for line := range lines {
-		e.Print("%s\n", line)
-	}
-
-	exitCode, waitErr := manager.Wait(ctx, ws.ID)
-	logCancel()
-
-	if ctx.Err() != nil {
-		e.Print("\nInterrupted. Stopping workspace %s...\n", ws.Name)
-		bgCtx := context.Background()
-		if errStop := manager.Stop(bgCtx, ws.ID, 30*time.Second); errStop != nil {
-			slog.Error("run: stop on interrupt", "err", errStop)
-		}
-		if errCleanup := manager.Cleanup(bgCtx, ws.ID); errCleanup != nil {
-			slog.Error("run: cleanup on interrupt", "err", errCleanup)
-		}
-		return cli.CmdErr(c, "%w", errRunInterrupted)
-	}
-
-	status := workspace.StatusCompleted
-	if waitErr != nil || exitCode != 0 {
-		status = workspace.StatusFailed
-	}
-	if errCleanup := manager.Cleanup(context.Background(), ws.ID); errCleanup != nil {
-		slog.Error("run: cleanup", "err", errCleanup)
-	}
-
-	e.Print("Workspace %s: %s (exit code %d)\n", ws.Name, status, exitCode)
-	if exitCode != 0 {
-		return cli.CmdErr(c, "%w", &exitError{code: exitCode})
-	}
-	return waitErr
+	return nil
 }
