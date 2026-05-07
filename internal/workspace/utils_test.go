@@ -51,7 +51,7 @@ func writeConfig(t *testing.T, basePath, content string) {
 	testutil.WriteFile(t, filepath.Join(basePath, "config.yaml"), content)
 }
 
-func withId(id string) wsOption {
+func withID(id string) wsOption {
 	return func(_ *testing.T, ws *state.Workspace) {
 		ws.ID = id
 	}

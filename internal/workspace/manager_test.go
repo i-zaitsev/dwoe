@@ -898,7 +898,7 @@ func TestManager_Refine_RejectsInvalid(t *testing.T) {
 
 			if len(tc.opts) > 0 {
 				var opts []wsOption
-				opts = append(opts, withName(tc.parent), withId(tc.parent))
+				opts = append(opts, withName(tc.parent), withID(tc.parent))
 				opts = append(opts, tc.opts...)
 				ts.setWorkspace(t, tc.parent, "", opts...)
 			}
@@ -913,21 +913,21 @@ func TestManager_Refine_RejectsInvalid(t *testing.T) {
 
 func TestManager_Refine_ReturnsChild(t *testing.T) {
 	t.Parallel()
-	parentId := "test"
+	parentID := "test"
 	ts := newTestSetup(t)
-	parentPath := ts.setWorkspace(t, parentId, StatusCompleted, withName(parentId))
+	parentPath := ts.setWorkspace(t, parentID, StatusCompleted, withName(parentID))
 
 	wsDir := filepath.Join(parentPath, "workspace")
 	testutil.WriteFile(t, filepath.Join(wsDir, "prompt.txt"), "task to refine")
 	testutil.WriteFile(t, filepath.Join(wsDir, ".git", "HEAD"), "ref: refs/heads/main\n")
 
-	child, err := ts.manager.Refine(parentId, "refine prompt", "child-task")
+	child, err := ts.manager.Refine(parentID, "refine prompt", "child-task")
 
 	assert.NotErr(t, err)
 	assert.NotNil(t, child)
-	assert.NotEqual(t, child.ID, parentId)
+	assert.NotEqual(t, child.ID, parentID)
 	assert.Equal(t, child.Name, "child-task")
-	assert.Equal(t, child.ParentID, parentId)
+	assert.Equal(t, child.ParentID, parentID)
 	assert.Equal(t, child.Status, StatusPending)
 	assert.Equal(t, child.Config.Agent.TaskPrompt, "refine prompt")
 	assert.PathExists(t, child.WorkFile("prompt.txt"))
