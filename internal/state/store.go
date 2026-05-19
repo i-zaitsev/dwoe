@@ -20,18 +20,18 @@ import (
 // Workspace represents the persistent state of a single workspace.
 // It tracks the workspace lifecycle from creation through completion or failure.
 type Workspace struct {
-	ID           string
-	Name         string
-	Status       string
-	ExitCode     *int   `json:"exit_code,omitempty"`
-	ErrorMsg     string `json:"error_msg,omitempty"`
-	BasePath     string
-	ContainerIDs map[string]string
-	NetworkID    string
-	CreatedAt    *time.Time
-	StartedAt    *time.Time
-	FinishedAt   *time.Time
-	ParentID     string `json:"parent_id,omitempty"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	Status       string            `json:"status"`
+	ExitCode     *int              `json:"exit_code,omitempty"`
+	ErrorMsg     string            `json:"error_msg,omitempty"`
+	BasePath     string            `json:"base_path"`
+	ContainerIDs map[string]string `json:"container_ids,omitempty"`
+	NetworkID    string            `json:"network_id,omitempty"`
+	CreatedAt    *time.Time        `json:"created_at,omitempty"`
+	StartedAt    *time.Time        `json:"started_at,omitempty"`
+	FinishedAt   *time.Time        `json:"finished_at,omitempty"`
+	ParentID     string            `json:"parent_id,omitempty"`
 }
 
 // EmptyWorkspace creates a placeholder structure with empty fields.
@@ -66,9 +66,11 @@ func (ws *Workspace) WorkFile(parts ...string) string {
 
 // File is the on-disk JSON structure containing all workspace states.
 type File struct {
-	Version    int
-	Workspaces map[string]*Workspace
+	Version    int                    `json:"version"`
+	Workspaces map[string]*Workspace  `json:"workspaces"`
 }
+
+const schemaVersion = 2
 
 // Store manages a persistent workspace state in a JSON file.
 // File locking protects all operations for concurrent access.
@@ -165,7 +167,7 @@ func (s *Store) UpdateStatus(id, status string) error {
 func (s *Store) readFile() (*File, error) {
 	data, err := os.ReadFile(s.path)
 	if os.IsNotExist(err) {
-		return &File{Version: 1, Workspaces: map[string]*Workspace{}}, nil
+		return &File{Version: schemaVersion, Workspaces: map[string]*Workspace{}}, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %s: %w", s.path, err)
@@ -173,6 +175,11 @@ func (s *Store) readFile() (*File, error) {
 	var f File
 	if errMarshal := json.Unmarshal(data, &f); errMarshal != nil {
 		return nil, fmt.Errorf("failed to unmarshal file: %w", errMarshal)
+	}
+	if f.Version < schemaVersion {
+		return nil, fmt.Errorf(
+			"state.json uses schema v%d, expected v%d; run: dwoe-migrate %s",
+			f.Version, schemaVersion, filepath.Dir(s.path))
 	}
 	if f.Workspaces == nil {
 		f.Workspaces = map[string]*Workspace{}

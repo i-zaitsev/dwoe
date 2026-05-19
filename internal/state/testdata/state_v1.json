@@ -1,0 +1,33 @@
+{
+  "Version": 1,
+  "Workspaces": {
+    "ws-abc-123": {
+      "ID": "ws-abc-123",
+      "Name": "lucky-mighty-squid",
+      "Status": "completed",
+      "exit_code": 0,
+      "BasePath": "/tmp/workspaces/ws-abc-123",
+      "ContainerIDs": {
+        "agent": "ctr-agent-1",
+        "proxy": "ctr-proxy-1"
+      },
+      "NetworkID": "net-123",
+      "CreatedAt": "2026-04-09T10:54:06Z",
+      "StartedAt": "2026-04-09T10:54:06Z",
+      "FinishedAt": "2026-04-09T20:46:57Z",
+      "parent_id": "ws-parent-1"
+    },
+    "ws-def-456": {
+      "ID": "ws-def-456",
+      "Name": "cool-neat-salmon",
+      "Status": "failed",
+      "error_msg": "timeout",
+      "BasePath": "/tmp/workspaces/ws-def-456",
+      "ContainerIDs": null,
+      "NetworkID": "",
+      "CreatedAt": "2026-04-19T22:35:12Z",
+      "StartedAt": "2026-04-19T22:35:12Z",
+      "FinishedAt": "2026-04-19T23:35:24Z"
+    }
+  }
+}

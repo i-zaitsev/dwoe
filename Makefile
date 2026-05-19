@@ -10,6 +10,9 @@ all: lint test build
 build:
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/$(BINARY_NAME) ./cmd/dwoe
 
+build-migrate:
+	$(GO) build -o bin/dwoe-migrate ./cmd/migrate
+
 install: build
 	sudo mv bin/$(BINARY_NAME) /usr/local/bin/
 

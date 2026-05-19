@@ -6,6 +6,9 @@ package state
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -150,4 +153,17 @@ func TestStore_ParentID(t *testing.T) {
 	got, err := store.Load("ws-2")
 	assert.NotErr(t, err)
 	assert.Equal(t, got.ParentID, "ws-1")
+}
+
+func TestStore_Load_rejectsV1(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	v1 := `{"Version":1,"Workspaces":{"ws-1":{"ID":"ws-1","Name":"test","Status":"done"}}}`
+	assert.NotErr(t, os.WriteFile(filepath.Join(dir, "state.json"), []byte(v1), 0o644))
+
+	store := NewStore(dir)
+	_, err := store.Load("ws-1")
+	assert.Err(t, err)
+	assert.Equal(t, strings.Contains(err.Error(), "dwoe-migrate"), true)
 }
