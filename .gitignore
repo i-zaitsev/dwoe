@@ -40,8 +40,8 @@ dist
 
 # local settings
 .claude/
-CLAUDE.md
 drafts
+agents/commands/
 
 # Nested git repos inside examples (recreated by EnsureRepoReady)
 examples/*/repo/.git
