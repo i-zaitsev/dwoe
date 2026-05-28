@@ -6,7 +6,7 @@
 package config
 
 const (
-	DefaultModel      = "claude-opus-4-5-20251101"
+	DefaultModel      = "claude-opus-4-7"
 	DefaultMaxTurns   = 200
 	DefaultCPUs       = "4"
 	DefaultMemory     = "8G"
@@ -32,6 +32,12 @@ var DefaultAllowList = []string{
 	".vcpkg.io",
 	"apt.llvm.org",
 	".cppreference.com",
+	"proxy.golang.org",
+	"sum.golang.org",
+	"pkg.go.dev",
+	".pypi.org",
+	".pythonhosted.org",
+	".crates.io",
 }
 
 var DefaultPermissions = []string{
@@ -39,4 +45,6 @@ var DefaultPermissions = []string{
 	"Read(*)",
 	"Write(*)",
 	"Edit(*)",
+	"WebFetch(*)",
+	"WebSearch(*)",
 }

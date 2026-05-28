@@ -31,9 +31,9 @@ func run() int {
 
 	if err := cli.Run(env, os.Args[1:]); err != nil {
 		// ErrWorkspaceDone signals that a workspace was already completed
-		// and does not need to be re-run. This is not a failure — the
-		// sentinel file (.dwoe-done) matched the current config, so the
-		// command exits successfully without starting a new run.
+		// and does not need to be re-run. This is not a failure:
+		// the sentinel file (.dwoe-done) matched the current config,
+		// so the command exits successfully without starting a new run.
 		if errors.Is(err, workspace.ErrWorkspaceDone) {
 			return 0
 		}
