@@ -5,7 +5,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,14 +32,10 @@ func TestLoadGlobalConfig_MissingFileReturnsDefaults(t *testing.T) {
 	tmpDir := t.TempDir()
 	config, err := LoadGlobalConfig(tmpDir)
 	assert.NotErr(t, err)
-	for _, tc := range []struct{ want, got string }{
-		{config.Defaults.Agent.Model, DefaultModel},
-		{fmt.Sprintf("%d", config.Defaults.Agent.MaxTurns), fmt.Sprintf("%d", DefaultMaxTurns)},
-		{config.Defaults.Resources.CPU, DefaultCPUs},
-		{config.Defaults.Resources.Memory, DefaultMemory},
-	} {
-		assert.Equal(t, tc.want, tc.got)
-	}
+	assert.Equal(t, config.Defaults.Agent.Model, DefaultModel)
+	assert.Equal(t, config.Defaults.Agent.MaxTurns, DefaultMaxTurns)
+	assert.Equal(t, config.Defaults.Resources.CPU, DefaultCPUs)
+	assert.Equal(t, config.Defaults.Resources.Memory, DefaultMemory)
 }
 
 func TestLoadMergedConfig(t *testing.T) {
@@ -49,14 +44,10 @@ func TestLoadMergedConfig(t *testing.T) {
 
 	cfg, err := LoadMergedConfig(taskPath, globalDir)
 	assert.NotErr(t, err)
-	for _, tc := range []struct{ got, want string }{
-		{cfg.Resources.CPU, "16"},
-		{cfg.Resources.Memory, "16G"},
-		{cfg.Agent.Model, "test-model"},
-		{fmt.Sprintf("%d", cfg.Agent.MaxTurns), fmt.Sprintf("%d", 9999)},
-	} {
-		assert.Equal(t, tc.got, tc.want)
-	}
+	assert.Equal(t, cfg.Resources.CPU, "16")
+	assert.Equal(t, cfg.Resources.Memory, "16G")
+	assert.Equal(t, cfg.Agent.Model, "test-model")
+	assert.Equal(t, cfg.Agent.MaxTurns, 9999)
 }
 
 func TestLoadMergedConfig_GitAndProxy(t *testing.T) {
@@ -65,15 +56,11 @@ func TestLoadMergedConfig_GitAndProxy(t *testing.T) {
 
 	cfg, err := LoadMergedConfig(taskPath, globalDir)
 	assert.NotErr(t, err)
-	for _, tc := range []struct{ got, want string }{
-		{cfg.Git.Name, "Global User"},
-		{cfg.Git.Email, "global@test.com"},
-		{fmt.Sprintf("%d", cfg.Network.Proxy.Port), fmt.Sprintf("%d", 3128)},
-		{fmt.Sprintf("%d", len(cfg.Network.Proxy.AllowList)), fmt.Sprintf("%d", 2)},
-		{cfg.Agent.Image, DefaultImage},
-	} {
-		assert.Equal(t, tc.got, tc.want)
-	}
+	assert.Equal(t, cfg.Git.Name, "Global User")
+	assert.Equal(t, cfg.Git.Email, "global@test.com")
+	assert.Equal(t, cfg.Network.Proxy.Port, 3128)
+	assert.Equal(t, len(cfg.Network.Proxy.AllowList), 2)
+	assert.Equal(t, cfg.Agent.Image, DefaultImage)
 }
 
 func TestMergeWithGlobal(t *testing.T) {
@@ -91,19 +78,14 @@ func TestMergeWithGlobal(t *testing.T) {
 		task := &Task{}
 		MergeWithGlobal(task, global)
 
-		fields := []struct{ got, want string }{
-			{task.Agent.Model, "global-model"},
-			{fmt.Sprintf("%d", task.Agent.MaxTurns), "100"},
-			{task.Resources.CPU, "8"},
-			{task.Resources.Memory, "16G"},
-			{task.Git.Name, "Global User"},
-			{task.Git.Email, "global@test.com"},
-			{fmt.Sprintf("%d", task.Network.Proxy.Port), "3128"},
-			{fmt.Sprintf("%d", len(task.Network.Proxy.AllowList)), "1"},
-		}
-		for _, f := range fields {
-			assert.Equal(t, f.got, f.want)
-		}
+		assert.Equal(t, task.Agent.Model, "global-model")
+		assert.Equal(t, task.Agent.MaxTurns, 100)
+		assert.Equal(t, task.Resources.CPU, "8")
+		assert.Equal(t, task.Resources.Memory, "16G")
+		assert.Equal(t, task.Git.Name, "Global User")
+		assert.Equal(t, task.Git.Email, "global@test.com")
+		assert.Equal(t, task.Network.Proxy.Port, 3128)
+		assert.Equal(t, len(task.Network.Proxy.AllowList), 1)
 	})
 
 	t.Run("task_takes_precedence", func(t *testing.T) {
@@ -117,19 +99,14 @@ func TestMergeWithGlobal(t *testing.T) {
 
 		MergeWithGlobal(task, global)
 
-		fields := []struct{ got, want string }{
-			{task.Agent.Model, "task-model"},
-			{fmt.Sprintf("%d", task.Agent.MaxTurns), "50"},
-			{task.Resources.CPU, "2"},
-			{task.Resources.Memory, "4G"},
-			{task.Git.Name, "Task User"},
-			{task.Git.Email, "task@test.com"},
-			{fmt.Sprintf("%d", task.Network.Proxy.Port), "9999"},
-			{task.Network.Proxy.AllowList[0], ".custom.dev"},
-		}
-		for _, f := range fields {
-			assert.Equal(t, f.got, f.want)
-		}
+		assert.Equal(t, task.Agent.Model, "task-model")
+		assert.Equal(t, task.Agent.MaxTurns, 50)
+		assert.Equal(t, task.Resources.CPU, "2")
+		assert.Equal(t, task.Resources.Memory, "4G")
+		assert.Equal(t, task.Git.Name, "Task User")
+		assert.Equal(t, task.Git.Email, "task@test.com")
+		assert.Equal(t, task.Network.Proxy.Port, 9999)
+		assert.Equal(t, task.Network.Proxy.AllowList[0], ".custom.dev")
 	})
 }
 
