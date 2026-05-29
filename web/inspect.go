@@ -76,8 +76,7 @@ func (s *Server) inspectWorkspace(w http.ResponseWriter, r *http.Request) {
 	_ = s.workspaces.Sync(r.Context(), q)
 	info, err := s.buildWorkspaceInfo(q)
 
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Content-Type", "text/html")
+	writeHTMLFragmentHeaders(w)
 
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `<div class="error">Workspace not found</div>`)
