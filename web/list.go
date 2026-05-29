@@ -46,8 +46,7 @@ func (s *Server) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 		infos = append(infos, info)
 	}
 
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Content-Type", "text/html")
+	writeHTMLFragmentHeaders(w)
 	writeTemplate(w, "workspace-list", listData{BatchFilter: batchFilter, Items: infos})
 }
 

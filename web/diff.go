@@ -31,9 +31,7 @@ func (s *Server) diffWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Content-Type", "text/html")
-
+	writeHTMLFragmentHeaders(w)
 	writeTemplate(w, "diff-info", diffView{
 		Commits: diff.Commits,
 		Stat:    diff.Stat,

@@ -125,7 +125,7 @@ func (s *Server) listBatches(w http.ResponseWriter, r *http.Request) {
 		summaries = append(summaries, sum)
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writeHTMLPageHeaders(w)
 	writeTemplate(w, "batches-page", batchesPageData{
 		pageConfig: pageConfigFromRequest(r),
 		Batches:    summaries,
@@ -162,7 +162,7 @@ func (s *Server) batchChanges(w http.ResponseWriter, r *http.Request, batchID st
 		}
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writeHTMLPageHeaders(w)
 	writeTemplate(w, "batches-changes", batchChangesData{
 		pageConfig: pageConfigFromRequest(r),
 		BatchID:    batchID,

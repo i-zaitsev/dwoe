@@ -24,6 +24,6 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	}
 	cfg := pageConfigFromRequest(r)
 	cfg.BatchFilter = r.URL.Query().Get("batch")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writeHTMLPageHeaders(w)
 	writeTemplate(w, "page.html", cfg)
 }

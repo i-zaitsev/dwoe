@@ -39,8 +39,7 @@ func (s *Server) logsWorkspace(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rc.Close()
 
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Content-Type", "text/html")
+	writeHTMLFragmentHeaders(w)
 
 	matcher := newLineMatcher(r.URL.Query().Get("filter"))
 	render := lineRenderer(r)
@@ -74,7 +73,7 @@ func (s *Server) logsView(w http.ResponseWriter, r *http.Request) {
 		info, _ = s.resolveWorkspace(w, r)
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writeHTMLPageHeaders(w)
 
 	name := "logs-page"
 	if isPretty(r) {
