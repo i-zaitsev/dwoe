@@ -6,17 +6,19 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/sentinel"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testfake"
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
@@ -92,4 +94,26 @@ func createWorkspace(t *testing.T, dir, id, status string, created *time.Time) *
 	ws := testfake.CreateWorkspace(t, dir, id, id+" name", status)
 	ws.CreatedAt = created
 	return ws
+}
+
+func createDoneWorkspaceTask(t *testing.T, setup *cmdTestSetup) string {
+	t.Helper()
+	srcDir := t.TempDir()
+	ws := testfake.CreateWorkspace(t, t.TempDir(), "ws-done", "done-task", "completed")
+	setup.state.Data[ws.ID] = ws
+
+	taskYAML := fmt.Sprintf(
+		"name: done-task\ncontinue_policy: resume\nsource:\n  local_path: %s\n", srcDir,
+	)
+	testutil.WriteFile(t, filepath.Join(ws.BasePath, "config.yaml"), taskYAML)
+
+	sen := sentinel.FromConfig(&config.Task{
+		Name:   "done-task",
+		Source: config.Source{LocalPath: srcDir},
+	})
+	assert.NotErr(t, sen.Write(ws.BasePath))
+
+	taskFile := filepath.Join(t.TempDir(), "task.yaml")
+	testutil.WriteFile(t, taskFile, taskYAML)
+	return taskFile
 }
