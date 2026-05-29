@@ -46,10 +46,10 @@ func (c *cmdRun) Parse(args []string) error {
 	if err != nil {
 		return err
 	}
-	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "task file"})
+	c.taskPath, err = cli.RequiredArg(c, fs, "task file")
+	if err != nil {
+		return err
 	}
-	c.taskPath = fs.Arg(0)
 	return nil
 }
 
@@ -69,14 +69,7 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	if e.Model() != "" && taskCfg.Agent.Model == "" {
 		taskCfg.Agent.Model = e.Model()
 	}
-	if e.NoProxy() {
-		taskCfg.NoProxy = true
-	}
-	if c.name != "" {
-		taskCfg.Name = c.name
-	} else if e.TaskName() != "" {
-		taskCfg.Name = e.TaskName()
-	}
+	applyTaskOverrides(e, taskCfg, c.name)
 
 	slog.Debug("run: creating workspace", "dataDir", e.DataDir())
 	manager, err := e.Manager()

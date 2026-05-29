@@ -61,10 +61,10 @@ func (c *cmdPatches) Parse(args []string) error {
 	if c.batchID != "" {
 		return nil
 	}
-	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "name or id"})
+	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	if err != nil {
+		return err
 	}
-	c.nameOrID = fs.Arg(0)
 	return nil
 }
 
@@ -80,14 +80,9 @@ func (c *cmdPatches) Run(e *cli.Env) error {
 func (c *cmdPatches) runSingle(e *cli.Env) error {
 	slog.Info("cli: patches", "nameOrID", c.nameOrID, "dir", c.dir)
 
-	manager, err := e.Manager()
+	ws, err := resolveCompletedWorkspace(c, e, c.nameOrID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
-	}
-
-	ws, err := manager.ResolveCompleted(c.nameOrID)
-	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return err
 	}
 
 	n, err := c.exportPatch(ws.WorkDir(), c.dir)

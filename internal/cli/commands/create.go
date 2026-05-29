@@ -36,10 +36,10 @@ func (c *cmdCreate) Parse(args []string) error {
 	if err != nil {
 		return err
 	}
-	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "task file"})
+	c.taskPath, err = cli.RequiredArg(c, fs, "task file")
+	if err != nil {
+		return err
 	}
-	c.taskPath = fs.Arg(0)
 	return nil
 }
 
@@ -52,14 +52,7 @@ func (c *cmdCreate) Run(e *cli.Env) error {
 	if err != nil {
 		return cli.CmdErr(c, "load config: %w", err)
 	}
-	if e.NoProxy() {
-		taskCfg.NoProxy = true
-	}
-	if c.name != "" {
-		taskCfg.Name = c.name
-	} else if e.TaskName() != "" {
-		taskCfg.Name = e.TaskName()
-	}
+	applyTaskOverrides(e, taskCfg, c.name)
 
 	manager, err := e.Manager()
 	if err != nil {

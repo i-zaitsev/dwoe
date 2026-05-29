@@ -39,24 +39,19 @@ func (c *cmdLogs) Parse(args []string) error {
 	if err != nil {
 		return err
 	}
-	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "name or id"})
+	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	if err != nil {
+		return err
 	}
-	c.nameOrID = fs.Arg(0)
 	return nil
 }
 
 func (c *cmdLogs) Run(e *cli.Env) error {
 	slog.Info("cli: logs", "nameOrID", c.nameOrID, "follow", c.follow)
 
-	manager, err := e.Manager()
+	manager, ws, err := resolveWorkspace(c, e, c.nameOrID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
-	}
-
-	ws, err := manager.Resolve(c.nameOrID)
-	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return err
 	}
 
 	logs, err := manager.Logs(e.Context(), ws.ID, c.follow)

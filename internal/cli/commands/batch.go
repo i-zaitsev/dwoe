@@ -57,10 +57,10 @@ func (c *cmdBatch) Parse(args []string) error {
 	if err != nil {
 		return err
 	}
-	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "directory"})
+	c.dir, err = cli.RequiredArg(c, fs, "directory")
+	if err != nil {
+		return err
 	}
-	c.dir = fs.Arg(0)
 	return nil
 }
 

@@ -66,10 +66,11 @@ func (c *cmdCollect) Parse(args []string) error {
 	if c.branch == "" {
 		return cli.CmdErr(c, "flag: %w", &cli.ArgMissingError{Name: "--branch"})
 	}
-	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "arg: %w", &cli.ArgMissingError{Name: "name or id"})
+	nameOrID, err := cli.RequiredArg(c, fs, "name or id")
+	if err != nil {
+		return err
 	}
-	c.nameOrID = fs.Arg(0)
+	c.nameOrID = nameOrID
 	return nil
 }
 
@@ -86,14 +87,9 @@ func (c *cmdCollect) Run(e *cli.Env) error {
 func (c *cmdCollect) runSingle(e *cli.Env) error {
 	slog.Info("cli: collect-single", "nameOrID", c.nameOrID, "repo", c.repo, "branch", c.branch)
 
-	manager, err := e.Manager()
+	ws, err := resolveCompletedWorkspace(c, e, c.nameOrID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
-	}
-
-	ws, err := manager.ResolveCompleted(c.nameOrID)
-	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return err
 	}
 
 	n, err := c.collect(ws.WorkDir(), c.repo, c.branch)
