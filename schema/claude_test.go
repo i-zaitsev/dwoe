@@ -5,38 +5,19 @@
 package schema
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
-
-func readLines(t *testing.T, path string) [][]byte {
-	t.Helper()
-	f, err := os.Open(path)
-	assert.NotErr(t, err)
-	defer f.Close()
-
-	var out [][]byte
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
-	for sc.Scan() {
-		line := make([]byte, len(sc.Bytes()))
-		copy(line, sc.Bytes())
-		out = append(out, line)
-	}
-	assert.NotErr(t, sc.Err())
-	return out
-}
 
 func TestParse_Samples(t *testing.T) {
 	t.Parallel()
-	lines := readLines(t, filepath.Join("testdata", "sample.jsonl"))
+	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
 
 	tests := []struct {
 		wantType    string
@@ -61,7 +42,7 @@ func TestParse_Samples(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d_%s_%s", i, tt.wantType, tt.wantSubtype), func(t *testing.T) {
 			t.Parallel()
-			v, err := Parse(lines[i])
+			v, err := Parse([]byte(lines[i]))
 			assert.NotErr(t, err)
 			assert.Equal(t, fmt.Sprintf("%T", v), tt.wantGoType)
 
@@ -75,7 +56,7 @@ func TestParse_Samples(t *testing.T) {
 
 func TestParse_Faulty(t *testing.T) {
 	t.Parallel()
-	lines := readLines(t, filepath.Join("testdata", "faulty.jsonl"))
+	lines := testutil.ReadLines(t, filepath.Join("testdata", "faulty.jsonl"))
 
 	tests := []struct {
 		name    string
@@ -96,7 +77,7 @@ func TestParse_Faulty(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			v, err := Parse(lines[i])
+			v, err := Parse([]byte(lines[i]))
 			switch tt.name {
 			case "empty", "whitespace_only":
 				assert.ErrIs(t, err, tt.wantErr)
@@ -118,8 +99,8 @@ func TestParse_Faulty(t *testing.T) {
 
 func TestParse_SystemInit_Spot(t *testing.T) {
 	t.Parallel()
-	lines := readLines(t, filepath.Join("testdata", "sample.jsonl"))
-	v, err := Parse(lines[0])
+	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
+	v, err := Parse([]byte(lines[0]))
 	assert.NotErr(t, err)
 
 	init, ok := v.(*SystemInit)
@@ -133,9 +114,9 @@ func TestParse_SystemInit_Spot(t *testing.T) {
 
 func TestParse_Assistant_ToolUse_Spot(t *testing.T) {
 	t.Parallel()
-	lines := readLines(t, filepath.Join("testdata", "sample.jsonl"))
+	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
 	// Line 3 (index 2) is the assistant/tool_use fixture.
-	v, err := Parse(lines[2])
+	v, err := Parse([]byte(lines[2]))
 	assert.NotErr(t, err)
 
 	a, ok := v.(*Assistant)
@@ -149,8 +130,8 @@ func TestParse_Assistant_ToolUse_Spot(t *testing.T) {
 
 func TestParse_Raw_PreservesUnmodelled(t *testing.T) {
 	t.Parallel()
-	lines := readLines(t, filepath.Join("testdata", "sample.jsonl"))
-	v, err := Parse(lines[0])
+	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
+	v, err := Parse([]byte(lines[0]))
 	assert.NotErr(t, err)
 
 	init, ok := v.(*SystemInit)
