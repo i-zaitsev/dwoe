@@ -4,30 +4,10 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/dwoe/internal/state"
 )
-
-type workspace struct {
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	Status       string            `json:"status"`
-	ExitCode     *int              `json:"exit_code,omitempty"`
-	ErrorMsg     string            `json:"error_msg,omitempty"`
-	BasePath     string            `json:"base_path"`
-	ContainerIDs map[string]string `json:"container_ids,omitempty"`
-	NetworkID    string            `json:"network_id,omitempty"`
-	CreatedAt    *time.Time        `json:"created_at,omitempty"`
-	StartedAt    *time.Time        `json:"started_at,omitempty"`
-	FinishedAt   *time.Time        `json:"finished_at,omitempty"`
-	ParentID     string            `json:"parent_id,omitempty"`
-}
-
-type stateFile struct {
-	Version    int                   `json:"version"`
-	Workspaces map[string]*workspace `json:"workspaces"`
-}
 
 func TestState_migratesV1(t *testing.T) {
 	t.Parallel()
@@ -39,7 +19,7 @@ func TestState_migratesV1(t *testing.T) {
 	assert.NotErr(t, err)
 	assert.Equal(t, count, 1)
 
-	var f stateFile
+	var f state.File
 	assert.NotErr(t, json.Unmarshal(out, &f))
 	assert.Equal(t, f.Version, 2)
 
