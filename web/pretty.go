@@ -23,7 +23,8 @@ func shouldExpand(first, full string) bool {
 }
 
 // prettyRow is the data passed to the pretty-row and pretty-row-expand templates.
-// An empty Pretty selects the plain row. Open preopens the details element.
+// An empty Pretty selects the plain row.
+// Open keeps the details element opened.
 type prettyRow struct {
 	Time      string
 	Kind      string
@@ -33,10 +34,17 @@ type prettyRow struct {
 	Open      bool
 }
 
+// expandIfRequired stores the escaped full text as the expandable body when
+// it spans more than the previewed first line or exceeds the length threshold.
+func (p *prettyRow) expandIfRequired(text string) {
+	if shouldExpand(firstLine(text), strings.TrimSpace(text)) {
+		p.Pretty = template.HTML(html.EscapeString(text))
+	}
+}
+
 // logLine is implemented by every per-kind renderer.
-// rows returns the prettyRow values a single JSONL event produces.
 type logLine interface {
-	rows() []prettyRow
+	rows() []prettyRow // returns the prettyRow values a single JSONL event produces
 }
 
 func renderPrettyLogLine(text string) string {
@@ -262,19 +270,15 @@ func (l *assistantLine) rows() []prettyRow {
 		switch block.Type {
 		case "text":
 			first := firstLine(block.Text)
-			full := strings.TrimSpace(block.Text)
 			row := prettyRow{
 				Time:      tm,
 				Kind:      "ast·txt",
 				KindClass: "ast",
 				Body:      template.HTML(html.EscapeString(first)),
 			}
-			if shouldExpand(first, full) {
-				row.Pretty = template.HTML(html.EscapeString(block.Text))
-			}
+			row.expandIfRequired(block.Text)
 			rows = append(rows, row)
 		case "thinking":
-			full := strings.TrimSpace(block.Thinking)
 			first := firstLine(block.Thinking)
 			row := prettyRow{
 				Time:      tm,
@@ -282,9 +286,7 @@ func (l *assistantLine) rows() []prettyRow {
 				KindClass: "think",
 				Body:      template.HTML(html.EscapeString(first)),
 			}
-			if shouldExpand(first, full) {
-				row.Pretty = template.HTML(html.EscapeString(block.Thinking))
-			}
+			row.expandIfRequired(block.Thinking)
 			rows = append(rows, row)
 		case "tool_use":
 			body := executeTemplate("body-tool-use", struct {
@@ -340,7 +342,6 @@ func (l *userLine) rows() []prettyRow {
 			continue
 		}
 		txt := toolResultText(block.Content)
-		full := strings.TrimSpace(txt)
 		first := firstLine(txt)
 		if block.IsError {
 			row := prettyRow{
@@ -348,11 +349,9 @@ func (l *userLine) rows() []prettyRow {
 				Kind:      "err",
 				KindClass: "err",
 				Body:      executeTemplate("body-err", struct{ Text string }{first}),
+				Open:      true,
 			}
-			if shouldExpand(first, full) {
-				row.Pretty = template.HTML(html.EscapeString(txt))
-				row.Open = true
-			}
+			row.expandIfRequired(txt)
 			rows = append(rows, row)
 			continue
 		}
@@ -362,9 +361,7 @@ func (l *userLine) rows() []prettyRow {
 			KindClass: "stdout",
 			Body:      executeTemplate("body-stdout", struct{ Text string }{first}),
 		}
-		if shouldExpand(first, full) {
-			row.Pretty = template.HTML(html.EscapeString(txt))
-		}
+		row.expandIfRequired(txt)
 		rows = append(rows, row)
 	}
 	return rows
