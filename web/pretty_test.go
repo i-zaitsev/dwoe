@@ -5,11 +5,9 @@
 package web
 
 import (
-	"bufio"
 	"context"
 	"io"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,6 +15,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
@@ -173,20 +172,12 @@ func TestRenderPrettyLogLine_AssistantLongText(t *testing.T) {
 func TestRenderPrettyLogLine_SampleJSONL(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join("..", "schema", "testdata", "sample.jsonl")
-	f, err := os.Open(path)
-	assert.NotErr(t, err)
-	defer f.Close()
-
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
-	lines := 0
-	for sc.Scan() {
-		got := renderPrettyLogLine(sc.Text())
+	lines := testutil.ReadLines(t, path)
+	for _, line := range lines {
+		got := renderPrettyLogLine(line)
 		assert.NotZero(t, len(got))
-		lines++
 	}
-	assert.NotErr(t, sc.Err())
-	assert.NotZero(t, lines)
+	assert.NotZero(t, len(lines))
 }
 
 func TestNewLineMatcher(t *testing.T) {
