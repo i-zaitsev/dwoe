@@ -34,6 +34,14 @@ func ParseFlags(cmd Command, args []string, register func(*flag.FlagSet)) (*flag
 	return fs, nil
 }
 
+// RequiredArg returns the first positional argument or a command-scoped missing-argument error.
+func RequiredArg(cmd Command, fs *flag.FlagSet, name string) (string, error) {
+	if fs.NArg() == 0 {
+		return "", CmdErr(cmd, "%w", &ArgMissingError{Name: name})
+	}
+	return fs.Arg(0), nil
+}
+
 // ScanLogs reads logs from a worker.
 // The function expects a generic io.ReadCloser and sends the collected logs
 // to the lines channel. The internal buffer in bufio.Scanner is limited to 1 mb.
