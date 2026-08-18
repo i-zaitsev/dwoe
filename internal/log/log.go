@@ -72,17 +72,15 @@ func Setup(opts *Opts) {
 	if w == nil {
 		w = os.Stderr
 	}
-	hOpts := &slog.HandlerOptions{
-		Level:       opts.Level,
-		AddSource:   true,
-		ReplaceAttr: useRelativeSourcePath(opts.SourceRoot),
-	}
 	var h slog.Handler
-	switch opts.Format {
-	case FormatText:
-		h = slog.NewTextHandler(w, hOpts)
-	default:
-		h = slog.NewJSONHandler(w, hOpts)
+	if opts.Format == FormatText {
+		h = NewPrettyHandler(w, opts.Level, opts.SourceRoot)
+	} else { // FormatJSON
+		h = slog.NewJSONHandler(w, &slog.HandlerOptions{
+			Level:       opts.Level,
+			AddSource:   true,
+			ReplaceAttr: useRelativeSourcePath(opts.SourceRoot),
+		})
 	}
 	slog.SetDefault(slog.New(h))
 }
