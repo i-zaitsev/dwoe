@@ -1,0 +1,18 @@
+# dwoe-agent:python adds Python and the uv package manager to the shared agent base.
+#
+# Build:
+# make image-python
+#
+FROM dwoe-base:latest
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && mv /root/.local/bin/uv /usr/local/bin/uv
+
+USER agent
+WORKDIR /workspace

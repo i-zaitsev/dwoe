@@ -1,6 +1,10 @@
 # A trivial proxy image for workers.
+#
 # Each worker is (by default) runs with a proxy container using Squid.
-# Build: docker build -f docker/Dockerfile.proxy -t dwoe-agent:proxy docker/
+#
+# Build:
+# make image-proxy
+#
 FROM alpine:3.21
 RUN apk add --no-cache squid
 ENTRYPOINT ["squid", "-NYC", "-f", "/etc/squid/squid.conf"]

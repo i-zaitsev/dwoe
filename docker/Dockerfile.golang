@@ -1,0 +1,21 @@
+# dwoe-agent:go adds the Go toolchain to the shared agent base.
+#
+# Named .golang rather than .go to avoid Go toolchain treating it as a source file.
+#
+# Build:
+# make image-go
+#
+FROM dwoe-base:latest
+
+# The Go toolchain is self-contained, so it is copied from the official image
+# instead of using the distro package, which lags behind.
+COPY --from=golang:1.25-bookworm /usr/local/go /usr/local/go
+
+ENV PATH="/usr/local/go/bin:/home/agent/.local/bin:${PATH}"
+ENV GOPATH="/home/agent/go"
+
+USER root
+RUN mkdir -p ${GOPATH} && chown -R agent:agent ${GOPATH}
+USER agent
+
+WORKDIR /workspace
