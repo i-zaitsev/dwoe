@@ -6,7 +6,6 @@
 package config
 
 const (
-	DefaultModel      = "claude-opus-4-7"
 	DefaultMaxTurns   = 200
 	DefaultCPUs       = "4"
 	DefaultMemory     = "8G"
@@ -27,7 +26,6 @@ var DefaultAllowList = []string{
 	".githubusercontent.com",
 	".github.com",
 	"developer.mozilla.org",
-	".anthropic.com",
 	".conan.io",
 	".vcpkg.io",
 	"apt.llvm.org",

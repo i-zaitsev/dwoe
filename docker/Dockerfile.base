@@ -1,6 +1,14 @@
-# dwoe-agent:latest is the universal image with Go, Python/UV, and Claude Code.
-# Build: docker build -f docker/Dockerfile.base -t dwoe-agent:latest docker/
-FROM debian:bookworm-slim
+# dwoe-base:latest
+#
+# Carries both Anthropic and OpenAI agent CLIs.
+# The images are provider-agnostic: the same image runs Claude Code or Codex depending on AGENT_PROVIDER.
+# Language images add their toolchain on top of this one.
+# Trixie is used for its modern GCC.
+#
+# Build:
+# docker build -f docker/Dockerfile.base -t dwoe-base:latest docker/
+#
+FROM debian:trixie-slim
 
 ARG USER_ID=9999
 ARG GROUP_ID=9999
@@ -10,14 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     jq \
-    golang-go \
-    python3 \
-    python3-venv \
     && rm -rf /var/lib/apt/lists/*
-
-# Install UV (Python package manager)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && mv /root/.local/bin/uv /usr/local/bin/uv
 
 RUN groupadd -g ${GROUP_ID} agent && \
     useradd -m -u ${USER_ID} -g agent -s /bin/bash agent
@@ -28,10 +29,15 @@ RUN mkdir -p /workspace /logs && \
 USER agent
 WORKDIR /workspace
 
-RUN curl -fsSL https://claude.ai/install.sh | bash
 ENV PATH="/home/agent/.local/bin:${PATH}"
 
-RUN mkdir -p /home/agent/.claude
+# Claude Code CLI
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# OpenAI Codex CLI (standalone binary, no Node required)
+RUN curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh
+
+RUN mkdir -p /home/agent/.claude /home/agent/.codex
 
 COPY entrypoint.sh /entrypoint.sh
 

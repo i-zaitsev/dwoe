@@ -61,13 +61,16 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	ctx := e.Context()
 
 	slog.Debug("run: loading config", "path", c.taskPath)
-	taskCfg, err := config.LoadMergedConfig(c.taskPath, e.DataDir())
+	global, err := config.LoadGlobalConfig(e.DataDir())
+	if err != nil {
+		return cli.CmdErr(c, "load global config: %w", err)
+	}
+	taskCfg, err := config.LoadTaskConfig(c.taskPath, global,
+		config.WithFallbackSourceDir(e.SourceDir()),
+		config.WithModel(e.Model()),
+	)
 	if err != nil {
 		return cli.CmdErr(c, "load config: %w", err)
-	}
-	taskCfg.FallbackSource(e.SourceDir())
-	if e.Model() != "" && taskCfg.Agent.Model == "" {
-		taskCfg.Agent.Model = e.Model()
 	}
 	applyTaskOverrides(e, taskCfg, c.name)
 

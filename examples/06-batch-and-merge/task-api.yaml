@@ -3,7 +3,7 @@ source:
   prompt_file: ./prompts/api.md
 agent:
   image: dwoe-agent:go
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   max_turns: 10
   env_vars:
     CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN}

@@ -9,16 +9,20 @@ Each example demonstrates a different way to use `dwoe`.
 * Agent image built from `docker/` (or any custom image with compatible entrypoint):
 
 ```bash
-docker build -f docker/Dockerfile.base -t dwoe-agent:latest docker/
-docker build -f docker/Dockerfile.claude-go -t dwoe-agent:go docker/
-docker build -f docker/Dockerfile.claude-python -t dwoe-agent:python docker/
-docker build -f docker/Dockerfile.proxy -t dwoe-proxy:latest docker/
+make images
 ```
 
 * Setting up the token in the shell before running agents:
 
 ```bash
 export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
+```
+
+The OpenAI Codex example (`09-codex/`) uses the same images and only needs an
+OpenAI key, since every agent image ships both agent CLIs:
+
+```bash
+export OPENAI_API_KEY=sk-...
 ```
 
 ## Usage Examples
@@ -32,6 +36,7 @@ export CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
 | 5 | `05-collect-patches/` | `dwoe patches`             | Export agent commits as patch files             |
 | 6 | `06-batch-and-merge/` | `dwoe batch` + `fire --do` | Full workflow: parallel tasks → patches → merge |
 | 7 | `07-custom-prompt/`   | `dwoe run`                 | Custom agent prompt and no-proxy mode           |
+| 9 | `09-codex/`           | `dwoe run`                 | OpenAI Codex provider on a shared agent image   |
 
 ## Workspace Layout
 

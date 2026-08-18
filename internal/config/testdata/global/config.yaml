@@ -1,7 +1,6 @@
-defaults:
-  resources:
-    cpu: "16"
-    memory: "32G"
+resources:
+  cpu: "16"
+  memory: "32G"
 git:
   user_name: "Global User"
   user_email: "global@test.com"

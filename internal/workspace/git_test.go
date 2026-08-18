@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
@@ -22,6 +23,7 @@ func TestMain(m *testing.M) {
 		_, _ = fmt.Fprintf(os.Stderr, "git unavailable: %v\n", err)
 		os.Exit(1)
 	}
+	provider.RegisterDefaultProviders()
 	os.Exit(m.Run())
 }
 

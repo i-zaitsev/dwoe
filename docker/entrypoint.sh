@@ -18,6 +18,37 @@ if [ ! -d ".git" ]; then
     git commit -m "Initial commit" || true
 fi
 
+# Run the agent for the configured provider. The Claude path is unchanged;
+# other providers add a branch here. Credentials and endpoints arrive via env.
+run_agent() {
+    case "${AGENT_PROVIDER:-anthropic}" in
+        anthropic)
+            claude -p "$task_prompt" \
+                --model "${CLAUDE_MODEL}" \
+                --max-turns "${MAX_TURNS}" \
+                --output-format stream-json \
+                --verbose
+            ;;
+        openai)
+            # codex exec authenticates with CODEX_API_KEY only. Accept the more
+            # familiar OPENAI_API_KEY as a fallback so either one works.
+            export CODEX_API_KEY="${CODEX_API_KEY:-${OPENAI_API_KEY:-}}"
+            if [ -z "${CODEX_API_KEY}" ]; then
+                log "no CODEX_API_KEY or OPENAI_API_KEY in the environment"
+            fi
+            codex exec "$task_prompt" \
+                --model "${AGENT_MODEL}" \
+                --skip-git-repo-check \
+                --dangerously-bypass-approvals-and-sandbox \
+                --json
+            ;;
+        *)
+            log "unknown AGENT_PROVIDER: ${AGENT_PROVIDER}"
+            return 64
+            ;;
+    esac
+}
+
 # Run the agent. On success (exit 0), the container exits.
 # On failure, retry with exponential backoff:
 # 16s, 32s, 64s, 128s, 256s, 512s, 1024s (cap ~17 min).
@@ -32,11 +63,7 @@ while true; do
     log "Agent run #${attempt}"
 
     set +e
-    claude -p "$task_prompt" \
-        --model "${CLAUDE_MODEL}" \
-        --max-turns "${MAX_TURNS}" \
-        --output-format stream-json \
-        --verbose
+    run_agent
     exit_code=$?
     set -e
 

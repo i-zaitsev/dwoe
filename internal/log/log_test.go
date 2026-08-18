@@ -31,7 +31,7 @@ func TestSetup_DefaultLevel(t *testing.T) {
 	if strings.Contains(out, "hidden") {
 		t.Error("Debug message should not appear at Info level")
 	}
-	assert.Contains(t, out, "source=")
+	assert.Contains(t, out, "[INF]")
 }
 
 func TestSetup_VerboseLevel(t *testing.T) {

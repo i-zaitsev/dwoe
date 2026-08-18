@@ -59,7 +59,7 @@ func TestResolvePromptContent(t *testing.T) {
 			ws := workspace.New(
 				state.EmptyWorkspace("test-id", "test-ws"),
 				&config.Task{
-					Agent:  config.Agent{TaskPrompt: tt.taskPrompt},
+					Agent:  &config.Agent{TaskPrompt: tt.taskPrompt},
 					Source: config.Source{PromptFile: tt.promptFile},
 				},
 			)

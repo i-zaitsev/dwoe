@@ -186,7 +186,7 @@ func buildUsage() string {
 	buf.WriteString("\t--datadir <dir>     Data directory (default: ~/.dwoe)\n")
 	buf.WriteString("\t--logfile <path>    Write JSON logs to file\n")
 	buf.WriteString("\t--loglevel <level>  Log level: debug, info, warn, error (default: warn)\n")
-	buf.WriteString("\t--logfmt <format>   Log format: text, json (default: json)\n")
+	buf.WriteString("\t--logfmt <format>   Log format: text, json (default)\n")
 	buf.WriteString("\t--sourcedir <path>  Default source directory for tasks\n")
 	buf.WriteString("\t--model <model>     Default model for tasks\n")
 	buf.WriteString("\t--taskname <name>   Override workspace name\n")

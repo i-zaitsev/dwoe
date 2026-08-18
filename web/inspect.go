@@ -20,6 +20,7 @@ import (
 type workspaceInfo struct {
 	ID            string
 	Name          string
+	Description   string
 	Status        string
 	Exit          string
 	Model         string
@@ -114,7 +115,10 @@ func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
 		FinishedAt: ws.FinishedAt,
 	}
 	if ws.Config != nil {
-		info.Model = ws.Config.Agent.Model
+		info.Description = ws.Config.Description
+		if ws.Config.Agent != nil {
+			info.Model = ws.Config.Agent.Provider.Model
+		}
 		if data, err := yaml.Marshal(ws.Config); err == nil {
 			info.TaskConfig = string(data)
 		} else {
@@ -128,11 +132,9 @@ func toWorkspaceInfo(ws *workspace.Workspace) workspaceInfo {
 // It prefers the inline TaskPrompt field; when empty, reads the prompt file.
 // Absolute paths and path traversal are rejected to keep reads scoped to the workspace.
 func resolvePromptContent(ws *workspace.Workspace) string {
-
-	strPrompt := ws.Config.Agent.TaskPrompt
-	if strPrompt != "" {
+	if ws.Config.Agent != nil && ws.Config.Agent.TaskPrompt != "" {
 		// prompt was provided as an inline string argument to the task running command
-		return strPrompt
+		return ws.Config.Agent.TaskPrompt
 	}
 
 	// otherwise, the prompt comes from a workspace file

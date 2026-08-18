@@ -303,7 +303,7 @@ func (m *Manager) Refine(parentNameOrID, prompt, explicitName string) (*Workspac
 }
 
 // Get loads a workspace by ID, reading both its persisted state and config.
-// Defaults are applied to the config before returning.
+// Missing config sections are filled with defaults before returning.
 func (m *Manager) Get(id string) (*Workspace, error) {
 	slog.Debug("workspace: get", "id", id)
 	ws, err := m.state.Load(id)
@@ -314,7 +314,6 @@ func (m *Manager) Get(id string) (*Workspace, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
-	cfgTask.ApplyDefaults()
 	return &Workspace{
 		Workspace: ws,
 		Config:    cfgTask,
@@ -981,8 +980,11 @@ func newManager(dataDir string, cli DockerClient, state StateStore) (*Manager, e
 
 // parseResources converts string-based CPU and memory limits from the task config
 // into the numeric types expected by the Docker API. Invalid values are silently ignored.
-func parseResources(cfg config.Resources) docker.Resources {
+func parseResources(cfg *config.Resources) docker.Resources {
 	var res docker.Resources
+	if cfg == nil {
+		return res
+	}
 	if cfg.CPU != "" {
 		cpus, err := strconv.ParseFloat(cfg.CPU, 64)
 		if err != nil {
@@ -1011,7 +1013,8 @@ func storeConfig(basePath string, cfg *config.Task) error {
 	return os.WriteFile(filepath.Join(basePath, "config.yaml"), data, 0o644)
 }
 
-// loadConfig reads and unmarshals the task config from the workspace's config.yaml.
+// loadConfig reads the task config from the workspace's config.yaml and fills the
+// gaps with defaults, so every caller gets a task with all sections populated.
 func loadConfig(basePath string) (*config.Task, error) {
 	data, err := os.ReadFile(filepath.Join(basePath, "config.yaml"))
 	if err != nil {
@@ -1021,7 +1024,7 @@ func loadConfig(basePath string) (*config.Task, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
-	return &cfg, nil
+	return config.NewTaskFrom(&cfg, config.NewGlobal()), nil
 }
 
 func markedAsDone(basePath string) bool {

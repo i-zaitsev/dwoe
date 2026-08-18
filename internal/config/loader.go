@@ -19,28 +19,21 @@ import (
 
 var ErrConfigExists = errors.New("config already exists")
 
-// LoadTaskConfig loads a task configuration from a YAML file at the given path.
-// It parses the file, resolves relative paths against the task file's directory,
-// and validates the configuration. Returns an error if the file cannot be read,
-// parsed, or if validation fails.
-func LoadTaskConfig(path string) (*Task, error) {
-	slog.Info("config: load-task", "path", path)
+// LoadTaskConfig reads a task file.
+//
+// It fills gaps from global settings and defaults and returns a ready-to-use task.
+// Relative source paths are resolved against the task file's directory. Any referenced allowlist file is merged in.
+// Caller options are applied after the file and global values but before defaults and take precedence over both.
+func LoadTaskConfig(taskPath string, g *Global, opts ...TaskOpt) (*Task, error) {
+	slog.Info("config: load-task", "path", taskPath)
 
-	f, err := os.Open(path)
+	parsed, err := decodeTaskFile(taskPath)
 	if err != nil {
-		return nil, fmt.Errorf("open file: %s: %w", path, err)
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-
-	decoder := yaml.NewDecoder(f)
-	var task Task
-	if errDec := decoder.Decode(&task); errDec != nil {
-		return nil, fmt.Errorf("decode YAML: %w", errDec)
+		return nil, err
 	}
 
-	task.ResolvePaths(filepath.Dir(path))
+	task := NewTaskFrom(parsed, g, opts...)
+	task.ResolvePaths(filepath.Dir(taskPath))
 
 	if task.Network.AllowListFile != "" {
 		slog.Debug("config: load-task", "allowlist", task.Network.AllowListFile)
@@ -51,6 +44,23 @@ func LoadTaskConfig(path string) (*Task, error) {
 		task.Network.Proxy.AllowList = append(task.Network.Proxy.AllowList, extra...)
 	}
 
+	return task, nil
+}
+
+// decodeTaskFile reads and YAML-decodes a task file without applying any defaults.
+func decodeTaskFile(taskPath string) (*Task, error) {
+	f, err := os.Open(taskPath)
+	if err != nil {
+		return nil, fmt.Errorf("open file: %s: %w", taskPath, err)
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	var task Task
+	if errDec := yaml.NewDecoder(f).Decode(&task); errDec != nil {
+		return nil, fmt.Errorf("decode YAML: %w", errDec)
+	}
 	return &task, nil
 }
 
@@ -65,7 +75,7 @@ func LoadGlobalConfig(dataDir string) (*Global, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			slog.Debug("config: load-global", "message", "config file not found, using defaults")
-			return GlobalWithDefaults(), nil
+			return NewGlobal(), nil
 		}
 		return nil, fmt.Errorf("cannot open global config %s: %w", configPath, err)
 	}
@@ -81,42 +91,6 @@ func LoadGlobalConfig(dataDir string) (*Global, error) {
 	}
 
 	return &global, nil
-}
-
-// LoadMergedConfig loads a task configuration and merges it with global defaults.
-// Global config values are applied only where the task config has no value set.
-// After merging, ApplyDefaults is called to fill any remaining empty fields.
-func LoadMergedConfig(taskPath, dataDir string) (*Task, error) {
-	slog.Info("config: load-merged", "task", taskPath, "datadir", dataDir)
-	var err error
-
-	global, err := LoadGlobalConfig(dataDir)
-	if err != nil {
-		return nil, fmt.Errorf("cannot load global config: %w", err)
-	}
-
-	task, err := LoadTaskConfig(taskPath)
-	if err != nil {
-		return nil, fmt.Errorf("cannot load task config: %w", err)
-	}
-
-	slog.Debug("config: load-merged", "message", "merging task config with global defaults")
-	MergeWithGlobal(task, global)
-	task.ApplyDefaults()
-
-	return task, nil
-}
-
-// MergeWithGlobal merges task configuration with global defaults.
-func MergeWithGlobal(task *Task, global *Global) {
-	task.Agent.Model = ifZero(task.Agent.Model, global.Defaults.Agent.Model)
-	task.Agent.MaxTurns = ifZero(task.Agent.MaxTurns, global.Defaults.Agent.MaxTurns)
-	task.Resources.CPU = ifZero(task.Resources.CPU, global.Defaults.Resources.CPU)
-	task.Resources.Memory = ifZero(task.Resources.Memory, global.Defaults.Resources.Memory)
-	task.Git.Name = ifZero(task.Git.Name, global.GitUser.Name)
-	task.Git.Email = ifZero(task.Git.Email, global.GitUser.Email)
-	task.Network.Proxy.Port = ifZero(task.Network.Proxy.Port, global.Proxy.Port)
-	task.Network.Proxy.AllowList = ifEmpty(task.Network.Proxy.AllowList, global.Proxy.AllowList)
 }
 
 // SaveGlobalConfig writes the global configuration to config.yaml in the given data directory.
@@ -182,10 +156,10 @@ func InitConfig(dataDir string) (string, error) {
 	if _, err := os.Stat(configPath); err == nil {
 		return configPath, ErrConfigExists
 	}
-	cfg := GlobalWithDefaults()
+	cfg := NewGlobal()
 	name, email := gitGlobalIdentity()
-	cfg.GitUser.Name = name
-	cfg.GitUser.Email = email
+	cfg.Git.Name = name
+	cfg.Git.Email = email
 	if err := SaveGlobalConfig(dataDir, cfg); err != nil {
 		return configPath, err
 	}
@@ -196,22 +170,4 @@ func gitGlobalIdentity() (string, string) {
 	name, _ := exec.Command("git", "config", "--global", "user.name").Output()
 	email, _ := exec.Command("git", "config", "--global", "user.email").Output()
 	return strings.TrimSpace(string(name)), strings.TrimSpace(string(email))
-}
-
-// ifZero returns val if it is not zero, otherwise it returns fallback.
-func ifZero[T comparable](val, fallback T) T {
-	var zero T
-	if val == zero {
-		return fallback
-	}
-	return val
-}
-
-// ifEmpty returns val if it is not empty, otherwise it returns fallback.
-// Works with slices and maps.
-func ifEmpty[S ~[]T, T any](val, fallback S) S {
-	if len(val) == 0 {
-		return fallback
-	}
-	return val
 }

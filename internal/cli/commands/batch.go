@@ -40,7 +40,7 @@ type cmdBatch struct {
 // Test code creates cmdBatch directly to replace the real functionality with mocks.
 func newCmdBatch() *cmdBatch {
 	return &cmdBatch{
-		loadConfig: config.LoadMergedConfig,
+		loadConfig: loadTaskConfig,
 		ensureRepo: workspace.EnsureRepoReady,
 	}
 }
@@ -127,10 +127,12 @@ func (c *cmdBatch) resolveBatchRepo(taskFiles []string, dataDir, sourceDir strin
 		if err != nil {
 			return "", cli.CmdErr(c, "task file %s: %w", taskFile, err)
 		}
-		cfg.FallbackSource(sourceDir)
+		cfg.EnsureSource(sourceDir)
 		taskRepoPath := cfg.Source.LocalPath
-		gitUser.Name = cfg.Git.Name
-		gitUser.Email = cfg.Git.Email
+		if cfg.Git != nil {
+			gitUser.Name = cfg.Git.Name
+			gitUser.Email = cfg.Git.Email
+		}
 		if repoPath == "" {
 			repoPath = taskRepoPath
 		} else if repoPath != taskRepoPath {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/cli/commands"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
@@ -25,6 +26,7 @@ func run() int {
 
 	defer stop()
 
+	provider.RegisterDefaultProviders()
 	cli.RegisterCommands(commands.Registry())
 	env := cli.NewEnv(os.Stdout, os.Stderr)
 	env.SetContext(ctx)

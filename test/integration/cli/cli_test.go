@@ -77,7 +77,7 @@ func TestCLI_RunAttached(t *testing.T) {
 	taskFile := writeTaskYAML(t, t.TempDir(), "run-attached", basicImage, t.TempDir())
 	out := runCLI(t, cliArgs(dataDir, "run", taskFile)...)
 
-	assert.ContainsAll(t, out, "Started workspace:", "test ok", "completed", "exit code 0")
+	assert.ContainsAll(t, out, "Workspace started:", "test ok", "completed", "exit code 0")
 }
 
 // Exercises the full workspace lifecycle through individual CLI commands:
@@ -90,7 +90,7 @@ func TestCLI_CreateStartStopDestroy(t *testing.T) {
 	taskFile := writeTaskYAML(t, t.TempDir(), "lifecycle", basicImage, t.TempDir())
 
 	out := runCLI(t, cliArgs(dataDir, "create", taskFile)...)
-	assert.ContainsAll(t, out, "Created workspace:", "Status: pending")
+	assert.ContainsAll(t, out, "Workspace created:", "Status: pending")
 	id := parseID(t, out)
 
 	out = runCLI(t, cliArgs(dataDir, "start", id)...)

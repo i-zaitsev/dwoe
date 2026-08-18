@@ -5,10 +5,22 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
+
+// loadTaskConfig reads the global config from dataDir and uses it to fill the gaps
+// in the task configuration read from taskPath.
+func loadTaskConfig(taskPath, dataDir string) (*config.Task, error) {
+	global, err := config.LoadGlobalConfig(dataDir)
+	if err != nil {
+		return nil, fmt.Errorf("load global config: %w", err)
+	}
+	return config.LoadTaskConfig(taskPath, global)
+}
 
 // resolveWorkspace creates a manager from the env and resolves the named workspace,
 // returning an error if either step fails.

@@ -1,0 +1,14 @@
+name: codex-hello
+source:
+  local_path: ./repo
+  prompt_file: ./prompt.md
+agent:
+  provider: openai
+  image: dwoe-agent:python
+  model: gpt-5.6-terra
+git:
+  user_name: "dwoe-agent"
+  user_email: "agent@dwoe.dev"
+resources:
+  cpu: "2"
+  memory: "4G"

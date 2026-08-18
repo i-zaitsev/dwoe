@@ -1,0 +1,36 @@
+# dwoe-agent:latest is the universal image: every toolchain in one place.
+#
+# It is the default image used when a task does not set agent.image, and it runs
+# any provider. Prefer a language image when a smaller container is enough.
+#
+# Build:
+# make image-universal
+#
+FROM dwoe-base:latest
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-venv \
+    gcc \
+    g++ \
+    libc6-dev \
+    make \
+    cmake \
+    pkg-config \
+    gdb \
+    valgrind \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && mv /root/.local/bin/uv /usr/local/bin/uv
+
+COPY --from=golang:1.25-bookworm /usr/local/go /usr/local/go
+
+ENV PATH="/usr/local/go/bin:/home/agent/.local/bin:${PATH}"
+ENV GOPATH="/home/agent/go"
+
+RUN mkdir -p ${GOPATH} && chown -R agent:agent ${GOPATH}
+
+USER agent
+WORKDIR /workspace

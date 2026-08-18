@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/template"
@@ -49,7 +50,7 @@ func (ws *Workspace) TemplateData() *template.Data {
 	return &template.Data{
 		WorkspaceID:    ws.ID,
 		WorkspaceName:  ws.Name,
-		Model:          ws.Config.Agent.Model,
+		Model:          ws.Config.Agent.Provider.Model,
 		MaxTurns:       ws.Config.Agent.MaxTurns,
 		ProxyIP:        ws.Config.Network.Gateway,
 		ProxyPort:      proxyPort(ws.Config.Network.Proxy),
@@ -67,10 +68,13 @@ type envPair struct {
 
 // Env returns the environment variables for the agent container.
 func (ws *Workspace) Env() []string {
+	p := ws.provider()
 	pairs := []envPair{
 		{"WORKSPACE_ID", ws.ID},
 		{"WORKSPACE_NAME", ws.Name},
-		{"CLAUDE_MODEL", ws.Config.Agent.Model},
+		{"AGENT_PROVIDER", p.Name.String()},
+		{"AGENT_MODEL", p.Model},
+		{"CLAUDE_MODEL", p.Model},
 		{"MAX_TURNS", strconv.Itoa(ws.Config.Agent.MaxTurns)},
 		{"GIT_USER_NAME", ws.Config.Git.Name},
 		{"GIT_USER_EMAIL", ws.Config.Git.Email},
@@ -82,6 +86,7 @@ func (ws *Workspace) Env() []string {
 		url := ws.proxyURL()
 		pairs = append(pairs, envPair{"HTTP_PROXY", url}, envPair{"HTTPS_PROXY", url})
 	}
+	pairs = append(pairs, providerAuthEnv(p)...)
 	for k, v := range ws.Config.Agent.EnvVars {
 		expanded := os.ExpandEnv(v)
 		if expanded == "" && strings.Contains(v, "$") {
@@ -90,6 +95,24 @@ func (ws *Workspace) Env() []string {
 		pairs = append(pairs, envPair{k, expanded})
 	}
 	return formatEnv(pairs)
+}
+
+// provider returns the task's resolved provider. The config snapshot is already
+// resolved at creation time, so no registry lookup is needed here.
+func (ws *Workspace) provider() provider.Provider {
+	return ws.Config.Agent.Provider
+}
+
+// providerAuthEnv passes the provider's credentials through from the host.
+// Each AuthEnvVars entry present in the host environment is forwarded as-is.
+func providerAuthEnv(p provider.Provider) []envPair {
+	var pairs []envPair
+	for _, key := range p.AuthEnvVars {
+		if val := os.Getenv(key); val != "" {
+			pairs = append(pairs, envPair{key, val})
+		}
+	}
+	return pairs
 }
 
 func (ws *Workspace) taskPrompt() string {
@@ -127,10 +150,18 @@ func formatEnv(pairs []envPair) []string {
 }
 
 // Mounts returns the volume mounts for the agent container.
+// The settings.json mount is Claude-specific; other providers do not use it.
 func (ws *Workspace) Mounts() []docker.Mount {
-	return []docker.Mount{
+	mounts := []docker.Mount{
 		{Source: filepath.Join(ws.BasePath, "workspace"), Target: "/workspace"},
 		{Source: filepath.Join(ws.BasePath, "logs", "agent"), Target: "/logs"},
-		{Source: filepath.Join(ws.BasePath, "settings.json"), Target: "/home/agent/.claude/settings.json", ReadOnly: true},
 	}
+	if ws.provider().Name == provider.ModelProviderAnthropic {
+		mounts = append(mounts, docker.Mount{
+			Source:   filepath.Join(ws.BasePath, "settings.json"),
+			Target:   "/home/agent/.claude/settings.json",
+			ReadOnly: true,
+		})
+	}
+	return mounts
 }
