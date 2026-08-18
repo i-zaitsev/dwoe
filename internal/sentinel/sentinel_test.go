@@ -5,6 +5,7 @@ import (
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
@@ -68,12 +69,12 @@ func TestSentinel_DifferentHash(t *testing.T) {
 		{
 			Name:           "task-1",
 			ContinuePolicy: config.ContinuePolicyResume,
-			Agent:          config.Agent{Model: "model-1"},
+			Agent:          &config.Agent{Provider: provider.Provider{Model: "model-1"}},
 		},
 		{
 			Name:           "task-1",
 			ContinuePolicy: config.ContinuePolicyResume,
-			Agent:          config.Agent{Model: "model-2"},
+			Agent:          &config.Agent{Provider: provider.Provider{Model: "model-2"}},
 			Source:         config.Source{PromptFile: "prompt.md"},
 			Description:    "a different task",
 		},
@@ -125,7 +126,7 @@ func TestSentinel_Match(t *testing.T) {
 
 	assert.Condition(t, sen.Match(&cfg))
 
-	cfg.Agent.Model = "different-model"
+	cfg.Agent = &config.Agent{Provider: provider.Provider{Model: "different-model"}}
 	assert.Condition(t, !sen.Match(&cfg))
 }
 

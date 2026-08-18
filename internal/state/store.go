@@ -66,8 +66,8 @@ func (ws *Workspace) WorkFile(parts ...string) string {
 
 // File is the on-disk JSON structure containing all workspace states.
 type File struct {
-	Version    int                    `json:"version"`
-	Workspaces map[string]*Workspace  `json:"workspaces"`
+	Version    int                   `json:"version"`
+	Workspaces map[string]*Workspace `json:"workspaces"`
 }
 
 const schemaVersion = 2

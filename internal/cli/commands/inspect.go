@@ -5,6 +5,7 @@
 package commands
 
 import (
+	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
@@ -12,6 +13,7 @@ import (
 
 type cmdInspect struct {
 	nameOrID string
+	desc     bool
 }
 
 func (c *cmdInspect) Name() string { return "inspect" }
@@ -19,7 +21,9 @@ func (c *cmdInspect) Desc() string { return "Show detailed workspace info" }
 func (c *cmdInspect) Args() string { return "<name|id>" }
 
 func (c *cmdInspect) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, nil)
+	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
+		fs.BoolVar(&c.desc, "desc", false, "print the task description")
+	})
 	if err != nil {
 		return err
 	}
@@ -51,6 +55,11 @@ func (c *cmdInspect) Run(e *cli.Env) error {
 	e.Print("Created:    %s\n", cli.FmtTime(ws.CreatedAt))
 	e.Print("Started:    %s\n", cli.FmtTime(ws.StartedAt))
 	e.Print("Finished:   %s\n", cli.FmtTime(ws.FinishedAt))
+
+	if c.desc {
+		e.Print("--------------------\n")
+		e.Print("%s\n", ws.Config.Description)
+	}
 
 	return nil
 }

@@ -45,6 +45,13 @@ func TestFireCmd_Parse(t *testing.T) {
 	}
 }
 
+func TestFireCmd_Parse_Provider(t *testing.T) {
+	t.Parallel()
+	cmd := new(cmdFire)
+	assert.NotErr(t, cmd.Parse([]string{"-r", "/tmp/repo", "--provider", "openai"}))
+	assert.Equal(t, cmd.provider, "openai")
+}
+
 func TestFireCmd_Parse_DoAndWorkConflict(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdFire)

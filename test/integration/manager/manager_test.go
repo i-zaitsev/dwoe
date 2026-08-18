@@ -16,6 +16,7 @@ import (
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/log"
 	"github.com/i-zaitsev/dwoe/internal/state"
@@ -41,6 +42,8 @@ func TestMain(m *testing.M) {
 		opts := log.DefaultOpts()
 		opts.Writer = &testLogs
 		log.Setup(opts)
+
+		provider.RegisterDefaultProviders()
 
 		client, err := docker.NewClient()
 		fatal(err)
@@ -134,15 +137,15 @@ func TestManager_DestroyCleanup(t *testing.T) {
 
 func testConfig(t *testing.T) *config.Task {
 	t.Helper()
-	return &config.Task{
+	return config.NewTaskFrom(&config.Task{
 		Name:        "integration-test-task",
 		Description: "Integration test task",
 		Source: config.Source{
 			LocalPath: t.TempDir(),
 		},
-		Agent: config.Agent{
+		Agent: &config.Agent{
+			Provider: provider.Provider{Model: "claude-sonnet-4-6"},
 			Image:    basicImage,
-			Model:    "claude-sonnet-4-6",
 			MaxTurns: 999,
 			EnvVars:  nil,
 			Permissions: []string{
@@ -150,7 +153,7 @@ func testConfig(t *testing.T) *config.Task {
 				"Read(SPEC.md)",
 			},
 		},
-		Git: config.GitUser{
+		Git: &config.GitUser{
 			Name:  "Test User",
 			Email: "test@test.com",
 		},
@@ -164,9 +167,9 @@ func testConfig(t *testing.T) *config.Task {
 			},
 			Name: fmt.Sprintf("inttest-%s", t.Name()),
 		},
-		Resources: config.Resources{
+		Resources: &config.Resources{
 			CPU:    "4",
 			Memory: "8Gi",
 		},
-	}
+	}, config.NewGlobal())
 }

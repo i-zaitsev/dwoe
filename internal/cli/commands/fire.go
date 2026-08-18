@@ -17,15 +17,17 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/batch"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 )
 
 // cmdFire
 type cmdFire struct {
-	repo    string // repository URL or local path
-	work    string // path to a file or directory with instructions (like task.yaml but any format)
-	do      string // inline task prompt (alternative to --work)
-	model   string // quick config: model to use
-	batchID string // optional batch group ID
+	repo     string // repository URL or local path
+	work     string // path to a file or directory with instructions (like task.yaml but any format)
+	do       string // inline task prompt (alternative to --work)
+	model    string // quick config: model to use
+	provider string // agent provider (anthropic, openai)
+	batchID  string // optional batch group ID
 }
 
 func newCmdFire() *cmdFire {
@@ -45,6 +47,7 @@ func (c *cmdFire) Parse(args []string) error {
 		fs.StringVar(&c.do, "do", "", "inline task prompt")
 		fs.StringVar(&c.model, "model", "", "model to use")
 		fs.StringVar(&c.model, "m", "", "model to use")
+		fs.StringVar(&c.provider, "provider", "", "agent provider (anthropic, openai)")
 		fs.StringVar(&c.batchID, "batch", "", "batch group ID")
 		fs.StringVar(&c.batchID, "b", "", "batch group ID")
 	})
@@ -69,53 +72,48 @@ func (c *cmdFire) Run(e *cli.Env) error {
 		return cli.CmdErr(c, "load global config: %w", err)
 	}
 
-	task := &config.Task{
-		Agent: config.Agent{
-			Model: c.model,
-			EnvVars: map[string]string{
-				"CLAUDE_CODE_OAUTH_TOKEN": "${CLAUDE_CODE_OAUTH_TOKEN}",
-			},
+	providerName, err := provider.ParseName(c.provider)
+	if err != nil {
+		return cli.CmdErr(c, "%w", err)
+	}
+
+	seed := &config.Task{
+		Agent: &config.Agent{
+			Provider: provider.Provider{Name: providerName, Model: c.model},
 		},
 	}
 
 	if c.do != "" {
-		task.Agent.TaskPrompt = c.do
+		seed.Agent.TaskPrompt = c.do
 	} else if c.work != "" {
 		promptFile, err := resolveWork(c.work)
 		if err != nil {
 			return cli.CmdErr(c, "%w", err)
 		}
-		task.Source.PromptFile = promptFile
+		seed.Source.PromptFile = promptFile
 	}
 	if isRepoURL(c.repo) {
-		task.Source.Repo = c.repo
-		task.Source.Branch = "main"
+		seed.Source.Repo = c.repo
+		seed.Source.Branch = "main"
 	} else {
 		abs, errAbs := filepath.Abs(c.repo)
 		if errAbs != nil {
 			return cli.CmdErr(c, "resolve repo path: %w", errAbs)
 		}
-		task.Source.LocalPath = abs
+		seed.Source.LocalPath = abs
 	}
 
-	if task.Git.Name == "" || task.Git.Email == "" {
-		name, email := gitIdentity()
-		if task.Git.Name == "" {
-			task.Git.Name = name
-		}
-		if task.Git.Email == "" {
-			task.Git.Email = email
-		}
+	if name, email := gitIdentity(); name != "" || email != "" {
+		seed.Git = &config.GitUser{Name: name, Email: email}
 	}
 
 	if e.NoProxy() {
-		task.NoProxy = true
+		seed.NoProxy = true
 	}
 	if e.TaskName() != "" {
-		task.Name = e.TaskName()
+		seed.Name = e.TaskName()
 	}
-	config.MergeWithGlobal(task, global)
-	task.ApplyDefaults()
+	task := config.NewTaskFrom(seed, global)
 
 	manager, err := e.Manager()
 	if err != nil {

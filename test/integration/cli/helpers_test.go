@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 )
 
@@ -43,7 +44,7 @@ func writeTaskYAML(t *testing.T, dir, name, image, localPath string) string {
 	return testutil.WriteTaskFile(t, filepath.Join(dir, "task.yaml"), &config.Task{
 		Name:    name,
 		Source:  config.Source{LocalPath: localPath},
-		Agent:   config.Agent{Image: image, Model: "test", MaxTurns: 1},
+		Agent:   &config.Agent{Provider: provider.Provider{Model: "test"}, Image: image, MaxTurns: 1},
 		Network: config.Network{Name: "clitest-" + name},
 	})
 }
@@ -53,9 +54,9 @@ func writeBatchTaskYAML(t *testing.T, dir, taskName, image, localPath string) st
 	return testutil.WriteBatchTaskFile(t, dir, &config.Task{
 		Name:    taskName,
 		Source:  config.Source{LocalPath: localPath},
-		Agent:   config.Agent{Image: image, Model: "test", MaxTurns: 1},
+		Agent:   &config.Agent{Provider: provider.Provider{Model: "test"}, Image: image, MaxTurns: 1},
 		Network: config.Network{Name: "clitest-batch-" + taskName},
-		Git:     config.GitUser{Name: "Test", Email: "test@test.dev"},
+		Git:     &config.GitUser{Name: "Test", Email: "test@test.dev"},
 	})
 }
 

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,12 +17,18 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/sentinel"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testfake"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
+
+func TestMain(m *testing.M) {
+	provider.RegisterDefaultProviders()
+	os.Exit(m.Run())
+}
 
 type cmdTestSetup struct {
 	env    *cli.Env
@@ -107,10 +114,10 @@ func createDoneWorkspaceTask(t *testing.T, setup *cmdTestSetup) string {
 	)
 	testutil.WriteFile(t, filepath.Join(ws.BasePath, "config.yaml"), taskYAML)
 
-	sen := sentinel.FromConfig(&config.Task{
+	sen := sentinel.FromConfig(config.NewTaskFrom(&config.Task{
 		Name:   "done-task",
 		Source: config.Source{LocalPath: srcDir},
-	})
+	}, config.NewGlobal()))
 	assert.NotErr(t, sen.Write(ws.BasePath))
 
 	taskFile := filepath.Join(t.TempDir(), "task.yaml")

@@ -9,7 +9,6 @@ import (
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
-	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 )
 
@@ -48,7 +47,7 @@ func (c *cmdCreate) Parse(args []string) error {
 func (c *cmdCreate) Run(e *cli.Env) error {
 	slog.Info("cli: create", "taskPath", c.taskPath, "name", c.name)
 
-	taskCfg, err := config.LoadMergedConfig(c.taskPath, e.DataDir())
+	taskCfg, err := loadTaskConfig(c.taskPath, e.DataDir())
 	if err != nil {
 		return cli.CmdErr(c, "load config: %w", err)
 	}

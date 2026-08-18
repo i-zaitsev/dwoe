@@ -30,14 +30,19 @@ func TestNewManager(t *testing.T) {
 	assert.NotNil(t, ts.manager)
 }
 
+// testTask completes a task built in a test so it satisfies Manager.Create.
+func testTask(cfg *config.Task) *config.Task {
+	return config.NewTaskFrom(cfg, config.NewGlobal())
+}
+
 func TestManager_Create(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
 
-	ws, err := ts.manager.Create(&config.Task{
+	ws, err := ts.manager.Create(testTask(&config.Task{
 		Name:   "test-task",
 		Source: config.Source{LocalPath: t.TempDir()},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	assert.NotZero(t, ws.ID)
@@ -415,15 +420,15 @@ func TestManager_Create_DuplicateName(t *testing.T) {
 	ts := newTestSetup(t)
 	src := t.TempDir()
 
-	ws1, err := ts.manager.Create(&config.Task{
+	ws1, err := ts.manager.Create(testTask(&config.Task{
 		Name:   "dup-test",
 		Source: config.Source{LocalPath: src},
-	})
+	}))
 	assert.NotErr(t, err)
-	ws2, err := ts.manager.Create(&config.Task{
+	ws2, err := ts.manager.Create(testTask(&config.Task{
 		Name:   "dup-test",
 		Source: config.Source{LocalPath: src},
-	})
+	}))
 	assert.NotErr(t, err)
 	assert.Equal(t, ws1.Name, "dup-test")
 	assert.Equal(t, ws2.Name, "dup-test-1")
@@ -436,13 +441,13 @@ func TestManager_Create_CopiesPromptFile(t *testing.T) {
 	promptFile := filepath.Join(t.TempDir(), "task-prompt.md")
 	testutil.WriteFile(t, promptFile, "Do the thing")
 
-	ws, err := ts.manager.Create(&config.Task{
+	ws, err := ts.manager.Create(testTask(&config.Task{
 		Name: "prompt-test",
 		Source: config.Source{
 			LocalPath:  srcDir,
 			PromptFile: promptFile,
 		},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	data, err := os.ReadFile(filepath.Join(ws.BasePath, "workspace", "task-prompt.md"))
@@ -458,13 +463,13 @@ func TestManager_Create_StoresPromptFileAsBasename(t *testing.T) {
 	promptFile := filepath.Join(t.TempDir(), "outside.md")
 	testutil.WriteFile(t, promptFile, "task body")
 
-	ws, err := ts.manager.Create(&config.Task{
+	ws, err := ts.manager.Create(testTask(&config.Task{
 		Name: "basename-test",
 		Source: config.Source{
 			LocalPath:  srcDir,
 			PromptFile: promptFile,
 		},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	cfg := testutil.ReadFile(t, filepath.Join(ws.BasePath, "config.yaml"))
@@ -479,13 +484,13 @@ func TestManager_Create_PromptFileInsideRepo(t *testing.T) {
 	promptFile := filepath.Join(srcDir, "task.md")
 	testutil.WriteFile(t, promptFile, "inline task body")
 
-	ws, err := ts.manager.Create(&config.Task{
+	ws, err := ts.manager.Create(testTask(&config.Task{
 		Name: "inside-repo",
 		Source: config.Source{
 			LocalPath:  srcDir,
 			PromptFile: promptFile,
 		},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "task.md"))
@@ -499,13 +504,13 @@ func TestManager_Create_SpecFileRewritten(t *testing.T) {
 	specFile := filepath.Join(t.TempDir(), "spec.md")
 	testutil.WriteFile(t, specFile, "the spec")
 
-	ws, err := ts.manager.Create(&config.Task{
+	ws, err := ts.manager.Create(testTask(&config.Task{
 		Name: "spec-test",
 		Source: config.Source{
 			LocalPath: srcDir,
 			SpecFile:  specFile,
 		},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "spec.md"))
@@ -516,10 +521,10 @@ func TestManager_ResolveCompleted(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
 
-	ws, err := ts.manager.Create(&config.Task{
+	ws, err := ts.manager.Create(testTask(&config.Task{
 		Name:   "resolve-test",
 		Source: config.Source{LocalPath: t.TempDir()},
-	})
+	}))
 	assert.NotErr(t, err)
 
 	tests := []struct {
@@ -663,11 +668,11 @@ func TestManager_FindOrCreate_CreatesNew(t *testing.T) {
 			t.Parallel()
 			ts := newTestSetup(t)
 
-			ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+			ws, err := ts.manager.FindOrCreate(context.Background(), testTask(&config.Task{
 				Name:           "new-task",
 				ContinuePolicy: tt.policy,
 				Source:         config.Source{LocalPath: t.TempDir()},
-			})
+			}))
 
 			assert.NotErr(t, err)
 			assert.Equal(t, ws.Status, StatusPending)
@@ -680,11 +685,11 @@ func TestManager_FindOrCreate_RestartWithExisting(t *testing.T) {
 	ts := newTestSetup(t)
 	ts.setWorkspace(t, "old-ws", StatusCompleted, withName("my-task"))
 
-	ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+	ws, err := ts.manager.FindOrCreate(context.Background(), testTask(&config.Task{
 		Name:           "my-task",
 		ContinuePolicy: config.ContinuePolicyRestart,
 		Source:         config.Source{LocalPath: t.TempDir()},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	assert.NotEqual(t, ws.ID, "old-ws")
@@ -709,11 +714,11 @@ func TestManager_FindOrCreate_Resume(t *testing.T) {
 			ts := newTestSetup(t)
 			ts.setWorkspace(t, "ws-1", tt.status, withName("my-task"))
 
-			ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+			ws, err := ts.manager.FindOrCreate(context.Background(), testTask(&config.Task{
 				Name:           "my-task",
 				ContinuePolicy: config.ContinuePolicyResume,
 				Source:         config.Source{LocalPath: t.TempDir()},
-			})
+			}))
 
 			assert.NotErr(t, err)
 			assert.Equal(t, ws.ID, "ws-1")
@@ -729,11 +734,11 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 		t.Parallel()
 		ts := newTestSetup(t)
 
-		_, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+		_, err := ts.manager.FindOrCreate(context.Background(), testTask(&config.Task{
 			Name:           "nonexistent",
 			ContinuePolicy: config.ContinuePolicyResume,
 			Source:         config.Source{LocalPath: t.TempDir()},
-		})
+		}))
 
 		assert.ErrAs[*state.NotFoundError](t, err)
 	})
@@ -742,10 +747,10 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 		t.Parallel()
 		ts := newTestSetup(t)
 
-		_, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+		_, err := ts.manager.FindOrCreate(context.Background(), testTask(&config.Task{
 			ContinuePolicy: config.ContinuePolicyResume,
 			Source:         config.Source{LocalPath: t.TempDir()},
-		})
+		}))
 
 		assert.ErrIs(t, err, errContinueRequiresName)
 	})
@@ -756,11 +761,11 @@ func TestManager_FindOrCreate_ResumeDone(t *testing.T) {
 	ts := newTestSetup(t)
 	srcDir := t.TempDir()
 
-	cfg := &config.Task{
+	cfg := testTask(&config.Task{
 		Name:           "done-task",
 		ContinuePolicy: config.ContinuePolicyResume,
 		Source:         config.Source{LocalPath: srcDir},
-	}
+	})
 
 	basePath := ts.setWorkspace(t, "ws-done", StatusCompleted,
 		withName("done-task"),
@@ -788,11 +793,11 @@ func TestManager_FindOrCreate_ResumeNotDone(t *testing.T) {
 		withConfig("name: not-done-task\nsource:\n  local_path: "+srcDir+"\n"),
 	)
 
-	ws, err := ts.manager.FindOrCreate(context.Background(), &config.Task{
+	ws, err := ts.manager.FindOrCreate(context.Background(), testTask(&config.Task{
 		Name:           "not-done-task",
 		ContinuePolicy: config.ContinuePolicyResume,
 		Source:         config.Source{LocalPath: srcDir},
-	})
+	}))
 
 	assert.NotErr(t, err)
 	assert.Condition(t, !ws.Done)
@@ -816,10 +821,10 @@ func TestManager_Wait_WritesSentinel(t *testing.T) {
 	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusCompleted)
 	assert.PathExists(t, filepath.Join(basePath, ".dwoe-done"))
 
-	cfg := &config.Task{
+	cfg := testTask(&config.Task{
 		Name:   "sentinel-task",
 		Source: config.Source{LocalPath: srcDir},
-	}
+	})
 	sen := sentinel.FromDir(basePath)
 	assert.Condition(t, sen.Match(cfg))
 }
