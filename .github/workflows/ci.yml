@@ -27,6 +27,7 @@ jobs:
         with:
           go-version: "1.25"
       - run: make test
+      - run: go vet -tags=integration ./...
 
   build:
     runs-on: ubuntu-latest
