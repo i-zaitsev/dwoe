@@ -3,7 +3,7 @@ source:
   local_path: ./repo
 agent:
   image: dwoe-agent:latest
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   max_turns: 10
   task_prompt: >
     You are working on a Go CLI tool. Read main.go to understand the
