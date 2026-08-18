@@ -17,7 +17,7 @@ import (
 func Equal[T comparable](t *testing.T, got, want T) {
 	t.Helper()
 	if got != want {
-		t.Errorf("got: %v, want: %v", got, want)
+		t.Errorf("\ngot:  %v\nwant: %v", got, want)
 	}
 }
 
@@ -60,6 +60,15 @@ func Contains(t *testing.T, got, want string) {
 	t.Helper()
 	if !strings.Contains(got, want) {
 		t.Errorf("%q does not contain %q", got, want)
+	}
+}
+
+func ContainsNone(t *testing.T, got string, substrings ...string) {
+	t.Helper()
+	for _, notWant := range substrings {
+		if strings.Contains(got, notWant) {
+			t.Errorf("%q contains not wanted value: %q", got, notWant)
+		}
 	}
 }
 
