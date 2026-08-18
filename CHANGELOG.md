@@ -1,5 +1,43 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- Multi-provider agents basic support: `anthropic` and `openai`
+- The `fire` command supports `--provider` flag
+- Task description shown by `dwoe inspect -desc` and in the web dashboard
+- Task configs are built through an options API
+- Layered Docker images for agents
+- Universal image with Go, Python, C, and C++ toolchains
+- The `make images` target to build the whole image tree
+
+### Fixes
+
+- The `--model` override had no effect and now applies to the task
+- Unknown provider names no longer panic
+- Provider credentials and allowed domains are resolved from the provider registry
+- `codex exec` authenticates with `CODEX_API_KEY` and falls back to `OPENAI_API_KEY`
+
+### Breaking
+
+- `dwoe-codex:latest` is gone: use any `dwoe-agent:*` image with `provider: openai`
+- Agent, git, and resources are optional task sections filled from globals and defaults
+- Sentinel hashes changed: a workspace completed by an earlier release re-runs once
+
+### Other
+
+- Human-readable log format via `--logfmt=text`, with the source location on warnings and errors
+- Colors only when the log writer is a terminal
+- Default models are now `claude-sonnet-5` and `gpt-5.6-terra`
+- Base image moved to Debian Trixie
+- Consistent `Workspace created|started` wording in command output
+- CI type-checks the integration build tag
+
+### Docs
+
+- Provider key, authentication per provider, and the image tree
+
 ## v0.1.1 (2026-04-21)
 
 ### Features
