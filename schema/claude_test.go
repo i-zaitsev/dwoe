@@ -7,17 +7,16 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/dwoe/schema/schematest"
 )
 
 func TestParse_Samples(t *testing.T) {
 	t.Parallel()
-	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
+	lines := schematest.Lines(t, "sample.jsonl")
 
 	tests := []struct {
 		wantType    string
@@ -56,7 +55,7 @@ func TestParse_Samples(t *testing.T) {
 
 func TestParse_Faulty(t *testing.T) {
 	t.Parallel()
-	lines := testutil.ReadLines(t, filepath.Join("testdata", "faulty.jsonl"))
+	lines := schematest.Lines(t, "faulty.jsonl")
 
 	tests := []struct {
 		name    string
@@ -99,7 +98,7 @@ func TestParse_Faulty(t *testing.T) {
 
 func TestParse_SystemInit_Spot(t *testing.T) {
 	t.Parallel()
-	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
+	lines := schematest.Lines(t, "sample.jsonl")
 	v, err := Parse([]byte(lines[0]))
 	assert.NotErr(t, err)
 
@@ -114,7 +113,7 @@ func TestParse_SystemInit_Spot(t *testing.T) {
 
 func TestParse_Assistant_ToolUse_Spot(t *testing.T) {
 	t.Parallel()
-	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
+	lines := schematest.Lines(t, "sample.jsonl")
 	// Line 3 (index 2) is the assistant/tool_use fixture.
 	v, err := Parse([]byte(lines[2]))
 	assert.NotErr(t, err)
@@ -130,7 +129,7 @@ func TestParse_Assistant_ToolUse_Spot(t *testing.T) {
 
 func TestParse_Raw_PreservesUnmodelled(t *testing.T) {
 	t.Parallel()
-	lines := testutil.ReadLines(t, filepath.Join("testdata", "sample.jsonl"))
+	lines := schematest.Lines(t, "sample.jsonl")
 	v, err := Parse([]byte(lines[0]))
 	assert.NotErr(t, err)
 

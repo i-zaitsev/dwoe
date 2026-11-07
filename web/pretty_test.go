@@ -8,15 +8,14 @@ import (
 	"context"
 	"io"
 	"net/http/httptest"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
-	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/dwoe/schema/schematest"
 )
 
 func TestRenderPrettyLogLine_Container(t *testing.T) {
@@ -171,8 +170,7 @@ func TestRenderPrettyLogLine_AssistantLongText(t *testing.T) {
 
 func TestRenderPrettyLogLine_SampleJSONL(t *testing.T) {
 	t.Parallel()
-	path := filepath.Join("..", "schema", "testdata", "sample.jsonl")
-	lines := testutil.ReadLines(t, path)
+	lines := schematest.Lines(t, "sample.jsonl")
 	for _, line := range lines {
 		got := renderPrettyLogLine(line)
 		assert.NotZero(t, len(got))
