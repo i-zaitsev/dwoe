@@ -7,10 +7,10 @@ package web
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestServer_New(t *testing.T) {
 	serv := NewServer(addr)
-	assert.Equal(t, serv.addr, addr)
+	assert.Eq(t, serv.addr, addr)
 }

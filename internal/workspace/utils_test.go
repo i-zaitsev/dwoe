@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testfake"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 type testSetup struct {
@@ -25,7 +25,7 @@ func newTestSetup(t *testing.T) *testSetup {
 	fd := new(testfake.FakeDocker)
 	fs := testfake.NewFakeState()
 	manager, err := newManager(t.TempDir(), fd, fs)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	return &testSetup{
 		docker:  fd,
 		state:   fs,

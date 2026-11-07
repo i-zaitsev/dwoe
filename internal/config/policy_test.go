@@ -7,7 +7,7 @@ package config
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,11 +30,11 @@ func TestContinuePolicy_UnmarshalYAML(t *testing.T) {
 			var task Task
 			err := yaml.Unmarshal([]byte(tt.yaml), &task)
 			if tt.wantErr {
-				assert.Err(t, err)
+				assert.ErrVal(t, err).NotNil().Fatal()
 				return
 			}
-			assert.NotErr(t, err)
-			assert.Equal(t, task.ContinuePolicy, tt.want)
+			assert.ErrVal(t, err).Nil().Fatal()
+			assert.Eq(t, task.ContinuePolicy, tt.want)
 		})
 	}
 }
@@ -53,7 +53,7 @@ func TestContinuePolicy_MarshalYAML(t *testing.T) {
 			t.Parallel()
 			task := Task{ContinuePolicy: tt.policy}
 			data, err := yaml.Marshal(&task)
-			assert.NotErr(t, err)
+			assert.ErrVal(t, err).Nil().Fatal()
 			assert.Contains(t, string(data), tt.want)
 		})
 	}
@@ -63,7 +63,7 @@ func TestContinuePolicy_MarshalYAML_DefaultOmitted(t *testing.T) {
 	t.Parallel()
 	task := Task{ContinuePolicy: ContinuePolicyDefault}
 	data, err := yaml.Marshal(&task)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.ContainsNone(t, string(data), "continue_policy")
 }
 
@@ -76,10 +76,10 @@ func TestContinuePolicy_RoundTrip(t *testing.T) {
 	} {
 		task := Task{ContinuePolicy: policy, Source: Source{LocalPath: "/tmp"}}
 		data, err := yaml.Marshal(&task)
-		assert.NotErr(t, err)
+		assert.ErrVal(t, err).Nil().Fatal()
 
 		var got Task
-		assert.NotErr(t, yaml.Unmarshal(data, &got))
-		assert.Equal(t, got.ContinuePolicy, policy)
+		assert.ErrVal(t, yaml.Unmarshal(data, &got)).Nil().Fatal()
+		assert.Eq(t, got.ContinuePolicy, policy)
 	}
 }

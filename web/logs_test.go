@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestWorkspaceLogs(t *testing.T) {
@@ -82,7 +82,7 @@ func TestWorkspaceLogs_Follow(t *testing.T) {
 	}()
 
 	rc, err := source.Logs(context.Background(), "any", true)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	var lines []string
 	scanner := bufio.NewScanner(rc)
@@ -91,7 +91,7 @@ func TestWorkspaceLogs_Follow(t *testing.T) {
 	}
 	rc.Close()
 
-	assert.Equal(t, len(lines), 3)
-	assert.Equal(t, lines[0], "line1")
-	assert.Equal(t, lines[2], "line3")
+	assert.Eq(t, len(lines), 3)
+	assert.Eq(t, lines[0], "line1")
+	assert.Eq(t, lines[2], "line3")
 }

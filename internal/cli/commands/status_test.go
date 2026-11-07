@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestStatusCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdStatus)
-	assert.NotErr(t, cmd.Parse([]string{"ws-1"}))
-	assert.Equal(t, cmd.nameOrID, "ws-1")
+	assert.ErrVal(t, cmd.Parse([]string{"ws-1"})).Nil().Fatal()
+	assert.Eq(t, cmd.nameOrID, "ws-1")
 }
 
 func TestStatusCmd_Parse_Errors(t *testing.T) {
@@ -31,7 +31,7 @@ func TestStatusCmd_Run(t *testing.T) {
 	setup.state.Data["ws-1"] = createWorkspace(t, t.TempDir(), "ws-1", "running", &now)
 	cmd := &cmdStatus{nameOrID: "ws-1"}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(),
 		"Name:     ws-1 name",
 		"ID:       ws-1",
@@ -47,5 +47,5 @@ func TestStatusCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }

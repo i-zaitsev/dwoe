@@ -13,11 +13,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/testfake"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestRunCmd_Parse(t *testing.T) {
@@ -57,10 +57,10 @@ func TestRunCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdRun)
-			assert.NotErr(t, cmd.Parse(tc.args))
-			assert.Equal(t, cmd.taskPath, tc.wantPath)
-			assert.Equal(t, cmd.name, tc.wantName)
-			assert.Equal(t, cmd.detach, tc.wantDetach)
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
+			assert.Eq(t, cmd.taskPath, tc.wantPath)
+			assert.Eq(t, cmd.name, tc.wantName)
+			assert.Eq(t, cmd.detach, tc.wantDetach)
 		})
 	}
 }
@@ -77,7 +77,7 @@ func TestRunCmd_Run(t *testing.T) {
 		t.Parallel()
 		ts, taskFile := createTestTask(t, "", 0)
 		cmd := &cmdRun{taskPath: taskFile, detach: true}
-		assert.NotErr(t, cmd.Run(ts.env))
+		assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 		assert.ContainsAll(t, ts.stdout.String(), "started", "Status: running")
 	})
 
@@ -85,7 +85,7 @@ func TestRunCmd_Run(t *testing.T) {
 		t.Parallel()
 		ts, taskFile := createTestTask(t, "line1\nline2\n<promise>DONE</promise>\n", 0)
 		cmd := &cmdRun{taskPath: taskFile}
-		assert.NotErr(t, cmd.Run(ts.env))
+		assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 		assert.ContainsAll(t, ts.stdout.String(), "line1", "line2", "completed")
 	})
 
@@ -100,7 +100,7 @@ func TestRunCmd_Run(t *testing.T) {
 		if !errors.As(err, &exitErr) {
 			t.Fatalf("err type = %T, want *exitError", err)
 		}
-		assert.Equal(t, exitErr.code, 1)
+		assert.Eq(t, exitErr.code, 1)
 		assert.ContainsAll(t, ts.stdout.String(), "failed")
 	})
 }
@@ -121,7 +121,7 @@ func TestRunCmd_Run_Interrupted(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrIs(t, err, errRunInterrupted)
+	assert.ErrVal(t, err).Is(errRunInterrupted).Fatal()
 	assert.ContainsAll(t, setup.stdout.String(), "Interrupted")
 }
 
@@ -139,7 +139,7 @@ func TestRunCmd_Run_SourceDirOverride(t *testing.T) {
 
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
 
-	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
@@ -159,7 +159,7 @@ func TestRunCmd_Run_PromptFileOutsideTaskDir(t *testing.T) {
 	})
 
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
-	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 
 	ws := ts.state.Data[cmd.createdID]
 	assert.NotNil(t, ws)
@@ -176,7 +176,7 @@ func TestRunCmd_Run_ModelOverride(t *testing.T) {
 
 	cmd := &cmdRun{taskPath: writeTaskFile(t, t.TempDir(), "model-test"), detach: true}
 
-	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
@@ -187,7 +187,7 @@ func TestRunCmd_Run_SourceDirNotUsedWhenYAMLHasSource(t *testing.T) {
 
 	cmd := &cmdRun{taskPath: writeTaskFile(t, t.TempDir(), "has-source"), detach: true}
 
-	assert.NotErr(t, cmd.Run(ts.env))
+	assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 	assert.ContainsAll(t, ts.stdout.String(), "started")
 }
 
@@ -198,7 +198,7 @@ func TestRunCmd_Run_MissingFile(t *testing.T) {
 
 	err := cmd.Run(ts.env)
 
-	assert.ErrIs(t, err, os.ErrNotExist)
+	assert.ErrVal(t, err).Is(os.ErrNotExist).Fatal()
 }
 
 func TestRunCmd_Run_ContinuePolicy(t *testing.T) {
@@ -216,7 +216,7 @@ func TestRunCmd_Run_ContinuePolicy(t *testing.T) {
 	))
 
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.Contains(t, setup.stdout.String(), "Workspace resumed: continue-test")
 }
 
@@ -228,7 +228,7 @@ func TestCmdRun_Run_SkipStartIfDone(t *testing.T) {
 	cmd := &cmdRun{taskPath: taskFile, detach: true}
 	err := cmd.Run(setup.env)
 
-	assert.ErrIs(t, err, workspace.ErrWorkspaceDone)
+	assert.ErrVal(t, err).Is(workspace.ErrWorkspaceDone).Fatal()
 	out := setup.stdout.String()
 	assert.Contains(t, out, "Workspace already done")
 	assert.Contains(t, out, ".dwoe-done")

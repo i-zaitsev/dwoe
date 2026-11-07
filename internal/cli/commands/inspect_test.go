@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestInspectCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdInspect)
-	assert.NotErr(t, cmd.Parse([]string{"ws-1"}))
-	assert.Equal(t, cmd.nameOrID, "ws-1")
+	assert.ErrVal(t, cmd.Parse([]string{"ws-1"})).Nil().Fatal()
+	assert.Eq(t, cmd.nameOrID, "ws-1")
 }
 
 func TestInspectCmd_Parse_Errors(t *testing.T) {
@@ -36,7 +36,7 @@ func TestInspectCmd_Run(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(),
 		"Name:       ws-1 name",
 		"ID:         ws-1",
@@ -60,7 +60,7 @@ func TestInspectCmd_Run_ParentID(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Contains(t, setup.stdout.String(), "Parent:     parent-xyz")
 }
 
@@ -75,7 +75,7 @@ func TestInspectCmd_Run_NilContainerIDs(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(),
 		"Agent:      (none)",
 		"Proxy:      (none)",
@@ -89,7 +89,7 @@ func TestInspectCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }
 
 func TestInspectCmd_Run_AmbiguousPrefix(t *testing.T) {
@@ -103,7 +103,7 @@ func TestInspectCmd_Run_AmbiguousPrefix(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.AmbiguousMatchError](t, err)
+	assert.ErrVal(t, err).As(new(*state.AmbiguousMatchError)).Fatal()
 }
 
 func TestInspectCmd_Run_UniquePrefix(t *testing.T) {
@@ -117,7 +117,7 @@ func TestInspectCmd_Run_UniquePrefix(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(),
 		"ID:         abc-111",
 		"Status:     running",

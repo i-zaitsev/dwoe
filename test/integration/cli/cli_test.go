@@ -17,10 +17,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/log"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 const (
@@ -148,7 +148,7 @@ func TestCLI_CollectAfterRun(t *testing.T) {
 	assert.ContainsAll(t, out, "Collected", "commit(s)")
 
 	branchOut, err := exec.Command("git", "-C", targetRepo, "branch", "--list", "feat/test").CombinedOutput()
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Contains(t, string(branchOut), "feat/test")
 }
 
@@ -177,5 +177,5 @@ func TestCLI_PatchesAfterRun(t *testing.T) {
 
 func ensureRepo(t *testing.T, dir string) {
 	t.Helper()
-	assert.NotErr(t, workspace.EnsureRepoReady(dir, "Test", "test@test.dev"))
+	assert.ErrVal(t, workspace.EnsureRepoReady(dir, "Test", "test@test.dev")).Nil().Fatal()
 }

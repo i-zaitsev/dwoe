@@ -10,16 +10,16 @@ import (
 	"io"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestLogsCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdLogs)
-	assert.NotErr(t, cmd.Parse([]string{"-f", "ws-test"}))
-	assert.Equal(t, cmd.nameOrID, "ws-test")
-	assert.Equal(t, cmd.follow, true)
+	assert.ErrVal(t, cmd.Parse([]string{"-f", "ws-test"})).Nil().Fatal()
+	assert.Eq(t, cmd.nameOrID, "ws-test")
+	assert.Eq(t, cmd.follow, true)
 }
 
 func TestLogsCmd_Parse_Errors(t *testing.T) {
@@ -45,8 +45,8 @@ func TestLogsCmd_Run_Follow(t *testing.T) {
 	}()
 
 	cmd := &cmdLogs{nameOrID: "ws-test", follow: true}
-	assert.NotErr(t, cmd.Run(setup.env))
-	assert.Equal(t, setup.stdout.String(), "line1\nline2\nline3\n")
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
+	assert.Eq(t, setup.stdout.String(), "line1\nline2\nline3\n")
 }
 
 func TestLogsCmd_Run_SentinelInContent(t *testing.T) {
@@ -64,8 +64,8 @@ func TestLogsCmd_Run_SentinelInContent(t *testing.T) {
 	}
 
 	cmd := &cmdLogs{nameOrID: "ws-test", follow: true}
-	assert.NotErr(t, cmd.Run(setup.env))
-	assert.Equal(t, setup.stdout.String(),
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
+	assert.Eq(t, setup.stdout.String(),
 		"before\n"+
 			"{\"content\":\"Write exactly <promise>DONE</promise> as your final output\"}\n"+
 			"after\n")
@@ -78,5 +78,5 @@ func TestLogsCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }

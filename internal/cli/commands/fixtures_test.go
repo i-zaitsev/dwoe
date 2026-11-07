@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
@@ -23,6 +22,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/testfake"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -84,15 +84,15 @@ func checkParseFails(t *testing.T, cmd cli.Command) {
 	t.Helper()
 	t.Run("nil_args", func(t *testing.T) {
 		t.Parallel()
-		assert.ErrAs[*cli.ArgMissingError](t, cmd.Parse(nil))
+		assert.ErrVal(t, cmd.Parse(nil)).As(new(*cli.ArgMissingError)).Fatal()
 	})
 	t.Run("empty_args", func(t *testing.T) {
 		t.Parallel()
-		assert.ErrAs[*cli.ArgMissingError](t, cmd.Parse([]string{}))
+		assert.ErrVal(t, cmd.Parse([]string{})).As(new(*cli.ArgMissingError)).Fatal()
 	})
 	t.Run("bad_flag", func(t *testing.T) {
 		t.Parallel()
-		assert.ErrAs[*cli.FlagParseError](t, cmd.Parse([]string{"-badflag"}))
+		assert.ErrVal(t, cmd.Parse([]string{"-badflag"})).As(new(*cli.FlagParseError)).Fatal()
 	})
 }
 
@@ -118,7 +118,7 @@ func createDoneWorkspaceTask(t *testing.T, setup *cmdTestSetup) string {
 		Name:   "done-task",
 		Source: config.Source{LocalPath: srcDir},
 	}, config.NewGlobal()))
-	assert.NotErr(t, sen.Write(ws.BasePath))
+	assert.ErrVal(t, sen.Write(ws.BasePath)).Nil().Fatal()
 
 	taskFile := filepath.Join(t.TempDir(), "task.yaml")
 	testutil.WriteFile(t, taskFile, taskYAML)

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestSetup_DefaultLevel(t *testing.T) {
@@ -59,8 +59,8 @@ func TestSetup_JSONFormat(t *testing.T) {
 	if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
 		t.Fatalf("output is not valid JSON: %v\n%s", err, buf.String())
 	}
-	assert.Equal(t, m["msg"], "test: hello")
-	assert.Equal(t, m["key"], "value")
+	assert.Eq(t, m["msg"], "test: hello")
+	assert.Eq(t, m["key"], "value")
 	if m["source"] == nil {
 		t.Error("expected source field in JSON output")
 	}
@@ -68,8 +68,8 @@ func TestSetup_JSONFormat(t *testing.T) {
 
 func TestDefaultOpts(t *testing.T) {
 	opts := DefaultOpts()
-	assert.Equal(t, opts.Level, slog.LevelInfo)
-	assert.Equal(t, opts.Format, FormatJSON)
+	assert.Eq(t, opts.Level, slog.LevelInfo)
+	assert.Eq(t, opts.Format, FormatJSON)
 	if opts.Writer == nil {
 		t.Error("Writer should not be nil")
 	}
@@ -123,7 +123,7 @@ func TestFormat_String(t *testing.T) {
 		{Format(99), ""},
 	}
 	for _, tt := range tests {
-		assert.Equal(t, tt.f.String(), tt.want)
+		assert.Eq(t, tt.f.String(), tt.want)
 	}
 }
 
@@ -140,6 +140,6 @@ func TestUseRelativeSourcePath(t *testing.T) {
 	})
 	s, ok := trimmedAttr.Value.Any().(*slog.Source)
 
-	assert.Condition(t, ok)
-	assert.Equal(t, s.File, "test.go")
+	assert.True(t, ok)
+	assert.Eq(t, s.File, "test.go")
 }

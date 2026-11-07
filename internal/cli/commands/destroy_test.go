@@ -7,9 +7,9 @@ package commands
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestDestroyCmd_Parse(t *testing.T) {
@@ -29,10 +29,10 @@ func TestDestroyCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdDestroy)
-			assert.NotErr(t, cmd.Parse(tc.args))
-			assert.Equal(t, cmd.nameOrID, tc.wantID)
-			assert.Equal(t, cmd.force, tc.wantForce)
-			assert.Equal(t, cmd.all, tc.wantAll)
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
+			assert.Eq(t, cmd.nameOrID, tc.wantID)
+			assert.Eq(t, cmd.force, tc.wantForce)
+			assert.Eq(t, cmd.all, tc.wantAll)
 		})
 	}
 }
@@ -50,7 +50,7 @@ func TestDestroyCmd_Run_Stopped(t *testing.T) {
 	setup.state.Data["ws-1"].NetworkID = "fake-net"
 	cmd := &cmdDestroy{nameOrID: "ws-1"}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(), "Destroying workspace:", "Workspace destroyed.")
 	if _, ok := setup.state.Data["ws-1"]; ok {
 		t.Error("workspace should be deleted from state")
@@ -66,7 +66,7 @@ func TestDestroyCmd_Run_RunningRequiresForce(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrIs(t, err, errWsRunning)
+	assert.ErrVal(t, err).Is(errWsRunning).Fatal()
 }
 
 func TestDestroyCmd_Run_RunningWithForce(t *testing.T) {
@@ -77,7 +77,7 @@ func TestDestroyCmd_Run_RunningWithForce(t *testing.T) {
 	setup.state.Data["ws-1"].NetworkID = "fake-net"
 	cmd := &cmdDestroy{nameOrID: "ws-1", force: true}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	if _, ok := setup.state.Data["ws-1"]; ok {
 		t.Error("workspace should be deleted from state")
 	}
@@ -92,7 +92,7 @@ func TestDestroyCmd_Run_All(t *testing.T) {
 	setup.state.Data["ws-2"].ContainerIDs = map[string]string{"agent": fakeContainer}
 	cmd := &cmdDestroy{all: true, force: true}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.Zero(t, len(setup.state.Data))
 }
 
@@ -103,7 +103,7 @@ func TestDestroyCmd_Run_AllWithoutForce(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*cli.ArgMissingError](t, err)
+	assert.ErrVal(t, err).As(new(*cli.ArgMissingError)).Fatal()
 }
 
 func TestDestroyCmd_Run_NotFound(t *testing.T) {
@@ -113,5 +113,5 @@ func TestDestroyCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -133,7 +133,7 @@ func TestWithFallbackSourceDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			task := NewTask("test", func(task *Task) { task.Source = tt.source }, WithFallbackSourceDir(tt.dir))
-			assert.Equal(t, task.Source.LocalPath, tt.wantPath)
+			assert.Eq(t, task.Source.LocalPath, tt.wantPath)
 		})
 	}
 }
@@ -143,11 +143,11 @@ func TestWithDefaults(t *testing.T) {
 
 	task := NewTask("test", WithDefaults())
 
-	assert.Equal(t, task.Agent.MaxTurns, DefaultMaxTurns)
-	assert.Equal(t, task.Resources.CPU, DefaultCPUs)
-	assert.Equal(t, task.Resources.Memory, DefaultMemory)
-	assert.Equal(t, task.Agent.Image, DefaultImage)
-	assert.Equal(t, len(task.Agent.Permissions), len(DefaultPermissions))
+	assert.Eq(t, task.Agent.MaxTurns, DefaultMaxTurns)
+	assert.Eq(t, task.Resources.CPU, DefaultCPUs)
+	assert.Eq(t, task.Resources.Memory, DefaultMemory)
+	assert.Eq(t, task.Agent.Image, DefaultImage)
+	assert.Eq(t, len(task.Agent.Permissions), len(DefaultPermissions))
 }
 
 func TestWithModel(t *testing.T) {
@@ -171,7 +171,7 @@ func TestWithModel(t *testing.T) {
 				task.Agent = &Agent{Provider: provider.Provider{Model: tt.fileModel}}
 			}, WithModel(tt.flagModel), WithDefaults())
 
-			assert.Equal(t, task.Agent.Provider.Model, tt.want)
+			assert.Eq(t, task.Agent.Provider.Model, tt.want)
 		})
 	}
 }
@@ -181,7 +181,7 @@ func TestWithDefaults_LanguageImage(t *testing.T) {
 
 	task := NewTask("test", func(task *Task) { task.Agent = &Agent{Language: "go"} }, WithDefaults())
 
-	assert.Equal(t, task.Agent.Image, "dwoe-agent:go")
+	assert.Eq(t, task.Agent.Image, "dwoe-agent:go")
 }
 
 func TestWithDefaults_ExplicitPermissions(t *testing.T) {
@@ -211,7 +211,7 @@ func TestTask_ResolvePaths(t *testing.T) {
 		{filepath.Join(testDir, "spec.md"), task.Source.SpecFile},
 		{filepath.Join(testDir, "prompt.txt"), task.Source.PromptFile},
 	} {
-		assert.Equal(t, tc.want, tc.got)
+		assert.Eq(t, tc.want, tc.got)
 	}
 }
 
@@ -227,7 +227,7 @@ func TestTask_PolicyRequiresNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		task := &Task{ContinuePolicy: tt.policy}
-		assert.Equal(t, task.PolicyRequiresNew(), tt.want)
+		assert.Eq(t, task.PolicyRequiresNew(), tt.want)
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,15 +25,15 @@ func TestProvider_Serialization(t *testing.T) {
 		{ModelProviderOpenAI, "openai"},
 	}
 	for _, tc := range tests {
-		assert.Equal(t, tc.inp.String(), tc.out)
+		assert.Eq(t, tc.inp.String(), tc.out)
 
 		data, err := yaml.Marshal(tc.inp)
-		assert.NotErr(t, err)
-		assert.Equal(t, strings.TrimSpace(string(data)), tc.out)
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, strings.TrimSpace(string(data)), tc.out)
 
 		var got ModelProviderName
-		assert.NotErr(t, yaml.Unmarshal(data, &got))
-		assert.Equal(t, got, tc.inp)
+		assert.ErrVal(t, yaml.Unmarshal(data, &got)).Nil().Fatal()
+		assert.Eq(t, got, tc.inp)
 	}
 }
 
@@ -53,11 +53,11 @@ func TestParseName(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := ParseName(tc.inp)
 			if tc.wantErr {
-				assert.Err(t, err)
+				assert.ErrVal(t, err).NotNil().Fatal()
 				return
 			}
-			assert.NotErr(t, err)
-			assert.Equal(t, got, tc.want)
+			assert.ErrVal(t, err).Nil().Fatal()
+			assert.Eq(t, got, tc.want)
 		})
 	}
 }
@@ -70,10 +70,10 @@ func TestRegisterProviders(t *testing.T) {
 	assert.NoDiff(t, []string{"anthropic", "openai"}, Names())
 
 	anthropic := Lookup(ModelProviderAnthropic)
-	assert.Equal(t, anthropic.Name, ModelProviderAnthropic)
-	assert.Equal(t, anthropic.Model, DefaultAnthropicModel)
+	assert.Eq(t, anthropic.Name, ModelProviderAnthropic)
+	assert.Eq(t, anthropic.Model, DefaultAnthropicModel)
 	assert.NotZero(t, len(anthropic.AuthEnvVars))
 
 	// An unregistered provider falls back to the default one.
-	assert.Equal(t, Lookup(ModelProviderUnknown).Name, DefaultModelProvider)
+	assert.Eq(t, Lookup(ModelProviderUnknown).Name, DefaultModelProvider)
 }

@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestBatchCmd_Parse(t *testing.T) {
@@ -28,8 +28,8 @@ func TestBatchCmd_Parse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdBatch)
-			assert.NotErr(t, cmd.Parse(tt.args))
-			assert.Equal(t, cmd.dir, tt.wantDir)
+			assert.ErrVal(t, cmd.Parse(tt.args)).Nil().Fatal()
+			assert.Eq(t, cmd.dir, tt.wantDir)
 		})
 	}
 }
@@ -59,7 +59,7 @@ func TestBatchCmd_Run(t *testing.T) {
 	}
 
 	err := cmd.Run(setup.env)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	out := setup.stdout.String()
 	assert.ContainsAll(t, out,
@@ -98,7 +98,7 @@ func TestBatchCmd_Run_PartialFailure(t *testing.T) {
 	}
 
 	err := cmd.Run(setup.env)
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 
 	out := setup.stdout.String()
 	assert.ContainsAll(t, out,
@@ -115,11 +115,11 @@ func TestDiscoverTasks(t *testing.T) {
 	}
 
 	got, err := discoverTasks(dir)
-	assert.NotErr(t, err)
-	assert.Equal(t, len(got), 3)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, len(got), 3)
 
 	for i, name := range []string{"task-a.yaml", "task-b.yaml", "task-c.yaml"} {
-		assert.Equal(t, filepath.Base(got[i]), name)
+		assert.Eq(t, filepath.Base(got[i]), name)
 	}
 }
 
@@ -131,10 +131,10 @@ func TestDiscoverTasks_Recursive(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(dir, "task.yaml"), "name: root")
 
 	got, err := discoverTasks(dir)
-	assert.NotErr(t, err)
-	assert.Equal(t, len(got), 3)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, len(got), 3)
 	for _, path := range got {
-		assert.Equal(t, filepath.Base(path), "task.yaml")
+		assert.Eq(t, filepath.Base(path), "task.yaml")
 	}
 }
 
@@ -146,16 +146,16 @@ func TestDiscoverTasks_IgnoresNonYAML(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(dir, "notes.txt"), "notes")
 
 	got, err := discoverTasks(dir)
-	assert.NotErr(t, err)
-	assert.Equal(t, len(got), 1)
-	assert.Equal(t, filepath.Base(got[0]), "task.yaml")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, len(got), 1)
+	assert.Eq(t, filepath.Base(got[0]), "task.yaml")
 }
 
 func TestDiscoverTasks_Empty(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	_, err := discoverTasks(dir)
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func TestBatchCmd_Run_WithSourceDir(t *testing.T) {
@@ -183,7 +183,7 @@ func TestBatchCmd_Run_WithSourceDir(t *testing.T) {
 		ensureRepo: func(_, _, _ string) error { return nil },
 	}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(),
 		"discovered 1 task(s)",
 		"Batch ID:",

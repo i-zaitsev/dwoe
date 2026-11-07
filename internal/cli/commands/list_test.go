@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestListCmd_Parse(t *testing.T) {
@@ -32,8 +32,8 @@ func TestListCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdList)
-			assert.NotErr(t, cmd.Parse(tc.args))
-			assert.Equal(t, cmd.format, tc.wantFormat)
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
+			assert.Eq(t, cmd.format, tc.wantFormat)
 		})
 	}
 }
@@ -42,7 +42,7 @@ func TestListCmd_Parse_InvalidFormat(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdList)
 	err := cmd.Parse([]string{"-format", "xml"})
-	assert.ErrAs[*cli.ArgInvalidError](t, err)
+	assert.ErrVal(t, err).As(new(*cli.ArgInvalidError)).Fatal()
 }
 
 func TestListCmd_Run_Table(t *testing.T) {
@@ -59,7 +59,7 @@ func TestListCmd_Run_Table(t *testing.T) {
 			setup := newListTestSetup(t, false)
 			cmd := &cmdList{format: tc.format}
 
-			assert.NotErr(t, cmd.Run(setup.env))
+			assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 			want := strings.Join([]string{
 				"NAME       ID    STATUS   EXIT         CREATED              STARTED              FINISHED",
 				"ws-1 name  ws-1  running  pending      2001-01-01 00:00:00                       ",
@@ -92,13 +92,13 @@ func TestListCmd_Run_JSON(t *testing.T) {
 
 			setup := newListTestSetup(t, tc.empty)
 			cmd := &cmdList{format: "json"}
-			assert.NotErr(t, cmd.Run(setup.env))
+			assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 
 			var wss []*workspace.Workspace
 			buf := strings.NewReader(setup.stdout.String())
 			dec := json.NewDecoder(buf)
-			assert.NotErr(t, dec.Decode(&wss))
-			assert.Equal(t, len(wss), tc.want)
+			assert.ErrVal(t, dec.Decode(&wss)).Nil().Fatal()
+			assert.Eq(t, len(wss), tc.want)
 		})
 	}
 }
@@ -110,7 +110,7 @@ func TestListCmd_Run_TableEmpty(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Contains(t, setup.stdout.String(), "No workspaces found")
 }
 

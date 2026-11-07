@@ -11,10 +11,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/batch"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 var addr = "127.0.0.1:8080"
@@ -107,7 +107,7 @@ func runHTTPTests(t *testing.T, handler http.Handler, tests []httpCase) {
 			req := httptest.NewRequest("GET", tt.url, nil)
 			handler.ServeHTTP(rr, req)
 
-			assert.Equal(t, rr.Code, tt.wantStatus)
+			assert.Eq(t, rr.Code, tt.wantStatus)
 			assert.Contains(t, rr.Body.String(), tt.wantContain)
 		})
 	}

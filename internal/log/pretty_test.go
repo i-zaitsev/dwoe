@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func testTime() time.Time {
@@ -50,9 +50,9 @@ func TestPrettyHandler_MessageFormatting(t *testing.T) {
 		err := h.Handle(context.Background(), r)
 		log := strings.TrimSpace(buf.String())
 
-		assert.NotErr(t, err)
-		assert.NotEqual(t, log, "")
-		assert.Equal(t, log, tc.expected)
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.NotEq(t, log, "")
+		assert.Eq(t, log, tc.expected)
 	}
 }
 
@@ -101,7 +101,7 @@ func TestPrettyHandler_SourceLogForLevels(t *testing.T) {
 
 		err := h.Handle(context.Background(), r)
 
-		assert.NotErr(t, err)
-		assert.Equal(t, strings.TrimSpace(buf.String()), tc.expected)
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, strings.TrimSpace(buf.String()), tc.expected)
 	}
 }

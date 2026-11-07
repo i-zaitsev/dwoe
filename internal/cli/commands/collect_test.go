@@ -7,9 +7,9 @@ package commands
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestCollectCmd_Parse(t *testing.T) {
@@ -41,11 +41,11 @@ func TestCollectCmd_Parse(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdCollect)
 
-			assert.NotErr(t, cmd.Parse(tc.args))
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
 
-			assert.Equal(t, cmd.nameOrID, tc.wantID)
-			assert.Equal(t, cmd.repo, tc.wantRepo)
-			assert.Equal(t, cmd.branch, tc.wantBranch)
+			assert.Eq(t, cmd.nameOrID, tc.wantID)
+			assert.Eq(t, cmd.repo, tc.wantRepo)
+			assert.Eq(t, cmd.branch, tc.wantBranch)
 		})
 	}
 }
@@ -67,7 +67,7 @@ func TestCollectCmd_Parse_MissingFlags(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.ErrAs[*cli.ArgMissingError](t, new(cmdCollect).Parse(tc.args))
+			assert.ErrVal(t, new(cmdCollect).Parse(tc.args)).As(new(*cli.ArgMissingError)).Fatal()
 		})
 	}
 }
@@ -75,8 +75,8 @@ func TestCollectCmd_Parse_MissingFlags(t *testing.T) {
 func TestCollectCmd_Parse_Batch(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdCollect)
-	assert.NotErr(t, cmd.Parse([]string{"--batch", "abc-123"}))
-	assert.Equal(t, cmd.batchID, "abc-123")
+	assert.ErrVal(t, cmd.Parse([]string{"--batch", "abc-123"})).Nil().Fatal()
+	assert.Eq(t, cmd.batchID, "abc-123")
 }
 
 func TestCollectCmd_Run_Single(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCollectCmd_Run_Single(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(), "Collected 3 commit(s)")
 }
 
@@ -101,7 +101,7 @@ func TestCollectCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }
 
 func TestCollectCmd_Run_Running(t *testing.T) {
@@ -112,7 +112,7 @@ func TestCollectCmd_Run_Running(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func TestCollectCmd_Run_Pending(t *testing.T) {
@@ -123,5 +123,5 @@ func TestCollectCmd_Run_Pending(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }

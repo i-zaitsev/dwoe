@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 	"github.com/i-zaitsev/dwoe/schema/schematest"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestRenderPrettyLogLine_Container(t *testing.T) {
@@ -35,7 +35,7 @@ func TestRenderPrettyLogLine_Container(t *testing.T) {
 			t.Parallel()
 			got := renderPrettyLogLine(tt.in)
 			if tt.in == "" {
-				assert.Equal(t, got, "")
+				assert.Eq(t, got, "")
 				return
 			}
 			assert.Contains(t, got, `class="row cont"`)
@@ -199,7 +199,7 @@ func TestNewLineMatcher(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			m := newLineMatcher(tt.pattern)
-			assert.Equal(t, m(tt.input), tt.want)
+			assert.Eq(t, m(tt.input), tt.want)
 		})
 	}
 }
@@ -219,7 +219,7 @@ func TestLogsWorkspace_ServerSideFilter(t *testing.T) {
 		req := httptest.NewRequest("GET", "/workspaces/logs?q=ws-1&pretty=1&filter=apples", nil)
 		serv.handler.ServeHTTP(rr, req)
 		body := rr.Body.String()
-		assert.Equal(t, rr.Code, 200)
+		assert.Eq(t, rr.Code, 200)
 		assert.Contains(t, body, "keep apples")
 		if strings.Contains(body, "drop bananas") {
 			t.Errorf("expected non-matching row to be filtered out, got: %s", body)

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestBatch_BranchName(t *testing.T) {
@@ -43,10 +43,10 @@ func TestBatch_SaveRecord(t *testing.T) {
 		},
 	}
 	dataDir := t.TempDir()
-	assert.NotErr(t, SaveRecord(dataDir, rec))
+	assert.ErrVal(t, SaveRecord(dataDir, rec)).Nil().Fatal()
 
 	got, err := LoadRecord(dataDir, "batch-1")
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	if diff := cmp.Diff(rec, got); diff != "" {
 		t.Errorf("round-trip mismatch (-want +got):\n%s", diff)
@@ -56,7 +56,7 @@ func TestBatch_SaveRecord(t *testing.T) {
 func TestBatch_LoadRecord(t *testing.T) {
 	t.Parallel()
 	got, err := LoadRecord("testdata", "test-batch")
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	want := &Record{
 		ID:        "test-batch",
@@ -79,20 +79,20 @@ func TestLoadOrCreate(t *testing.T) {
 
 	t.Run("creates_when_missing", func(t *testing.T) {
 		rec, err := LoadOrCreate(dir, id, "/some/repo")
-		assert.NotErr(t, err)
-		assert.Equal(t, id, rec.ID)
-		assert.Equal(t, rec.SourceDir, "/some/repo")
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, id, rec.ID)
+		assert.Eq(t, rec.SourceDir, "/some/repo")
 		assert.Zero(t, len(rec.Entries))
 	})
 
 	t.Run("loads_existing", func(t *testing.T) {
 		rec, _ := LoadOrCreate(dir, id, "/some/repo")
 		rec.Entries = append(rec.Entries, Entry{WorkspaceID: "ws-1"})
-		assert.NotErr(t, SaveRecord(dir, rec))
+		assert.ErrVal(t, SaveRecord(dir, rec)).Nil().Fatal()
 
 		loaded, err := LoadOrCreate(dir, id, "/some/repo")
-		assert.NotErr(t, err)
-		assert.Equal(t, len(loaded.Entries), 1)
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, len(loaded.Entries), 1)
 	})
 }
 
@@ -111,7 +111,7 @@ func TestBatch_LoadRecord_Errors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := LoadRecord(tt.dataDir, tt.id)
-			assert.Err(t, err)
+			assert.ErrVal(t, err).NotNil().Fatal()
 		})
 	}
 }
@@ -119,6 +119,6 @@ func TestBatch_LoadRecord_Errors(t *testing.T) {
 func TestBatch_ReadRecords(t *testing.T) {
 	t.Parallel()
 	recs, err := ReadRecords("testdata", "batches_many")
-	assert.NotErr(t, err)
-	assert.Equal(t, 3, len(recs))
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, 3, len(recs))
 }
