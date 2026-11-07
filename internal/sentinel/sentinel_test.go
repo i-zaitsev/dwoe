@@ -3,10 +3,10 @@ package sentinel
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestSentinel_FromConfig(t *testing.T) {
@@ -20,7 +20,7 @@ func TestSentinel_FromConfig(t *testing.T) {
 
 	sen := FromConfig(&cfg)
 
-	assert.NotEqual(t, sen.hash, "")
+	assert.NotEq(t, sen.hash, "")
 }
 
 func TestSentinel_FromFile(t *testing.T) {
@@ -32,7 +32,7 @@ func TestSentinel_FromFile(t *testing.T) {
 
 	sen := FromDir(baseDir)
 
-	assert.Equal(t, sen.hash, testHash)
+	assert.Eq(t, sen.hash, testHash)
 }
 
 func TestSentinel_SameHash(t *testing.T) {
@@ -53,7 +53,7 @@ func TestSentinel_SameHash(t *testing.T) {
 		if hash == "" {
 			hash = hashed
 		} else {
-			assert.Equal(t, hash, hashed)
+			assert.Eq(t, hash, hashed)
 		}
 	}
 }
@@ -86,7 +86,7 @@ func TestSentinel_DifferentHash(t *testing.T) {
 		if hash == "" {
 			hash = hashed
 		} else {
-			assert.NotEqual(t, hash, hashed)
+			assert.NotEq(t, hash, hashed)
 		}
 	}
 }
@@ -109,9 +109,9 @@ func TestSentinel_Equal(t *testing.T) {
 	sen1 := FromConfig(&cfg1)
 	sen2 := FromConfig(&cfg2)
 
-	assert.Condition(t, Equal(sen1, sen1))
-	assert.Condition(t, Equal(sen2, sen2))
-	assert.Condition(t, !Equal(sen1, sen2))
+	assert.True(t, Equal(sen1, sen1))
+	assert.True(t, Equal(sen2, sen2))
+	assert.True(t, !Equal(sen1, sen2))
 }
 
 func TestSentinel_Match(t *testing.T) {
@@ -124,10 +124,10 @@ func TestSentinel_Match(t *testing.T) {
 	}
 	sen := FromConfig(&cfg)
 
-	assert.Condition(t, sen.Match(&cfg))
+	assert.True(t, sen.Match(&cfg))
 
 	cfg.Agent = &config.Agent{Provider: provider.Provider{Model: "different-model"}}
-	assert.Condition(t, !sen.Match(&cfg))
+	assert.True(t, !sen.Match(&cfg))
 }
 
 func TestSentinel_Write(t *testing.T) {
@@ -143,7 +143,7 @@ func TestSentinel_Write(t *testing.T) {
 
 	err := sen.Write(baseDir)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	written := testutil.ReadFile(t, sentinelPath(baseDir))
-	assert.Equal(t, sen.hash, written)
+	assert.Eq(t, sen.hash, written)
 }

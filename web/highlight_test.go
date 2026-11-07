@@ -7,7 +7,7 @@ package web
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestHighlightJSON(t *testing.T) {

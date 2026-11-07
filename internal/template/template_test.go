@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestTemplate_SquidConf(t *testing.T) {
@@ -18,7 +18,7 @@ func TestTemplate_SquidConf(t *testing.T) {
 		ProxyPort: 3128,
 	}
 	out, err := SquidConf(&data)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	s := string(out)
 	assert.ContainsAll(t, s, "http_port 3128", "acl allowlist dstdomain", "http_access deny all")
 }
@@ -33,7 +33,7 @@ func TestTemplate_SettingsJSON(t *testing.T) {
 		},
 	}
 	out, err := SettingsJSON(&data)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	s := string(out)
 	assert.ContainsAll(t, s, data.Permissions...)
 	assert.Contains(t, s, `"permissions"`)
@@ -50,7 +50,7 @@ func TestTemplate_GuidelinesMD(t *testing.T) {
 		},
 	}
 	out, err := GuidelinesMD(&data)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	s := string(out)
 	assert.ContainsAll(t, s, data.AllowedDomains...)
 	assert.Contains(t, s, "Autonomous Operation Mode")
@@ -67,7 +67,7 @@ func TestTemplate_Allowlist(t *testing.T) {
 		},
 	}
 	out, err := Allowlist(&data)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	s := string(out)
 	assert.ContainsAll(t, s, data.AllowedDomains...)
 }
@@ -92,7 +92,7 @@ func TestTemplate_WriteAll(t *testing.T) {
 			"two": "2",
 		},
 	}
-	assert.NotErr(t, WriteAll(tmpDir, &data))
+	assert.ErrVal(t, WriteAll(tmpDir, &data)).Nil().Fatal()
 	for _, name := range []string{
 		filepath.Join("proxy", "squid.conf"),
 		filepath.Join("proxy", "allowlist.txt"),

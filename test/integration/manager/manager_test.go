@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/docker"
@@ -22,6 +21,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 const basicImage = "dwoe-integration-test:latest"
@@ -66,13 +66,13 @@ func TestManager_Lifecycle(t *testing.T) {
 	store := state.NewStore(dataDir)
 
 	manager, err := workspace.NewManagerWith(dataDir, testClient, store)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	cfg := testConfig(t)
 	testutil.WriteFile(t, filepath.Join(cfg.Source.LocalPath, "hello.txt"), "hi")
 
 	ws, err := manager.Create(cfg)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	if ws.Status != "pending" {
 		t.Fatalf("workspace status is not pending, got: %s", ws.Status)
 	}
@@ -83,10 +83,10 @@ func TestManager_Lifecycle(t *testing.T) {
 		t.Fatalf("source file not copied into workspace")
 	}
 
-	assert.NotErr(t, manager.Start(ctx, ws.ID))
+	assert.ErrVal(t, manager.Start(ctx, ws.ID)).Nil().Fatal()
 
 	ws2, err := manager.Get(ws.ID)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	if ws2.Status != "running" {
 		t.Fatalf("workspace status is not running, got: %s", ws2.Status)
 	}
@@ -95,23 +95,23 @@ func TestManager_Lifecycle(t *testing.T) {
 	}
 
 	code, err := manager.Wait(ctx, ws.ID)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	if code != 0 {
 		t.Fatalf("workspace exited with non-zero code: %d", code)
 	}
 
-	assert.NotErr(t, manager.Destroy(ctx, ws.ID, workspace.DestroyOpts{KeepDir: false}))
+	assert.ErrVal(t, manager.Destroy(ctx, ws.ID, workspace.DestroyOpts{KeepDir: false})).Nil().Fatal()
 	_, err = manager.Get(ws.ID)
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func TestManager_InvalidConfig(t *testing.T) {
 	dataDir := t.TempDir()
 	store := state.NewStore(dataDir)
 	manager, err := workspace.NewManagerWith(dataDir, testClient, store)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	_, err = manager.Create(&config.Task{})
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func TestManager_DestroyCleanup(t *testing.T) {
@@ -120,19 +120,19 @@ func TestManager_DestroyCleanup(t *testing.T) {
 	store := state.NewStore(dataDir)
 
 	manager, err := workspace.NewManagerWith(dataDir, testClient, store)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	ws, err := manager.Create(testConfig(t))
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
-	assert.NotErr(t, manager.Start(ctx, ws.ID))
-	assert.NotErr(t, manager.Destroy(ctx, ws.ID, workspace.DestroyOpts{}))
+	assert.ErrVal(t, manager.Start(ctx, ws.ID)).Nil().Fatal()
+	assert.ErrVal(t, manager.Destroy(ctx, ws.ID, workspace.DestroyOpts{})).Nil().Fatal()
 
 	if testutil.FileExists(ws.BasePath) {
 		t.Fatalf("workspace base path still exists: %s", ws.BasePath)
 	}
 	_, err = manager.Get(ws.ID)
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func testConfig(t *testing.T) *config.Task {

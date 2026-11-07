@@ -10,8 +10,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/schema/schematest"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestParse_Samples(t *testing.T) {
@@ -36,18 +36,18 @@ func TestParse_Samples(t *testing.T) {
 		{"result", "success", "*schema.Result"},
 		{"system", "api_retry", "*schema.APIRetry"},
 	}
-	assert.Equal(t, len(lines), len(tests))
+	assert.Eq(t, len(lines), len(tests))
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d_%s_%s", i, tt.wantType, tt.wantSubtype), func(t *testing.T) {
 			t.Parallel()
 			v, err := Parse([]byte(lines[i]))
-			assert.NotErr(t, err)
-			assert.Equal(t, fmt.Sprintf("%T", v), tt.wantGoType)
+			assert.ErrVal(t, err).Nil().Fatal()
+			assert.Eq(t, fmt.Sprintf("%T", v), tt.wantGoType)
 
 			env := envelopeOf(t, v)
-			assert.Equal(t, env.Type, tt.wantType)
-			assert.Equal(t, env.Subtype, tt.wantSubtype)
+			assert.Eq(t, env.Type, tt.wantType)
+			assert.Eq(t, env.Subtype, tt.wantSubtype)
 			assert.NotZero(t, len(env.Raw))
 		})
 	}
@@ -71,7 +71,7 @@ func TestParse_Faulty(t *testing.T) {
 		{"unknown_type", nil, "*schema.Unknown", "x"},
 		{"unknown_subtype", nil, "*schema.Unknown", ""},
 	}
-	assert.Equal(t, len(lines), len(tests))
+	assert.Eq(t, len(lines), len(tests))
 
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,16 +79,16 @@ func TestParse_Faulty(t *testing.T) {
 			v, err := Parse([]byte(lines[i]))
 			switch tt.name {
 			case "empty", "whitespace_only":
-				assert.ErrIs(t, err, tt.wantErr)
+				assert.ErrVal(t, err).Is(tt.wantErr).Fatal()
 				return
 			case "plain_text", "invalid_json":
-				assert.Err(t, err)
+				assert.ErrVal(t, err).NotNil().Fatal()
 				return
 			}
-			assert.NotErr(t, err)
-			assert.Equal(t, fmt.Sprintf("%T", v), tt.wantGo)
+			assert.ErrVal(t, err).Nil().Fatal()
+			assert.Eq(t, fmt.Sprintf("%T", v), tt.wantGo)
 			u, ok := v.(*Unknown)
-			assert.Condition(t, ok)
+			assert.True(t, ok)
 			if tt.wantTop != "" {
 				assert.HasKey(t, u.Top, tt.wantTop)
 			}
@@ -100,10 +100,10 @@ func TestParse_SystemInit_Spot(t *testing.T) {
 	t.Parallel()
 	lines := schematest.Lines(t, "sample.jsonl")
 	v, err := Parse([]byte(lines[0]))
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	init, ok := v.(*SystemInit)
-	assert.Condition(t, ok)
+	assert.True(t, ok)
 	assert.NotZero(t, init.Model)
 	if !slices.Contains(init.Tools, "Bash") {
 		t.Errorf("Tools missing Bash: %v", init.Tools)
@@ -116,13 +116,13 @@ func TestParse_Assistant_ToolUse_Spot(t *testing.T) {
 	lines := schematest.Lines(t, "sample.jsonl")
 	// Line 3 (index 2) is the assistant/tool_use fixture.
 	v, err := Parse([]byte(lines[2]))
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	a, ok := v.(*Assistant)
-	assert.Condition(t, ok)
-	assert.Equal(t, len(a.Message.Content), 1)
+	assert.True(t, ok)
+	assert.Eq(t, len(a.Message.Content), 1)
 	block := a.Message.Content[0]
-	assert.Equal(t, block.Type, "tool_use")
+	assert.Eq(t, block.Type, "tool_use")
 	assert.NotZero(t, block.Name)
 	assert.NotZero(t, len(block.Input))
 }
@@ -131,12 +131,12 @@ func TestParse_Raw_PreservesUnmodelled(t *testing.T) {
 	t.Parallel()
 	lines := schematest.Lines(t, "sample.jsonl")
 	v, err := Parse([]byte(lines[0]))
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	init, ok := v.(*SystemInit)
-	assert.Condition(t, ok)
+	assert.True(t, ok)
 	var top map[string]json.RawMessage
-	assert.NotErr(t, json.Unmarshal(init.Raw, &top))
+	assert.ErrVal(t, json.Unmarshal(init.Raw, &top)).Nil().Fatal()
 	// output_style is emitted by the CLI but intentionally not modelled
 	// on SystemInit; renderers reach it via Raw.
 	assert.HasKey(t, top, "output_style")

@@ -8,17 +8,17 @@ import (
 	"os"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestCreateCmd_Parse(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdCreate)
-	assert.NotErr(t, cmd.Parse([]string{"-name", "custom", "/path/to/task.yaml"}))
-	assert.Equal(t, cmd.taskPath, "/path/to/task.yaml")
-	assert.Equal(t, cmd.name, "custom")
+	assert.ErrVal(t, cmd.Parse([]string{"-name", "custom", "/path/to/task.yaml"})).Nil().Fatal()
+	assert.Eq(t, cmd.taskPath, "/path/to/task.yaml")
+	assert.Eq(t, cmd.name, "custom")
 }
 
 func TestCreateCmd_Parse_Errors(t *testing.T) {
@@ -33,9 +33,9 @@ func TestCreateCmd_Run(t *testing.T) {
 
 	err := cmd.Run(ts.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	nDirs := testutil.DirCount(ts.env.DataDir(), "workspaces", "*", "workspace")
-	assert.Equal(t, nDirs, 1)
+	assert.Eq(t, nDirs, 1)
 	assert.ContainsAll(t, ts.stdout.String(), "Workspace created: test-task", "Status: pending")
 }
 
@@ -47,7 +47,7 @@ func TestCreateCmd_Run_SkipIfDone(t *testing.T) {
 	cmd := &cmdCreate{taskPath: taskFile}
 	err := cmd.Run(setup.env)
 
-	assert.ErrIs(t, err, workspace.ErrWorkspaceDone)
+	assert.ErrVal(t, err).Is(workspace.ErrWorkspaceDone).Fatal()
 	assert.Contains(t, setup.stdout.String(), "Workspace already done")
 }
 
@@ -58,5 +58,5 @@ func TestCreateCmd_Run_MissingFile(t *testing.T) {
 
 	err := cmd.Run(ts.env)
 
-	assert.ErrIs(t, err, os.ErrNotExist)
+	assert.ErrVal(t, err).Is(os.ErrNotExist).Fatal()
 }

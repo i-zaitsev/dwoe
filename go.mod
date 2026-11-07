@@ -6,6 +6,7 @@ require (
 	github.com/docker/go-units v0.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
+	github.com/i-zaitsev/pkg v0.1.1
 	github.com/moby/moby/api v1.52.0
 	github.com/moby/moby/client v0.1.0
 	gopkg.in/yaml.v3 v3.0.1

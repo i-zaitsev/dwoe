@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestParseBuildOutput(t *testing.T) {
@@ -19,7 +19,7 @@ func TestParseBuildOutput(t *testing.T) {
 {"stream":"Successfully built abc123\n"}
 `
 	var buf bytes.Buffer
-	assert.NotErr(t, parseBuildOutput(strings.NewReader(input), &buf))
+	assert.ErrVal(t, parseBuildOutput(strings.NewReader(input), &buf)).Nil().Fatal()
 	assert.ContainsAll(t, buf.String(), "Step 1/3", "Step 2/3", "Successfully built")
 }
 
@@ -30,5 +30,5 @@ func TestParseBuildOutput_Error(t *testing.T) {
 `
 	var buf bytes.Buffer
 	err := parseBuildOutput(strings.NewReader(input), &buf)
-	assert.ErrAs[*BuildError](t, err)
+	assert.ErrVal(t, err).As(new(*BuildError)).Fatal()
 }

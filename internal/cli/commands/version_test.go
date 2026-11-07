@@ -8,9 +8,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/version"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestVersionCmd_Run(t *testing.T) {
@@ -19,8 +19,8 @@ func TestVersionCmd_Run(t *testing.T) {
 	e := cli.NewEnv(&stdout, &stderr)
 	cmd := &cmdVersion{}
 
-	assert.NotErr(t, cmd.Run(e))
+	assert.ErrVal(t, cmd.Run(e)).Nil().Fatal()
 
 	want := version.Get() + "\n"
-	assert.Equal(t, stdout.String(), want)
+	assert.Eq(t, stdout.String(), want)
 }

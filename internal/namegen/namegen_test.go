@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestGenerate(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		name := Generate()
 		parts := strings.Split(name, "-")
-		assert.Equal(t, len(parts), 3)
+		assert.Eq(t, len(parts), 3)
 		if parts[0] == parts[1] {
 			t.Errorf("adjectives should be distinct: %q", name)
 		}

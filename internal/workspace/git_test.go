@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -31,7 +31,7 @@ func TestGit_CloneRepo(t *testing.T) {
 	t.Parallel()
 	repoDir := t.TempDir()
 	err := CloneRepo("https://github.com/i-zaitsev/url.git", repoDir, "main")
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 }
 
 func TestGit_CopyLocalDir(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGit_CopyLocalDir(t *testing.T) {
 	srcDir := t.TempDir()
 	dstDir := t.TempDir()
 	err := CopyLocalDir(srcDir, dstDir)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 }
 
 func TestGit_CloneAndCopy(t *testing.T) {
@@ -47,8 +47,8 @@ func TestGit_CloneAndCopy(t *testing.T) {
 	cloneDir := t.TempDir()
 	copyDir := t.TempDir()
 
-	assert.NotErr(t, CloneRepo("https://github.com/i-zaitsev/url.git", cloneDir, "main"))
-	assert.NotErr(t, CopyLocalDir(cloneDir, copyDir))
+	assert.ErrVal(t, CloneRepo("https://github.com/i-zaitsev/url.git", cloneDir, "main")).Nil().Fatal()
+	assert.ErrVal(t, CopyLocalDir(cloneDir, copyDir)).Nil().Fatal()
 
 	if _, err := os.Stat(filepath.Join(cloneDir, ".git")); err != nil {
 		t.Fatal("clone missing .git")
@@ -79,7 +79,7 @@ func TestCopyTree_PreservesGit(t *testing.T) {
 
 	testutil.WriteFile(t, filepath.Join(srcDir, ".git", "HEAD"), "ref: refs/heads/main\n")
 
-	assert.NotErr(t, CopyTree(srcDir, dstDir))
+	assert.ErrVal(t, CopyTree(srcDir, dstDir)).Nil().Fatal()
 	assert.PathExists(t, filepath.Join(dstDir, ".git", "HEAD"))
 }
 
@@ -100,7 +100,7 @@ func TestGit_CloneCopyErrors(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
-			assert.Err(t, testFn(tmpDir))
+			assert.ErrVal(t, testFn(tmpDir)).NotNil().Fatal()
 		})
 	}
 }
@@ -112,7 +112,7 @@ func TestGit_InitRepo(t *testing.T) {
 		"user.name":  "Test User",
 		"user.email": "test@example.com",
 	}
-	assert.NotErr(t, InitRepo(dir, cfg["user.name"], cfg["user.email"]))
+	assert.ErrVal(t, InitRepo(dir, cfg["user.name"], cfg["user.email"])).Nil().Fatal()
 	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
 		t.Fatal("missing .git")
 	}
@@ -134,8 +134,8 @@ func TestCollect(t *testing.T) {
 	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 
 	n, err := Collect(wsDir, targetDir, "agent/feature")
-	assert.NotErr(t, err)
-	assert.Equal(t, n, 2)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, n, 2)
 
 	// Verify branch exists with the commits.
 	out, _ := exec.Command("git", "-C", targetDir, "log", "--oneline", "agent/feature").CombinedOutput()
@@ -144,7 +144,7 @@ func TestCollect(t *testing.T) {
 
 	// Verify we're back on main.
 	branch, _ := exec.Command("git", "-C", targetDir, "rev-parse", "--abbrev-ref", "HEAD").CombinedOutput()
-	assert.Equal(t, strings.TrimSpace(string(branch)), "main")
+	assert.Eq(t, strings.TrimSpace(string(branch)), "main")
 }
 
 func TestCollect_NoAgentCommits(t *testing.T) {
@@ -154,7 +154,7 @@ func TestCollect_NoAgentCommits(t *testing.T) {
 	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 
 	n, err := Collect(wsDir, targetDir, "agent/empty")
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Zero(t, n)
 }
 
@@ -169,18 +169,18 @@ func TestCollect_BranchExists(t *testing.T) {
 	mustGit(t, "-C", targetDir, "checkout", "main")
 
 	_, err := Collect(wsDir, targetDir, "taken")
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func TestEnsureRepoReady_AlreadyInit(t *testing.T) {
 	t.Parallel()
 	dir := initTestRepo(t, "Test", "test@test.dev")
 
-	assert.NotErr(t, EnsureRepoReady(dir, "Test", "test@test.dev"))
+	assert.ErrVal(t, EnsureRepoReady(dir, "Test", "test@test.dev")).Nil().Fatal()
 
 	out, _ := exec.Command("git", "-C", dir, "log", "--oneline").CombinedOutput()
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-	assert.Equal(t, len(lines), 1)
+	assert.Eq(t, len(lines), 1)
 }
 
 func TestEnsureRepoReady_NewRepo(t *testing.T) {
@@ -188,7 +188,7 @@ func TestEnsureRepoReady_NewRepo(t *testing.T) {
 	dir := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(dir, "main.go"), "package main")
 
-	assert.NotErr(t, EnsureRepoReady(dir, "Test", "test@test.dev"))
+	assert.ErrVal(t, EnsureRepoReady(dir, "Test", "test@test.dev")).Nil().Fatal()
 
 	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
 		t.Fatal("expected .git to exist")
@@ -210,7 +210,7 @@ func TestMergeBranches(t *testing.T) {
 	addCommit(t, dir, "b.txt", "b", "add b")
 	mustGit(t, "-C", dir, "checkout", "main")
 
-	assert.NotErr(t, MergeBranches(dir, []string{"branch-a", "branch-b"}, "merge features"))
+	assert.ErrVal(t, MergeBranches(dir, []string{"branch-a", "branch-b"}, "merge features")).Nil().Fatal()
 
 	for _, f := range []string{"a.txt", "b.txt"} {
 		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
@@ -221,7 +221,7 @@ func TestMergeBranches(t *testing.T) {
 
 func TestMergeBranches_Empty(t *testing.T) {
 	t.Parallel()
-	assert.NotErr(t, MergeBranches("/nonexistent", nil, "msg"))
+	assert.ErrVal(t, MergeBranches("/nonexistent", nil, "msg")).Nil().Fatal()
 }
 
 func TestExportPatches(t *testing.T) {
@@ -233,11 +233,11 @@ func TestExportPatches(t *testing.T) {
 
 	outDir := filepath.Join(t.TempDir(), "patches")
 	n, err := ExportPatches(wsDir, outDir)
-	assert.NotErr(t, err)
-	assert.Equal(t, n, 2)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, n, 2)
 
 	patches, _ := filepath.Glob(filepath.Join(outDir, "*.patch"))
-	assert.Equal(t, len(patches), 2)
+	assert.Eq(t, len(patches), 2)
 
 	for _, p := range patches {
 		data, err := os.ReadFile(p)
@@ -257,7 +257,7 @@ func TestExportPatches_NoAgentCommits(t *testing.T) {
 
 	outDir := filepath.Join(t.TempDir(), "patches")
 	n, err := ExportPatches(wsDir, outDir)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Zero(t, n)
 }
 
@@ -269,8 +269,8 @@ func TestExportPatches_PatchesApplyCleanly(t *testing.T) {
 
 	outDir := filepath.Join(t.TempDir(), "patches")
 	n, err := ExportPatches(wsDir, outDir)
-	assert.NotErr(t, err)
-	assert.Equal(t, n, 1)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, n, 1)
 
 	targetDir := initTestRepo(t, "Owner", "owner@test.dev")
 
@@ -322,7 +322,7 @@ func TestWalkDir(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 		files, err := walkDir(dir, ".git")
-		assert.NotErr(t, err)
+		assert.ErrVal(t, err).Nil().Fatal()
 		assert.Zero(t, len(files))
 	})
 
@@ -333,8 +333,8 @@ func TestWalkDir(t *testing.T) {
 		testutil.WriteFile(t, filepath.Join(dir, "sub", "b.txt"), "b")
 
 		files, err := walkDir(dir)
-		assert.NotErr(t, err)
-		assert.Equal(t, len(files), 2)
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, len(files), 2)
 		want := map[string]bool{"a.txt": true, filepath.Join("sub", "b.txt"): true}
 		for _, f := range files {
 			if !want[f] {
@@ -351,15 +351,15 @@ func TestWalkDir(t *testing.T) {
 		testutil.WriteFile(t, filepath.Join(dir, ".git", "objects", "x"), "obj")
 
 		files, err := walkDir(dir, ".git")
-		assert.NotErr(t, err)
-		assert.Equal(t, len(files), 1)
-		assert.Equal(t, files[0], "file.txt")
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, len(files), 1)
+		assert.Eq(t, files[0], "file.txt")
 	})
 
 	t.Run("nonexistent_dir", func(t *testing.T) {
 		t.Parallel()
 		_, err := walkDir("/no/such/dir")
-		assert.Err(t, err)
+		assert.ErrVal(t, err).NotNil().Fatal()
 	})
 
 	t.Run("file_not_dir", func(t *testing.T) {
@@ -367,7 +367,7 @@ func TestWalkDir(t *testing.T) {
 		f := filepath.Join(t.TempDir(), "file.txt")
 		testutil.WriteFile(t, f, "x")
 		_, err := walkDir(f)
-		assert.Err(t, err)
+		assert.ErrVal(t, err).NotNil().Fatal()
 	})
 }
 
@@ -397,7 +397,7 @@ func TestGit_InitRepoErrors(t *testing.T) {
 	for _, tc := range emptyCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			t.Parallel()
-			assert.Err(t, InitRepo(t.TempDir(), tc.userName, tc.userEmail))
+			assert.ErrVal(t, InitRepo(t.TempDir(), tc.userName, tc.userEmail)).NotNil().Fatal()
 		})
 	}
 }

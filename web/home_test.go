@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestHome_returnsPage(t *testing.T) {
@@ -19,6 +19,6 @@ func TestHome_returnsPage(t *testing.T) {
 
 	serv.handler.ServeHTTP(rr, req)
 
-	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, rr.Header().Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Eq(t, rr.Code, http.StatusOK)
+	assert.Eq(t, rr.Header().Get("Content-Type"), "text/html; charset=utf-8")
 }

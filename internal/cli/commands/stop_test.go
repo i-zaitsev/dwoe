@@ -7,8 +7,8 @@ package commands
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestStopCmd_Parse(t *testing.T) {
@@ -27,9 +27,9 @@ func TestStopCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdStop)
-			assert.NotErr(t, cmd.Parse(tc.args))
-			assert.Equal(t, cmd.nameOrID, tc.wantID)
-			assert.Equal(t, cmd.force, tc.wantForce)
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
+			assert.Eq(t, cmd.nameOrID, tc.wantID)
+			assert.Eq(t, cmd.force, tc.wantForce)
 		})
 	}
 }
@@ -46,7 +46,7 @@ func TestStopCmd_Run(t *testing.T) {
 	setup.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": fakeContainer}
 	cmd := &cmdStop{nameOrID: "ws-1"}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(), "Stopping workspace:", "Workspace stopped.")
 }
 
@@ -57,7 +57,7 @@ func TestStopCmd_Run_Force(t *testing.T) {
 	setup.state.Data["ws-1"].ContainerIDs = map[string]string{"agent": fakeContainer}
 	cmd := &cmdStop{nameOrID: "ws-1", force: true}
 
-	assert.NotErr(t, cmd.Run(setup.env))
+	assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(), "Workspace stopped.")
 }
 
@@ -68,5 +68,5 @@ func TestStopCmd_Run_NotFound(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }

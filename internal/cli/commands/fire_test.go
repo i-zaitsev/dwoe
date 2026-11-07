@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestFireCmd_Parse(t *testing.T) {
@@ -35,12 +35,12 @@ func TestFireCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdFire)
-			assert.NotErr(t, cmd.Parse(tc.args))
-			assert.Equal(t, cmd.repo, tc.wantRepo)
-			assert.Equal(t, cmd.work, tc.wantWork)
-			assert.Equal(t, cmd.do, tc.wantDo)
-			assert.Equal(t, cmd.model, tc.wantModel)
-			assert.Equal(t, cmd.batchID, tc.wantBatch)
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
+			assert.Eq(t, cmd.repo, tc.wantRepo)
+			assert.Eq(t, cmd.work, tc.wantWork)
+			assert.Eq(t, cmd.do, tc.wantDo)
+			assert.Eq(t, cmd.model, tc.wantModel)
+			assert.Eq(t, cmd.batchID, tc.wantBatch)
 		})
 	}
 }
@@ -48,14 +48,14 @@ func TestFireCmd_Parse(t *testing.T) {
 func TestFireCmd_Parse_Provider(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdFire)
-	assert.NotErr(t, cmd.Parse([]string{"-r", "/tmp/repo", "--provider", "openai"}))
-	assert.Equal(t, cmd.provider, "openai")
+	assert.ErrVal(t, cmd.Parse([]string{"-r", "/tmp/repo", "--provider", "openai"})).Nil().Fatal()
+	assert.Eq(t, cmd.provider, "openai")
 }
 
 func TestFireCmd_Parse_DoAndWorkConflict(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdFire)
-	assert.Err(t, cmd.Parse([]string{"-r", "/tmp/repo", "--do", "fix", "-w", "task.md"}))
+	assert.ErrVal(t, cmd.Parse([]string{"-r", "/tmp/repo", "--do", "fix", "-w", "task.md"})).NotNil().Fatal()
 }
 
 func TestFireCmd_Parse_Errors(t *testing.T) {
@@ -74,7 +74,7 @@ func TestFireCmd_Run(t *testing.T) {
 		testutil.WriteFile(t, workFile, "do the thing")
 
 		cmd := &cmdFire{repo: srcDir, work: workFile}
-		assert.NotErr(t, cmd.Run(setup.env))
+		assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 		assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "View logs:")
 	})
 
@@ -84,7 +84,7 @@ func TestFireCmd_Run(t *testing.T) {
 		srcDir := t.TempDir()
 
 		cmd := &cmdFire{repo: srcDir, do: "just do it"}
-		assert.NotErr(t, cmd.Run(setup.env))
+		assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 		assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "View logs:")
 	})
 
@@ -96,7 +96,7 @@ func TestFireCmd_Run(t *testing.T) {
 		testutil.WriteFile(t, workFile, "do the thing")
 
 		cmd := &cmdFire{repo: srcDir, work: workFile, batchID: "test-batch"}
-		assert.NotErr(t, cmd.Run(setup.env))
+		assert.ErrVal(t, cmd.Run(setup.env)).Nil().Fatal()
 		assert.ContainsAll(t, setup.stdout.String(), "Started workspace:", "Batch: test-batch")
 	})
 }
@@ -113,10 +113,10 @@ func TestFireCmd_ResolveWork_SingleFile(t *testing.T) {
 
 	got, err := resolveWork("./task.md")
 
-	assert.NotErr(t, err)
-	assert.Condition(t, filepath.IsAbs(got))
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.True(t, filepath.IsAbs(got))
 	data, _ := os.ReadFile(got)
-	assert.Equal(t, string(data), "do the thing")
+	assert.Eq(t, string(data), "do the thing")
 }
 
 func TestFireCmd_ResolveWork_Directory(t *testing.T) {
@@ -127,7 +127,7 @@ func TestFireCmd_ResolveWork_Directory(t *testing.T) {
 
 	got, err := resolveWork(dir)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	data, _ := os.ReadFile(got)
 	content := string(data)
 	assert.ContainsAll(t, content, "a.md", "first", "b.md", "second")
@@ -149,7 +149,7 @@ func TestFireCmd_IsRepoURL(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, isRepoURL(tc.input), tc.want)
+			assert.Eq(t, isRepoURL(tc.input), tc.want)
 		})
 	}
 }

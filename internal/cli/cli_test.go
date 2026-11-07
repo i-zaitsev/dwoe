@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func init() {
@@ -64,7 +64,7 @@ func TestParseGlobalFlags_FromArgs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("args=%v", tc.args), func(t *testing.T) {
 			got, _, err := parseGlobalFlags(tc.args)
-			assert.NotErr(t, err)
+			assert.ErrVal(t, err).Nil().Fatal()
 			if diff := cmp.Diff(tc.want, *got, cmp.AllowUnexported(GlobalFlags{})); diff != "" {
 				t.Fatalf("flags mismatch (-want +got):\n%s", diff)
 			}
@@ -84,7 +84,7 @@ func TestParseGlobalFlags_RestArgs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("args=%v", tc.args), func(t *testing.T) {
 			_, rest, err := parseGlobalFlags(tc.args)
-			assert.NotErr(t, err)
+			assert.ErrVal(t, err).Nil().Fatal()
 			if diff := cmp.Diff(tc.rest, rest); diff != "" {
 				t.Fatalf("rest mismatch (-want +got):\n%s", diff)
 			}
@@ -110,12 +110,12 @@ func TestRequiredArg(t *testing.T) {
 			t.Parallel()
 			cmd := &stubCmd{name: "demo"}
 			fs, err := ParseFlags(cmd, tt.args, nil)
-			assert.NotErr(t, err)
+			assert.ErrVal(t, err).Nil().Fatal()
 
 			got, err := RequiredArg(cmd, fs, "task file")
 			if !tt.wantErr {
-				assert.NotErr(t, err)
-				assert.Equal(t, got, tt.want)
+				assert.ErrVal(t, err).Nil().Fatal()
+				assert.Eq(t, got, tt.want)
 				return
 			}
 
@@ -123,7 +123,7 @@ func TestRequiredArg(t *testing.T) {
 			if !errors.As(err, &missing) {
 				t.Fatalf("error = %v, want ArgMissingError", err)
 			}
-			assert.Equal(t, missing.Name, tt.wantField)
+			assert.Eq(t, missing.Name, tt.wantField)
 			assert.Contains(t, err.Error(), "demo: task file is required")
 		})
 	}
@@ -134,7 +134,7 @@ func TestRunNoArgs(t *testing.T) {
 
 	err := Run(e, nil)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Contains(t, stdout.String(), "Usage:")
 }
 
@@ -143,8 +143,8 @@ func TestRunUnknownCommand(t *testing.T) {
 
 	err := Run(e, []string{"bogus"})
 
-	assert.Err(t, err)
-	assert.ErrIs(t, err, ErrUnknownCommand)
+	assert.ErrVal(t, err).NotNil().Fatal()
+	assert.ErrVal(t, err).Is(ErrUnknownCommand).Fatal()
 }
 
 func TestRunHelp(t *testing.T) {
@@ -152,7 +152,7 @@ func TestRunHelp(t *testing.T) {
 		t.Run(arg, func(t *testing.T) {
 			e, stdout, _ := testEnv()
 			err := Run(e, []string{arg})
-			assert.NotErr(t, err)
+			assert.ErrVal(t, err).Nil().Fatal()
 
 			out := stdout.String()
 			assert.ContainsAll(t, out, "Usage:", "Flags:", "Commands:")
@@ -192,7 +192,7 @@ func TestDispatchCmdHelp(t *testing.T) {
 
 	e, stdout, _ := testEnv()
 	err := dispatchCmd(e, "test", []string{"-h"})
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	out := stdout.String()
 	assert.Contains(t, out, "A test command")
 	assert.Contains(t, out, "Usage:")

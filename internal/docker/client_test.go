@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 var (
@@ -37,16 +37,16 @@ func TestMain(m *testing.M) {
 }
 
 func TestClient_Ping(t *testing.T) {
-	assert.NotErr(t, testClient.Ping(context.Background()))
+	assert.ErrVal(t, testClient.Ping(context.Background())).Nil().Fatal()
 }
 
 func TestClient_BuildImage(t *testing.T) {
 	dir := t.TempDir()
 	dockerfile := filepath.Join(dir, "Dockerfile")
-	assert.NotErr(t, os.WriteFile(dockerfile, []byte("FROM alpine\n"), 0644))
+	assert.ErrVal(t, os.WriteFile(dockerfile, []byte("FROM alpine\n"), 0644)).Nil().Fatal()
 
 	tag := "test-build-" + time.Now().Format("150405")
-	assert.NotErr(t, testClient.BuildImage(context.Background(), dockerfile, tag, io.Discard))
+	assert.ErrVal(t, testClient.BuildImage(context.Background(), dockerfile, tag, io.Discard)).Nil().Fatal()
 }
 
 func TestClient_ContainerLifecycle(t *testing.T) {
@@ -67,7 +67,7 @@ func TestClient_ContainerLifecycle(t *testing.T) {
 			t.Fatal(errRemove)
 		}
 	}
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 }
 
 func TestClient_NetworkLifecycle(t *testing.T) {
@@ -82,7 +82,7 @@ func TestClient_NetworkLifecycle(t *testing.T) {
 		GetNetworkID(name),
 		RemoveNetwork(),
 	)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	if state.NetworkID == "" {
 		t.Fatal("expected network ID")
 	}
@@ -96,11 +96,11 @@ func TestClient_NetworkAlreadyExists(t *testing.T) {
 	}
 
 	id1, err := testClient.CreateNetwork(ctx, cfg)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	id2, err := testClient.CreateNetwork(ctx, cfg)
-	assert.NotErr(t, err)
-	assert.Equal(t, id1, id2)
-	assert.NotErr(t, testClient.RemoveNetwork(ctx, id1))
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, id1, id2)
+	assert.ErrVal(t, testClient.RemoveNetwork(ctx, id1)).Nil().Fatal()
 }
 
 func TestClient_ContainerNetworkLifecycle(t *testing.T) {
@@ -123,7 +123,7 @@ func TestClient_ContainerNetworkLifecycle(t *testing.T) {
 		RemoveContainer(true),
 		RemoveNetwork(),
 	)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	if state.NetworkID == "" {
 		t.Fatal("expected network ID")
 	}

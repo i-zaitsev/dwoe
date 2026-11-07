@@ -16,12 +16,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/sentinel"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestNewManager(t *testing.T) {
@@ -44,10 +44,10 @@ func TestManager_Create(t *testing.T) {
 		Source: config.Source{LocalPath: t.TempDir()},
 	}))
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NotZero(t, ws.ID)
-	assert.Equal(t, ws.Name, "test-task")
-	assert.Equal(t, ws.Status, "pending")
+	assert.Eq(t, ws.Name, "test-task")
+	assert.Eq(t, ws.Status, "pending")
 	assert.NotZero(t, ts.state.Data[ws.ID])
 	for _, dir := range []string{"workspace", "logs/agent", "logs/proxy", ".docker", "config.yaml"} {
 		assert.PathExists(t, filepath.Join(ws.BasePath, dir))
@@ -61,14 +61,14 @@ func TestManager_Get(t *testing.T) {
 
 	t.Run("found_by_id", func(t *testing.T) {
 		ws, err := ts.manager.Get("test-id")
-		assert.NotErr(t, err)
-		assert.Equal(t, ws.Status, "testing")
-		assert.Equal(t, ws.Config.Description, "test task")
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, ws.Status, "testing")
+		assert.Eq(t, ws.Config.Description, "test task")
 	})
 
 	t.Run("not_found_by_id", func(t *testing.T) {
 		_, err := ts.manager.Get("nonexistent")
-		assert.Err(t, err)
+		assert.ErrVal(t, err).NotNil().Fatal()
 	})
 }
 
@@ -79,13 +79,13 @@ func TestManager_GetByName(t *testing.T) {
 
 	t.Run("found_by_name", func(t *testing.T) {
 		ws, err := ts.manager.GetByName("my-task")
-		assert.NotErr(t, err)
-		assert.Equal(t, ws.ID, "some-id")
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, ws.ID, "some-id")
 	})
 
 	t.Run("not_found_by_name", func(t *testing.T) {
 		_, err := ts.manager.GetByName("nonexistent")
-		assert.Err(t, err)
+		assert.ErrVal(t, err).NotNil().Fatal()
 	})
 }
 
@@ -97,8 +97,8 @@ func TestManager_List(t *testing.T) {
 
 	ws, err := ts.manager.List()
 
-	assert.NotErr(t, err)
-	assert.Equal(t, len(ws), 2)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, len(ws), 2)
 	ids := map[string]bool{}
 	for _, w := range ws {
 		ids[w.ID] = true
@@ -115,13 +115,13 @@ func TestManager_Start(t *testing.T) {
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoDiff(t, []string{
 		"CreateNetwork",
 		"CreateContainer", "StartContainer", // proxy
 		"CreateContainer", "StartContainer", // agent
 	}, ts.docker.Calls)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, "running")
+	assert.Eq(t, ts.state.Data["ws-1"].Status, "running")
 	assert.HasKey(t, ts.state.Data["ws-1"].ContainerIDs, "proxy")
 	assert.HasKey(t, ts.state.Data["ws-1"].ContainerIDs, "agent")
 	assert.NotZero(t, ts.state.Data["ws-1"].NetworkID)
@@ -134,7 +134,7 @@ func TestManager_Start_Templates(t *testing.T) {
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	for _, name := range []string{
 		filepath.Join("proxy", "squid.conf"),
 		filepath.Join("proxy", "allowlist.txt"),
@@ -166,7 +166,7 @@ func TestManager_Start_ContainerConfig(t *testing.T) {
 	err := ts.manager.Start(context.Background(), "ws-1")
 
 	wantAction := "CreateContainer"
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	if !slices.Contains(ts.docker.Calls, wantAction) {
 		t.Fatalf("%s not called", wantAction)
 	}
@@ -190,7 +190,7 @@ func TestManager_Start_WithProxy(t *testing.T) {
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoDiff(t, []string{
 		"CreateNetwork",
 		"CreateContainer", "StartContainer", // proxy
@@ -209,7 +209,7 @@ func TestManager_Start_WithoutProxy(t *testing.T) {
 
 	err := ts.manager.Start(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoKey(t, ts.state.Data["ws-1"].ContainerIDs, "proxy")
 }
 
@@ -225,7 +225,7 @@ func TestManager_Stop_WithProxy(t *testing.T) {
 
 	err := ts.manager.Stop(context.Background(), "ws-1", time.Minute)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoDiff(t, []string{"StopContainer", "StopContainer"}, ts.docker.Calls) // stops both containers
 }
 
@@ -236,9 +236,9 @@ func TestManager_Stop(t *testing.T) {
 
 	err := ts.manager.Stop(context.Background(), "ws-1", time.Minute)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoDiff(t, []string{"StopContainer"}, ts.docker.Calls)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, "stopped")
+	assert.Eq(t, ts.state.Data["ws-1"].Status, "stopped")
 }
 
 func TestManager_Logs(t *testing.T) {
@@ -248,7 +248,7 @@ func TestManager_Logs(t *testing.T) {
 
 	rc, err := ts.manager.Logs(context.Background(), "ws-1", true)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NotNil(t, rc)
 	_ = rc.Close()
 	assert.NoDiff(t, []string{"ContainerLogs"}, ts.docker.Calls)
@@ -260,10 +260,10 @@ func TestManager_Wait(t *testing.T) {
 	ts.setWorkspace(t, "ws-1", "running", withAgent())
 
 	_, err := ts.manager.Wait(context.Background(), "ws-1")
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	assert.NoDiff(t, []string{"WaitContainer"}, ts.docker.Calls)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, "completed")
+	assert.Eq(t, ts.state.Data["ws-1"].Status, "completed")
 	assert.NotNil(t, ts.state.Data["ws-1"].FinishedAt)
 }
 
@@ -304,10 +304,10 @@ func TestManager_Sync_ContainerExit(t *testing.T) {
 			ts.setWorkspace(t, "ws-1", "running", withFullDocker())
 			ts.docker.InspectContainerFn = tt.inspectFn
 
-			assert.NotErr(t, ts.manager.Sync(context.Background(), "ws-1"))
+			assert.ErrVal(t, ts.manager.Sync(context.Background(), "ws-1")).Nil().Fatal()
 
 			ws := ts.state.Data["ws-1"]
-			assert.Equal(t, ws.Status, tt.wantStatus)
+			assert.Eq(t, ws.Status, tt.wantStatus)
 			assert.NotNil(t, ws.FinishedAt)
 			assert.Nil(t, ws.ContainerIDs)
 			assert.Zero(t, ws.NetworkID)
@@ -323,9 +323,9 @@ func TestManager_Sync_StillRunning(t *testing.T) {
 
 	err := ts.manager.Sync(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	ws := ts.state.Data["ws-1"]
-	assert.Equal(t, ws.Status, "running")
+	assert.Eq(t, ws.Status, "running")
 	assert.Nil(t, ws.FinishedAt)
 }
 
@@ -336,7 +336,7 @@ func TestManager_Sync_NotRunning(t *testing.T) {
 
 	err := ts.manager.Sync(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Zero(t, len(ts.docker.Calls))
 }
 
@@ -357,7 +357,7 @@ func TestManager_Destroy(t *testing.T) {
 				DestroyOpts{KeepDir: keepDir},
 			)
 
-			assert.NotErr(t, err)
+			assert.ErrVal(t, err).Nil().Fatal()
 			assert.NoDiff(t, wantCalls, ts.docker.Calls)
 			assert.Nil(t, ts.state.Data["ws-1"])
 			if !keepDir {
@@ -375,7 +375,7 @@ func TestManager_Cleanup(t *testing.T) {
 
 	err := ts.manager.Cleanup(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoDiff(t, wantCalls, ts.docker.Calls)
 	assert.NotNil(t, ts.state.Data["ws-1"])
 	assert.Nil(t, ts.state.Data["ws-1"].ContainerIDs)
@@ -394,10 +394,10 @@ func TestManager_Cleanup_SavesLogs(t *testing.T) {
 
 	err := ts.manager.Cleanup(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	data, err := os.ReadFile(filepath.Join(basePath, "logs", "agent", savedLogFile))
-	assert.NotErr(t, err)
-	assert.Equal(t, string(data), wantLogs)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, string(data), wantLogs)
 }
 
 func TestManager_Logs_FallbackToFile(t *testing.T) {
@@ -408,11 +408,11 @@ func TestManager_Logs_FallbackToFile(t *testing.T) {
 
 	rc, err := ts.manager.Logs(context.Background(), "ws-1", false)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	data, err := io.ReadAll(rc)
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	_ = rc.Close()
-	assert.Equal(t, string(data), "saved output\n")
+	assert.Eq(t, string(data), "saved output\n")
 }
 
 func TestManager_Create_DuplicateName(t *testing.T) {
@@ -424,14 +424,14 @@ func TestManager_Create_DuplicateName(t *testing.T) {
 		Name:   "dup-test",
 		Source: config.Source{LocalPath: src},
 	}))
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	ws2, err := ts.manager.Create(testTask(&config.Task{
 		Name:   "dup-test",
 		Source: config.Source{LocalPath: src},
 	}))
-	assert.NotErr(t, err)
-	assert.Equal(t, ws1.Name, "dup-test")
-	assert.Equal(t, ws2.Name, "dup-test-1")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, ws1.Name, "dup-test")
+	assert.Eq(t, ws2.Name, "dup-test-1")
 }
 
 func TestManager_Create_CopiesPromptFile(t *testing.T) {
@@ -449,11 +449,11 @@ func TestManager_Create_CopiesPromptFile(t *testing.T) {
 		},
 	}))
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	data, err := os.ReadFile(filepath.Join(ws.BasePath, "workspace", "task-prompt.md"))
-	assert.NotErr(t, err)
-	assert.Equal(t, string(data), "Do the thing")
-	assert.Equal(t, ws.Config.Source.PromptFile, "task-prompt.md")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, string(data), "Do the thing")
+	assert.Eq(t, ws.Config.Source.PromptFile, "task-prompt.md")
 }
 
 func TestManager_Create_StoresPromptFileAsBasename(t *testing.T) {
@@ -471,10 +471,10 @@ func TestManager_Create_StoresPromptFileAsBasename(t *testing.T) {
 		},
 	}))
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	cfg := testutil.ReadFile(t, filepath.Join(ws.BasePath, "config.yaml"))
 	assert.Contains(t, cfg, "prompt_file: outside.md")
-	assert.Condition(t, !strings.Contains(cfg, promptFile))
+	assert.True(t, !strings.Contains(cfg, promptFile))
 }
 
 func TestManager_Create_PromptFileInsideRepo(t *testing.T) {
@@ -492,9 +492,9 @@ func TestManager_Create_PromptFileInsideRepo(t *testing.T) {
 		},
 	}))
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "task.md"))
-	assert.Equal(t, ws.Config.Source.PromptFile, "task.md")
+	assert.Eq(t, ws.Config.Source.PromptFile, "task.md")
 }
 
 func TestManager_Create_SpecFileRewritten(t *testing.T) {
@@ -512,9 +512,9 @@ func TestManager_Create_SpecFileRewritten(t *testing.T) {
 		},
 	}))
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "spec.md"))
-	assert.Equal(t, ws.Config.Source.SpecFile, "spec.md")
+	assert.Eq(t, ws.Config.Source.SpecFile, "spec.md")
 }
 
 func TestManager_ResolveCompleted(t *testing.T) {
@@ -525,7 +525,7 @@ func TestManager_ResolveCompleted(t *testing.T) {
 		Name:   "resolve-test",
 		Source: config.Source{LocalPath: t.TempDir()},
 	}))
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 
 	tests := []struct {
 		name    string
@@ -540,7 +540,7 @@ func TestManager_ResolveCompleted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NotErr(t, ts.manager.UpdateStatus(ws.ID, tt.status))
+			assert.ErrVal(t, ts.manager.UpdateStatus(ws.ID, tt.status)).Nil().Fatal()
 			got, err := ts.manager.ResolveCompleted(ws.ID)
 			if tt.wantErr {
 				if err == nil {
@@ -551,7 +551,7 @@ func TestManager_ResolveCompleted(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			assert.Equal(t, got.ID, ws.ID)
+			assert.Eq(t, got.ID, ws.ID)
 		})
 	}
 }
@@ -560,7 +560,7 @@ func TestManager_ResolveCompleted_NotFound(t *testing.T) {
 	t.Parallel()
 	ts := newTestSetup(t)
 	_, err := ts.manager.ResolveCompleted("no-such-id")
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 }
 
 func TestManager_ResolvePrefix_UniqueMatch(t *testing.T) {
@@ -570,8 +570,8 @@ func TestManager_ResolvePrefix_UniqueMatch(t *testing.T) {
 
 	ws, err := ts.manager.ResolvePrefix("abc-111")
 
-	assert.NotErr(t, err)
-	assert.Equal(t, ws.ID, "abc-111-full-id")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, ws.ID, "abc-111-full-id")
 }
 
 func TestManager_ResolvePrefix_Ambiguous(t *testing.T) {
@@ -583,7 +583,7 @@ func TestManager_ResolvePrefix_Ambiguous(t *testing.T) {
 
 	_, err := ts.manager.ResolvePrefix("abc")
 
-	assert.ErrAs[*state.AmbiguousMatchError](t, err)
+	assert.ErrVal(t, err).As(new(*state.AmbiguousMatchError)).Fatal()
 }
 
 func TestManager_ResolvePrefix_NotFound(t *testing.T) {
@@ -592,7 +592,7 @@ func TestManager_ResolvePrefix_NotFound(t *testing.T) {
 
 	_, err := ts.manager.ResolvePrefix("zzz")
 
-	assert.ErrAs[*state.NotFoundError](t, err)
+	assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 }
 
 func TestManager_Resolve_PrefixFallback(t *testing.T) {
@@ -602,8 +602,8 @@ func TestManager_Resolve_PrefixFallback(t *testing.T) {
 
 	ws, err := ts.manager.Resolve("abcdef")
 
-	assert.NotErr(t, err)
-	assert.Equal(t, ws.ID, "abcdef-1234-5678")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, ws.ID, "abcdef-1234-5678")
 }
 
 func TestManager_Diff(t *testing.T) {
@@ -622,9 +622,9 @@ func TestManager_Diff(t *testing.T) {
 	addCommit(t, wsDir, "feature.go", "package main", "add feature")
 
 	info, err := ts.manager.Diff("ws-1")
-	assert.NotErr(t, err)
-	assert.Equal(t, len(info.Commits), 1)
-	assert.Equal(t, info.Commits[0].Message, "add feature")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, len(info.Commits), 1)
+	assert.Eq(t, info.Commits[0].Message, "add feature")
 	assert.Contains(t, info.Stat, "feature.go")
 	assert.Contains(t, info.Diff, "package main")
 }
@@ -637,8 +637,8 @@ func TestManager_Sync_OrphanedRunning(t *testing.T) {
 
 	err := ts.manager.Sync(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusFailed)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, ts.state.Data["ws-1"].Status, StatusFailed)
 	assert.NotNil(t, ts.state.Data["ws-1"].FinishedAt)
 }
 
@@ -650,8 +650,8 @@ func TestManager_Stop_MissingContainers(t *testing.T) {
 
 	err := ts.manager.Stop(context.Background(), "ws-1", time.Minute)
 
-	assert.NotErr(t, err)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusStopped)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, ts.state.Data["ws-1"].Status, StatusStopped)
 }
 
 func TestManager_FindOrCreate_CreatesNew(t *testing.T) {
@@ -674,8 +674,8 @@ func TestManager_FindOrCreate_CreatesNew(t *testing.T) {
 				Source:         config.Source{LocalPath: t.TempDir()},
 			}))
 
-			assert.NotErr(t, err)
-			assert.Equal(t, ws.Status, StatusPending)
+			assert.ErrVal(t, err).Nil().Fatal()
+			assert.Eq(t, ws.Status, StatusPending)
 		})
 	}
 }
@@ -691,8 +691,8 @@ func TestManager_FindOrCreate_RestartWithExisting(t *testing.T) {
 		Source:         config.Source{LocalPath: t.TempDir()},
 	}))
 
-	assert.NotErr(t, err)
-	assert.NotEqual(t, ws.ID, "old-ws")
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.NotEq(t, ws.ID, "old-ws")
 }
 
 func TestManager_FindOrCreate_Resume(t *testing.T) {
@@ -720,9 +720,9 @@ func TestManager_FindOrCreate_Resume(t *testing.T) {
 				Source:         config.Source{LocalPath: t.TempDir()},
 			}))
 
-			assert.NotErr(t, err)
-			assert.Equal(t, ws.ID, "ws-1")
-			assert.Equal(t, ws.Status, tt.wantStatus)
+			assert.ErrVal(t, err).Nil().Fatal()
+			assert.Eq(t, ws.ID, "ws-1")
+			assert.Eq(t, ws.Status, tt.wantStatus)
 		})
 	}
 }
@@ -740,7 +740,7 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 			Source:         config.Source{LocalPath: t.TempDir()},
 		}))
 
-		assert.ErrAs[*state.NotFoundError](t, err)
+		assert.ErrVal(t, err).As(new(*state.NotFoundError)).Fatal()
 	})
 
 	t.Run("no_name", func(t *testing.T) {
@@ -752,7 +752,7 @@ func TestManager_FindOrCreate_ResumeErrors(t *testing.T) {
 			Source:         config.Source{LocalPath: t.TempDir()},
 		}))
 
-		assert.ErrIs(t, err, errContinueRequiresName)
+		assert.ErrVal(t, err).Is(errContinueRequiresName).Fatal()
 	})
 }
 
@@ -773,14 +773,14 @@ func TestManager_FindOrCreate_ResumeDone(t *testing.T) {
 	)
 
 	sen := sentinel.FromConfig(cfg)
-	assert.NotErr(t, sen.Write(basePath))
+	assert.ErrVal(t, sen.Write(basePath)).Nil().Fatal()
 
 	ws, err := ts.manager.FindOrCreate(context.Background(), cfg)
 
-	assert.NotErr(t, err)
-	assert.Condition(t, ws.Done)
-	assert.Equal(t, ws.ID, "ws-done")
-	assert.Equal(t, ws.Status, StatusCompleted)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.True(t, ws.Done)
+	assert.Eq(t, ws.ID, "ws-done")
+	assert.Eq(t, ws.Status, StatusCompleted)
 }
 
 func TestManager_FindOrCreate_ResumeNotDone(t *testing.T) {
@@ -799,9 +799,9 @@ func TestManager_FindOrCreate_ResumeNotDone(t *testing.T) {
 		Source:         config.Source{LocalPath: srcDir},
 	}))
 
-	assert.NotErr(t, err)
-	assert.Condition(t, !ws.Done)
-	assert.Equal(t, ws.Status, StatusStopped)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.True(t, !ws.Done)
+	assert.Eq(t, ws.Status, StatusStopped)
 	assert.NoPathExists(t, filepath.Join(basePath, ".dwoe-done"))
 }
 
@@ -816,9 +816,9 @@ func TestManager_Wait_WritesSentinel(t *testing.T) {
 
 	code, err := ts.manager.Wait(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.Zero(t, code)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusCompleted)
+	assert.Eq(t, ts.state.Data["ws-1"].Status, StatusCompleted)
 	assert.PathExists(t, filepath.Join(basePath, ".dwoe-done"))
 
 	cfg := testTask(&config.Task{
@@ -826,7 +826,7 @@ func TestManager_Wait_WritesSentinel(t *testing.T) {
 		Source: config.Source{LocalPath: srcDir},
 	})
 	sen := sentinel.FromDir(basePath)
-	assert.Condition(t, sen.Match(cfg))
+	assert.True(t, sen.Match(cfg))
 }
 
 func TestManager_Wait_NoSentinelOnFailure(t *testing.T) {
@@ -843,9 +843,9 @@ func TestManager_Wait_NoSentinelOnFailure(t *testing.T) {
 
 	code, err := ts.manager.Wait(context.Background(), "ws-1")
 
-	assert.NotErr(t, err)
-	assert.Equal(t, code, 1)
-	assert.Equal(t, ts.state.Data["ws-1"].Status, StatusFailed)
+	assert.ErrVal(t, err).Nil().Fatal()
+	assert.Eq(t, code, 1)
+	assert.Eq(t, ts.state.Data["ws-1"].Status, StatusFailed)
 	assert.NoPathExists(t, filepath.Join(basePath, ".dwoe-done"))
 }
 
@@ -910,7 +910,7 @@ func TestManager_Refine_RejectsInvalid(t *testing.T) {
 
 			_, err := ts.manager.Refine(tc.parent, tc.prompt, "new-task")
 
-			assert.Err(t, err)
+			assert.ErrVal(t, err).NotNil().Fatal()
 			assert.Contains(t, err.Error(), tc.errMsg)
 		})
 	}
@@ -928,13 +928,13 @@ func TestManager_Refine_ReturnsChild(t *testing.T) {
 
 	child, err := ts.manager.Refine(parentID, "refine prompt", "child-task")
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NotNil(t, child)
-	assert.NotEqual(t, child.ID, parentID)
-	assert.Equal(t, child.Name, "child-task")
-	assert.Equal(t, child.ParentID, parentID)
-	assert.Equal(t, child.Status, StatusPending)
-	assert.Equal(t, child.Config.Agent.TaskPrompt, "refine prompt")
+	assert.NotEq(t, child.ID, parentID)
+	assert.Eq(t, child.Name, "child-task")
+	assert.Eq(t, child.ParentID, parentID)
+	assert.Eq(t, child.Status, StatusPending)
+	assert.Eq(t, child.Config.Agent.TaskPrompt, "refine prompt")
 	assert.PathExists(t, child.WorkFile("prompt.txt"))
 	assert.PathExists(t, child.WorkFile(".git", "HEAD"))
 }

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestRefineCmd_Parse(t *testing.T) {
@@ -74,12 +74,12 @@ func TestRefineCmd_Parse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			cmd := new(cmdRefine)
-			assert.NotErr(t, cmd.Parse(tc.args))
-			assert.Equal(t, cmd.parentNameOrID, tc.wantParent)
-			assert.Equal(t, cmd.do, tc.wantDo)
-			assert.Equal(t, cmd.work, tc.wantWork)
-			assert.Equal(t, cmd.name, tc.wantName)
-			assert.Equal(t, cmd.detach, tc.wantDetach)
+			assert.ErrVal(t, cmd.Parse(tc.args)).Nil().Fatal()
+			assert.Eq(t, cmd.parentNameOrID, tc.wantParent)
+			assert.Eq(t, cmd.do, tc.wantDo)
+			assert.Eq(t, cmd.work, tc.wantWork)
+			assert.Eq(t, cmd.name, tc.wantName)
+			assert.Eq(t, cmd.detach, tc.wantDetach)
 		})
 	}
 }
@@ -88,14 +88,14 @@ func TestRefineCmd_Parse_MissingParent(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdRefine)
 	err := cmd.Parse([]string{"--do", "x"})
-	assert.ErrAs[*cli.ArgMissingError](t, err)
+	assert.ErrVal(t, err).As(new(*cli.ArgMissingError)).Fatal()
 }
 
 func TestRefineCmd_Parse_MissingDoAndWork(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdRefine)
 	err := cmd.Parse([]string{"parent-ws"})
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 	assert.Contains(t, err.Error(), "either --do or --work is required")
 }
 
@@ -103,7 +103,7 @@ func TestRefineCmd_Parse_DoAndWorkConflict(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdRefine)
 	err := cmd.Parse([]string{"--do", "x", "--work", "f.md", "parent-ws"})
-	assert.Err(t, err)
+	assert.ErrVal(t, err).NotNil().Fatal()
 	assert.Contains(t, err.Error(), "cannot use both --do and --work")
 }
 
@@ -111,7 +111,7 @@ func TestRefineCmd_Parse_UnknownFlag(t *testing.T) {
 	t.Parallel()
 	cmd := new(cmdRefine)
 	err := cmd.Parse([]string{"--bogus", "parent-ws"})
-	assert.ErrAs[*cli.FlagParseError](t, err)
+	assert.ErrVal(t, err).As(new(*cli.FlagParseError)).Fatal()
 }
 
 func createCompletedParent(t *testing.T, setup *cmdTestSetup, id string) {
@@ -140,7 +140,7 @@ func TestRefineCmd_Run_RejectsActive(t *testing.T) {
 
 			err := cmd.Run(setup.env)
 
-			assert.Err(t, err)
+			assert.ErrVal(t, err).NotNil().Fatal()
 			assert.Contains(t, err.Error(), "still "+status)
 		})
 	}
@@ -157,7 +157,7 @@ func TestRefineCmd_Run_Detach(t *testing.T) {
 
 		err := cmd.Run(setup.env)
 
-		assert.NotErr(t, err)
+		assert.ErrVal(t, err).Nil().Fatal()
 		assert.ContainsAll(t, setup.stdout.String(),
 			"Refining workspace:",
 			"Parent:",
@@ -176,7 +176,7 @@ func TestRefineCmd_Run_Detach(t *testing.T) {
 
 		err := cmd.Run(setup.env)
 
-		assert.NotErr(t, err)
+		assert.ErrVal(t, err).Nil().Fatal()
 		assert.ContainsAll(t, setup.stdout.String(), "Refining workspace:")
 	})
 
@@ -189,9 +189,9 @@ func TestRefineCmd_Run_Detach(t *testing.T) {
 
 		err := cmd.Run(setup.env)
 
-		assert.NotErr(t, err)
-		assert.Equal(t, len(setup.state.Data), before+1)
-		assert.Equal(t, setup.state.Data["ws-done"].Status, "completed")
+		assert.ErrVal(t, err).Nil().Fatal()
+		assert.Eq(t, len(setup.state.Data), before+1)
+		assert.Eq(t, setup.state.Data["ws-done"].Status, "completed")
 	})
 }
 
@@ -209,6 +209,6 @@ func TestRefineCmd_Run_Attached(t *testing.T) {
 
 	err := cmd.Run(setup.env)
 
-	assert.NotErr(t, err)
+	assert.ErrVal(t, err).Nil().Fatal()
 	assert.ContainsAll(t, setup.stdout.String(), "log-line-1", "completed")
 }

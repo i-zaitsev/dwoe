@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
 	"github.com/i-zaitsev/dwoe/internal/docker"
 	"github.com/i-zaitsev/dwoe/internal/state"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func newWorkspace(name provider.ModelProviderName) *Workspace {
@@ -58,10 +58,10 @@ func TestWorkspace_Mounts_SettingsProviderSpecific(t *testing.T) {
 	const settings = "/home/agent/.claude/settings.json"
 
 	claudeTargets := mountTargets(newWorkspace(provider.ModelProviderAnthropic).Mounts())
-	assert.Equal(t, slices.Contains(claudeTargets, settings), true)
+	assert.Eq(t, slices.Contains(claudeTargets, settings), true)
 
 	openaiTargets := mountTargets(newWorkspace(provider.ModelProviderOpenAI).Mounts())
-	assert.Equal(t, slices.Contains(openaiTargets, settings), false)
+	assert.Eq(t, slices.Contains(openaiTargets, settings), false)
 }
 
 func mountTargets(mounts []docker.Mount) []string {
@@ -119,7 +119,7 @@ func TestWorkspace_Env_PromptFileSynthesizesTaskPrompt(t *testing.T) {
 			}
 			env := strings.Join(ws.Env(), "\n")
 			if tt.wantEnv == "" {
-				assert.Condition(t, !strings.Contains(env, "TASK_PROMPT="))
+				assert.True(t, !strings.Contains(env, "TASK_PROMPT="))
 			} else {
 				assert.Contains(t, env, tt.wantEnv)
 			}

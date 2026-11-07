@@ -9,21 +9,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/assert"
+	"github.com/i-zaitsev/pkg/assert"
 )
 
 func TestLines_sample(t *testing.T) {
 	lines := Lines(t, "sample.jsonl")
 
-	assert.Equal(t, len(lines), 12)
+	assert.Eq(t, len(lines), 12)
 	for _, line := range lines {
-		assert.Condition(t, strings.HasPrefix(line, "{"))
+		assert.True(t, strings.HasPrefix(line, "{"))
 	}
 }
 
 func TestLines_faulty_keepsBlankLines(t *testing.T) {
 	lines := Lines(t, "faulty.jsonl")
 
-	assert.Equal(t, len(lines), 7)
-	assert.Condition(t, slices.Contains(lines, ""))
+	assert.Eq(t, len(lines), 7)
+	assert.True(t, slices.Contains(lines, ""))
 }
