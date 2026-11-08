@@ -249,6 +249,7 @@ func TestManager_Logs(t *testing.T) {
 	rc, err := ts.manager.Logs(context.Background(), "ws-1", true)
 
 	assert.ErrVal(t, err).Nil().Fatal()
+	// TODO: use assert.Val(t, rc).NotZero().Fatal() once pkg/assert has it; a nil rc panics on the next line.
 	assert.NotNil(t, rc)
 	_ = rc.Close()
 	assert.NoDiff(t, []string{"ContainerLogs"}, ts.docker.Calls)
@@ -377,6 +378,7 @@ func TestManager_Cleanup(t *testing.T) {
 
 	assert.ErrVal(t, err).Nil().Fatal()
 	assert.NoDiff(t, wantCalls, ts.docker.Calls)
+	// TODO: use assert.Val(t, ts.state.Data["ws-1"]).NotZero().Fatal() once pkg/assert has it; a missing entry panics on the next line.
 	assert.NotNil(t, ts.state.Data["ws-1"])
 	assert.Nil(t, ts.state.Data["ws-1"].ContainerIDs)
 	assert.Zero(t, ts.state.Data["ws-1"].NetworkID)
@@ -929,6 +931,7 @@ func TestManager_Refine_ReturnsChild(t *testing.T) {
 	child, err := ts.manager.Refine(parentID, "refine prompt", "child-task")
 
 	assert.ErrVal(t, err).Nil().Fatal()
+	// TODO: use assert.Val(t, child).NotZero().Fatal() once pkg/assert has it; a nil child panics on the next line.
 	assert.NotNil(t, child)
 	assert.NotEq(t, child.ID, parentID)
 	assert.Eq(t, child.Name, "child-task")

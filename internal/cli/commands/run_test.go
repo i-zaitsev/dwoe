@@ -162,6 +162,7 @@ func TestRunCmd_Run_PromptFileOutsideTaskDir(t *testing.T) {
 	assert.ErrVal(t, cmd.Run(ts.env)).Nil().Fatal()
 
 	ws := ts.state.Data[cmd.createdID]
+	// TODO: use assert.Val(t, ws).NotZero().Fatal() once pkg/assert has it; a nil ws panics on the next line.
 	assert.NotNil(t, ws)
 	assert.PathExists(t, filepath.Join(ws.BasePath, "workspace", "outside.md"))
 

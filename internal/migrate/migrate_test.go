@@ -24,11 +24,13 @@ func TestState_migratesV1(t *testing.T) {
 	assert.Eq(t, f.Version, 2)
 
 	ws := f.Workspaces["ws-abc-123"]
+	// TODO: use assert.Val(t, ws).NotZero().Fatal() once pkg/assert has it; a nil ws panics on the next line.
 	assert.NotNil(t, ws)
 	assert.Eq(t, ws.ID, "ws-abc-123")
 	assert.Eq(t, ws.Name, "lucky-mighty-squid")
 	assert.Eq(t, ws.Status, "completed")
 	assert.Eq(t, ws.BasePath, "/tmp/workspaces/ws-abc-123")
+	// TODO: use assert.Val(t, ws.ExitCode).NotZero().Fatal() once pkg/assert has it; a nil ws.ExitCode panics on the next line.
 	assert.NotNil(t, ws.ExitCode)
 	assert.Eq(t, *ws.ExitCode, 0)
 	assert.Eq(t, ws.ParentID, "ws-parent-1")
@@ -40,6 +42,7 @@ func TestState_migratesV1(t *testing.T) {
 	assert.NotNil(t, ws.FinishedAt)
 
 	ws2 := f.Workspaces["ws-def-456"]
+	// TODO: use assert.Val(t, ws2).NotZero().Fatal() once pkg/assert has it; a nil ws2 panics on the next line.
 	assert.NotNil(t, ws2)
 	assert.Eq(t, ws2.ErrorMsg, "timeout")
 	assert.Nil(t, ws2.ExitCode)
