@@ -5,13 +5,13 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/batch"
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/cli/batchinfo"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdCollect cherry-picks commits from a workspace into a target repo.
@@ -49,24 +49,24 @@ func (c *cmdCollect) Args() string { return "<name|id> [--batch ID]" }
 // The repo mode takes a single branch from a worker.
 // The batch mode locates the previously executed batch tasks and collects all the branches from there.
 func (c *cmdCollect) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.repo, "repo", "", "path to target git repository")
-		fs.StringVar(&c.branch, "branch", "", "branch name to create")
-		fs.StringVar(&c.batchID, "batch", "", "collect all workspaces from a batch")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.repo, "repo", "", "path to target git repository")
+	fs.StringVar(&c.branch, "branch", "", "branch name to create")
+	fs.StringVar(&c.batchID, "batch", "", "collect all workspaces from a batch")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
 	if c.batchID != "" {
 		return nil
 	}
 	if c.repo == "" {
-		return cli.CmdErr(c, "flag: %w", &cli.ArgMissingError{Name: "--repo"})
+		return cmd.Errorf(c, "flag: %w", &cmd.ArgMissingError{Name: "--repo"})
 	}
 	if c.branch == "" {
-		return cli.CmdErr(c, "flag: %w", &cli.ArgMissingError{Name: "--branch"})
+		return cmd.Errorf(c, "flag: %w", &cmd.ArgMissingError{Name: "--branch"})
 	}
-	nameOrID, err := cli.RequiredArg(c, fs, "name or id")
+	nameOrID, err := cmd.RequiredArg(c, fs, "name or id")
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (c *cmdCollect) runSingle(e *cli.Env) error {
 
 	n, err := c.collect(ws.WorkDir(), c.repo, c.branch)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	if n == 0 {
@@ -114,7 +114,7 @@ func (c *cmdCollect) runBatch(e *cli.Env) error {
 
 	rec, err := batch.LoadRecord(e.DataDir(), c.batchID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	e.Print("Started collecting workspaces:\n")
@@ -123,7 +123,7 @@ func (c *cmdCollect) runBatch(e *cli.Env) error {
 		return c.collect(ws.WorkDir(), rec.SourceDir, entry.Branch)
 	})
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	ok, failed := batchinfo.Report(e, results, "commit(s)")
@@ -131,7 +131,7 @@ func (c *cmdCollect) runBatch(e *cli.Env) error {
 	e.Print("\nCollected %d/%d workspaces into %s\n", ok, len(results), rec.SourceDir)
 
 	if failed > 0 {
-		return cli.CmdErr(c, "%d workspace(s) failed", failed)
+		return cmd.Errorf(c, "%d workspace(s) failed", failed)
 	}
 
 	return nil

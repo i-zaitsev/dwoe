@@ -1,10 +1,10 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 type cmdRefine struct {
@@ -20,27 +20,27 @@ func (c *cmdRefine) Desc() string { return "Refine a completed workspace with a 
 func (c *cmdRefine) Args() string { return "<parent-name|id> --do <prompt> | --work <path>" }
 
 func (c *cmdRefine) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.do, "do", "", "inline task prompt")
-		fs.StringVar(&c.do, "d", "", "inline task prompt")
-		fs.StringVar(&c.work, "work", "", "path to work file")
-		fs.StringVar(&c.work, "w", "", "path to work file")
-		fs.StringVar(&c.name, "name", "", "override workspace name")
-		fs.BoolVar(&c.detach, "detach", false, "start and return immediately")
-		fs.BoolVar(&c.detach, "D", false, "start and return immediately")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.do, "do", "", "inline task prompt")
+	fs.StringVar(&c.do, "d", "", "inline task prompt")
+	fs.StringVar(&c.work, "work", "", "path to work file")
+	fs.StringVar(&c.work, "w", "", "path to work file")
+	fs.StringVar(&c.name, "name", "", "override workspace name")
+	fs.BoolVar(&c.detach, "detach", false, "start and return immediately")
+	fs.BoolVar(&c.detach, "D", false, "start and return immediately")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
 	if c.do != "" && c.work != "" {
-		return cli.CmdErr(c, "cannot use both --do and --work")
+		return cmd.Errorf(c, "cannot use both --do and --work")
 	}
 	if fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "parent workspace"})
+		return cmd.Errorf(c, "%w", &cmd.ArgMissingError{Name: "parent workspace"})
 	}
 	c.parentNameOrID = fs.Arg(0)
 	if c.do == "" && c.work == "" {
-		return cli.CmdErr(c, "either --do or --work is required")
+		return cmd.Errorf(c, "either --do or --work is required")
 	}
 	return nil
 }
@@ -52,24 +52,24 @@ func (c *cmdRefine) Run(e *cli.Env) error {
 	if c.work != "" {
 		resolved, err := resolveWork(c.work)
 		if err != nil {
-			return cli.CmdErr(c, "%w", err)
+			return cmd.Errorf(c, "%w", err)
 		}
 		prompt = resolved
 	}
 
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	child, err := manager.Refine(c.parentNameOrID, prompt, c.name)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	ctx := e.Context()
 	if err := manager.Start(ctx, child.ID); err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	e.Print("Refining workspace: %s\n", child.Name)
@@ -84,7 +84,7 @@ func (c *cmdRefine) Run(e *cli.Env) error {
 	}
 
 	if err := runAttached(e, manager, child.ID, child.Name); err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 	return nil
 }

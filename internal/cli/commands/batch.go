@@ -19,6 +19,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdBatch runs a group of workers using task-*.yaml files defined in the dir.
@@ -53,11 +54,12 @@ func (c *cmdBatch) Args() string { return "<dir>" }
 // Parse expects the arguments for the command.
 // The batch command requires only a single positional parameter providing the dir with tasks.
 func (c *cmdBatch) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, nil)
+	fs := cmd.NewFlagSet(c)
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.dir, err = cli.RequiredArg(c, fs, "directory")
+	c.dir, err = cmd.RequiredArg(c, fs, "directory")
 	if err != nil {
 		return err
 	}
@@ -87,7 +89,7 @@ func (c *cmdBatch) Run(e *cli.Env) error {
 
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	slog.Debug("cli: batch", "phase", "starting tasks")
@@ -107,7 +109,7 @@ func (c *cmdBatch) Run(e *cli.Env) error {
 	}
 	rec := batch.NewRecord(sourceDir, relPaths, ids)
 	if errSave := batch.SaveRecord(e.DataDir(), rec); errSave != nil {
-		return cli.CmdErr(c, "%w", errSave)
+		return cmd.Errorf(c, "%w", errSave)
 	}
 
 	e.Print("Batch ID: %s\n", rec.ID)
@@ -125,7 +127,7 @@ func (c *cmdBatch) resolveBatchRepo(taskFiles []string, dataDir, sourceDir strin
 	for _, taskFile := range taskFiles {
 		cfg, err := c.loadConfig(taskFile, dataDir)
 		if err != nil {
-			return "", cli.CmdErr(c, "task file %s: %w", taskFile, err)
+			return "", cmd.Errorf(c, "task file %s: %w", taskFile, err)
 		}
 		cfg.EnsureSource(sourceDir)
 		taskRepoPath := cfg.Source.LocalPath
@@ -136,11 +138,11 @@ func (c *cmdBatch) resolveBatchRepo(taskFiles []string, dataDir, sourceDir strin
 		if repoPath == "" {
 			repoPath = taskRepoPath
 		} else if repoPath != taskRepoPath {
-			return "", cli.CmdErr(c, "subtask repo name mismatch: %s", taskRepoPath)
+			return "", cmd.Errorf(c, "subtask repo name mismatch: %s", taskRepoPath)
 		}
 	}
 	if repoPath == "" {
-		return "", cli.CmdErr(c, "source repo is not found")
+		return "", cmd.Errorf(c, "source repo is not found")
 	}
 	errReady := c.ensureRepo(repoPath, gitUser.Name, gitUser.Email)
 	if errReady != nil {
@@ -156,14 +158,14 @@ func (c *cmdBatch) startAll(e *cli.Env, taskFiles []string) ([]string, error) {
 	slog.Debug("cli: batch", "phase", "start-all")
 	var ids []string
 	for _, tf := range taskFiles {
-		cmd := &cmdRun{taskPath: tf, detach: true}
-		if err := cmd.Run(e); err != nil {
+		run := &cmdRun{taskPath: tf, detach: true}
+		if err := run.Run(e); err != nil {
 			if errors.Is(err, workspace.ErrWorkspaceDone) {
 				continue
 			}
-			return nil, cli.CmdErr(c, "%w", err)
+			return nil, cmd.Errorf(c, "%w", err)
 		}
-		ids = append(ids, cmd.createdID)
+		ids = append(ids, run.createdID)
 	}
 	return ids, nil
 }
@@ -219,7 +221,7 @@ func (c *cmdBatch) waitAll(e *cli.Env, manager *workspace.Manager, ids []string)
 	e.Print("\nSummary: %d total, %d completed, %d failed\n", len(results), completed, failed)
 
 	if failed > 0 {
-		return cli.CmdErr(c, "%d of %d workspace(s) failed", failed, len(results))
+		return cmd.Errorf(c, "%d of %d workspace(s) failed", failed, len(results))
 	}
 
 	return nil

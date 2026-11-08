@@ -7,11 +7,11 @@ package commands
 import (
 	"bufio"
 	"context"
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdLogs streams the container logs of a running workspace.
@@ -32,14 +32,14 @@ func (c *cmdLogs) Args() string { return "<name|id>" }
 // Requires a workspace name or ID as a positional argument. The follow flag
 // controls whether to stream logs continuously (default: true).
 func (c *cmdLogs) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.BoolVar(&c.follow, "follow", false, "follow the logs from container")
-		fs.BoolVar(&c.follow, "f", false, "follow the logs from container")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.BoolVar(&c.follow, "follow", false, "follow the logs from container")
+	fs.BoolVar(&c.follow, "f", false, "follow the logs from container")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	c.nameOrID, err = cmd.RequiredArg(c, fs, "name or id")
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (c *cmdLogs) Run(e *cli.Env) error {
 	logs, err := manager.Logs(e.Context(), ws.ID, c.follow)
 	if err != nil {
 		if ws.Status == workspace.StatusCompleted || ws.Status == workspace.StatusFailed {
-			return cli.CmdErr(c, "workspace destroyed, logs unavailable")
+			return cmd.Errorf(c, "workspace destroyed, logs unavailable")
 		}
 		return err
 	}

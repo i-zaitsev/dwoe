@@ -6,13 +6,13 @@ package commands
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log/slog"
 	"text/tabwriter"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdList displays all known workspaces.
@@ -31,14 +31,14 @@ func (c *cmdList) Args() string { return "[--format FMT]" }
 // Parse expects the arguments for the subcommand.
 // The optional format flag selects the output format: "table" or "json".
 func (c *cmdList) Parse(args []string) error {
-	_, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.format, "format", "table", "output format (table, json)")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.format, "format", "table", "output format (table, json)")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
 	if c.format != "table" && c.format != "json" {
-		return cli.CmdErr(c, "%w", &cli.ArgInvalidError{Name: "format", Value: c.format})
+		return cmd.Errorf(c, "%w", &cmd.ArgInvalidError{Name: "format", Value: c.format})
 	}
 	return nil
 }
@@ -49,12 +49,12 @@ func (c *cmdList) Run(e *cli.Env) error {
 
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	workspaces, err := manager.List()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	if c.format == "table" {

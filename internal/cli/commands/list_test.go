@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func TestListCmd_Parse(t *testing.T) {
@@ -40,9 +40,9 @@ func TestListCmd_Parse(t *testing.T) {
 
 func TestListCmd_Parse_InvalidFormat(t *testing.T) {
 	t.Parallel()
-	cmd := new(cmdList)
-	err := cmd.Parse([]string{"-format", "xml"})
-	assert.ErrVal(t, err).As(new(*cli.ArgInvalidError)).Fatal()
+	c := new(cmdList)
+	err := c.Parse([]string{"-format", "xml"})
+	assert.ErrVal(t, err).As(new(*cmd.ArgInvalidError)).Fatal()
 }
 
 func TestListCmd_Run_Table(t *testing.T) {

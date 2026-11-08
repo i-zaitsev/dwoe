@@ -5,12 +5,12 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdRun creates, starts, and optionally follows a workspace in one step.
@@ -38,15 +38,15 @@ func (c *cmdRun) Args() string { return "<task.yaml>" }
 // Requires a task file as the first positional argument. Optional flags
 // override the workspace name or enable detached mode.
 func (c *cmdRun) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.name, "name", "", "override workspace name")
-		fs.BoolVar(&c.detach, "detach", false, "start and return immediately")
-		fs.BoolVar(&c.detach, "d", false, "start and return immediately")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.name, "name", "", "override workspace name")
+	fs.BoolVar(&c.detach, "detach", false, "start and return immediately")
+	fs.BoolVar(&c.detach, "d", false, "start and return immediately")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.taskPath, err = cli.RequiredArg(c, fs, "task file")
+	c.taskPath, err = cmd.RequiredArg(c, fs, "task file")
 	if err != nil {
 		return err
 	}
@@ -63,26 +63,26 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	slog.Debug("run: loading config", "path", c.taskPath)
 	global, err := config.LoadGlobalConfig(e.DataDir())
 	if err != nil {
-		return cli.CmdErr(c, "load global config: %w", err)
+		return cmd.Errorf(c, "load global config: %w", err)
 	}
 	taskCfg, err := config.LoadTaskConfig(c.taskPath, global,
 		config.WithFallbackSourceDir(e.SourceDir()),
 		config.WithModel(e.Model()),
 	)
 	if err != nil {
-		return cli.CmdErr(c, "load config: %w", err)
+		return cmd.Errorf(c, "load config: %w", err)
 	}
 	applyTaskOverrides(e, taskCfg, c.name)
 
 	slog.Debug("run: creating workspace", "dataDir", e.DataDir())
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	ws, err := manager.FindOrCreate(ctx, taskCfg)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 	if ws.Done {
 		e.Print("Workspace already done: %s\n", ws.Name)
@@ -97,7 +97,7 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	slog.Debug("run: starting workspace", "id", ws.ID)
 	err = manager.Start(ctx, ws.ID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	var verb string
@@ -117,7 +117,7 @@ func (c *cmdRun) Run(e *cli.Env) error {
 	}
 
 	if err := runAttached(e, manager, ws.ID, ws.Name); err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 	return nil
 }

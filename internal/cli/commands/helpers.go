@@ -10,6 +10,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // loadTaskConfig reads the global config from dataDir and uses it to fill the gaps
@@ -24,28 +25,28 @@ func loadTaskConfig(taskPath, dataDir string) (*config.Task, error) {
 
 // resolveWorkspace creates a manager from the env and resolves the named workspace,
 // returning an error if either step fails.
-func resolveWorkspace(cmd cli.Command, e *cli.Env, nameOrID string) (*workspace.Manager, *workspace.Workspace, error) {
+func resolveWorkspace(c cli.Command, e *cli.Env, nameOrID string) (*workspace.Manager, *workspace.Workspace, error) {
 	manager, err := e.Manager()
 	if err != nil {
-		return nil, nil, cli.CmdErr(cmd, "%w", err)
+		return nil, nil, cmd.Errorf(c, "%w", err)
 	}
 	ws, err := manager.Resolve(nameOrID)
 	if err != nil {
-		return nil, nil, cli.CmdErr(cmd, "%w", err)
+		return nil, nil, cmd.Errorf(c, "%w", err)
 	}
 	return manager, ws, nil
 }
 
 // resolveCompletedWorkspace creates a manager from the env and resolves a completed workspace.
 // It mirrors resolveWorkspace, but the resolved workspace must have a sentinel file.
-func resolveCompletedWorkspace(cmd cli.Command, e *cli.Env, nameOrID string) (*workspace.Workspace, error) {
+func resolveCompletedWorkspace(c cli.Command, e *cli.Env, nameOrID string) (*workspace.Workspace, error) {
 	manager, err := e.Manager()
 	if err != nil {
-		return nil, cli.CmdErr(cmd, "%w", err)
+		return nil, cmd.Errorf(c, "%w", err)
 	}
 	ws, err := manager.ResolveCompleted(nameOrID)
 	if err != nil {
-		return nil, cli.CmdErr(cmd, "%w", err)
+		return nil, cmd.Errorf(c, "%w", err)
 	}
 	return ws, nil
 }

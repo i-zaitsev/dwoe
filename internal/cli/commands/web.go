@@ -5,10 +5,9 @@
 package commands
 
 import (
-	"flag"
-
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/web"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdWeb starts the web dashboard.
@@ -27,10 +26,13 @@ func (c *cmdWeb) Args() string { return "[--addr ADDR]" }
 // Parse expects the arguments for the subcommand.
 // The optional addr flag sets the HTTP listen address.
 func (c *cmdWeb) Parse(args []string) error {
-	_, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.addr, "addr", "127.0.0.1:8080", "listen address")
-	})
-	return err
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.addr, "addr", "127.0.0.1:8080", "listen address")
+	err := fs.Parse(args)
+	if err != nil {
+		return cmd.Errorf(c, "%w", err)
+	}
+	return nil
 }
 
 // Run starts the web server and blocks until it returns.

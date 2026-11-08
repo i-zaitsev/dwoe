@@ -7,7 +7,6 @@ package cli
 import (
 	"bufio"
 	"context"
-	"flag"
 	"io"
 	"log/slog"
 	"path/filepath"
@@ -16,31 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-// ParseFlags is a generic flag-parsing util for subcommands.
-// The register function is a callback that configures a flag set required by command.
-// The parser has output disabled and empty usage which is delegated to the top-level entry point.
-func ParseFlags(cmd Command, args []string, register func(*flag.FlagSet)) (*flag.FlagSet, error) {
-	name := cmd.Name()
-	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.Usage = func() {}
-	fs.SetOutput(io.Discard)
-	if register != nil {
-		register(fs)
-	}
-	if err := fs.Parse(args); err != nil {
-		return nil, CmdErr(cmd, "%w", &FlagParseError{err: err})
-	}
-	return fs, nil
-}
-
-// RequiredArg returns the first positional argument or a command-scoped missing-argument error.
-func RequiredArg(cmd Command, fs *flag.FlagSet, name string) (string, error) {
-	if fs.NArg() == 0 {
-		return "", CmdErr(cmd, "%w", &ArgMissingError{Name: name})
-	}
-	return fs.Arg(0), nil
-}
 
 // ScanLogs reads logs from a worker.
 // The function expects a generic io.ReadCloser and sends the collected logs

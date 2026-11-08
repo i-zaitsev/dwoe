@@ -7,12 +7,13 @@ package commands
 
 import (
 	"github.com/i-zaitsev/dwoe/internal/cli"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // Registry returns a map of all subcommands.
 // The subcommands should be registered via cli.RegisterCommands.
 // This allows decoupling the CLI entry point from specific subcommands.
-func Registry() map[string]cli.Command {
+func Registry() (map[string]cli.Command, error) {
 	subcommands := []cli.Command{
 		newCmdBatch(),
 		newCmdCollect(),
@@ -34,9 +35,9 @@ func Registry() map[string]cli.Command {
 
 	registry := make(map[string]cli.Command, len(subcommands))
 
-	for _, cmd := range subcommands {
-		registry[cmd.Name()] = cmd
+	if err := cmd.Register(registry, subcommands...); err != nil {
+		return nil, err
 	}
 
-	return registry
+	return registry, nil
 }

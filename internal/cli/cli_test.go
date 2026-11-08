@@ -6,13 +6,13 @@ package cli
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func init() {
@@ -88,43 +88,6 @@ func TestParseGlobalFlags_RestArgs(t *testing.T) {
 			if diff := cmp.Diff(tc.rest, rest); diff != "" {
 				t.Fatalf("rest mismatch (-want +got):\n%s", diff)
 			}
-		})
-	}
-}
-
-func TestRequiredArg(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name      string
-		args      []string
-		want      string
-		wantErr   bool
-		wantField string
-	}{
-		{name: "present", args: []string{"task.yaml", "extra"}, want: "task.yaml"},
-		{name: "missing_nil", wantErr: true, wantField: "task file"},
-		{name: "missing_empty", args: []string{}, wantErr: true, wantField: "task file"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			cmd := &stubCmd{name: "demo"}
-			fs, err := ParseFlags(cmd, tt.args, nil)
-			assert.ErrVal(t, err).Nil().Fatal()
-
-			got, err := RequiredArg(cmd, fs, "task file")
-			if !tt.wantErr {
-				assert.ErrVal(t, err).Nil().Fatal()
-				assert.Eq(t, got, tt.want)
-				return
-			}
-
-			var missing *ArgMissingError
-			if !errors.As(err, &missing) {
-				t.Fatalf("error = %v, want ArgMissingError", err)
-			}
-			assert.Eq(t, missing.Name, tt.wantField)
-			assert.Contains(t, err.Error(), "demo: task file is required")
 		})
 	}
 }
@@ -222,6 +185,5 @@ func (s *helpableStubCmd) Args() string   { return s.args }
 func (s *helpableStubCmd) Run(*Env) error { return nil }
 
 func (s *helpableStubCmd) Parse(args []string) error {
-	_, err := ParseFlags(s, args, nil)
-	return err
+	return cmd.NewFlagSet(s).Parse(args)
 }
