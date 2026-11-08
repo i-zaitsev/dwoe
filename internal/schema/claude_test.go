@@ -10,7 +10,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/schema/schematest"
+	"github.com/i-zaitsev/dwoe/internal/schema/schematest"
 	"github.com/i-zaitsev/pkg/assert"
 )
 

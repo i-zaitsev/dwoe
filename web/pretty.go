@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/schema"
+	"github.com/i-zaitsev/dwoe/internal/schema"
 )
 
 const longLineThreshold = 120
