@@ -12,9 +12,9 @@ import (
 	"testing"
 
 	"github.com/i-zaitsev/dwoe/internal/config"
+	"github.com/i-zaitsev/dwoe/internal/schema/schematest"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
-	"github.com/i-zaitsev/dwoe/schema/schematest"
 	"github.com/i-zaitsev/pkg/assert"
 )
 
