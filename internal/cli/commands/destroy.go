@@ -6,11 +6,11 @@ package commands
 
 import (
 	"errors"
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // errWsRunning is returned when attempting to destroy
@@ -37,16 +37,16 @@ func (c *cmdDestroy) Args() string { return "<name|id>" }
 // Requires a workspace name or ID as a positional argument, or all to target
 // every workspace. The force flag allows destroying running workspaces.
 func (c *cmdDestroy) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.BoolVar(&c.force, "force", false, "destroy even if running")
-		fs.BoolVar(&c.force, "f", false, "destroy even if running")
-		fs.BoolVar(&c.all, "all", false, "destroy all workspaces")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.BoolVar(&c.force, "force", false, "destroy even if running")
+	fs.BoolVar(&c.force, "f", false, "destroy even if running")
+	fs.BoolVar(&c.all, "all", false, "destroy all workspaces")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
 	if !c.all && fs.NArg() == 0 {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "name or id"})
+		return cmd.Errorf(c, "%w", &cmd.ArgMissingError{Name: "name or id"})
 	}
 	if fs.NArg() > 0 {
 		c.nameOrID = fs.Arg(0)
@@ -61,23 +61,23 @@ func (c *cmdDestroy) Run(e *cli.Env) error {
 
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	if c.all {
 		if !c.force {
-			return cli.CmdErr(c, "--all: %w", &cli.ArgMissingError{Name: "--force"})
+			return cmd.Errorf(c, "--all: %w", &cmd.ArgMissingError{Name: "--force"})
 		}
 		return c.destroyAll(e, manager)
 	}
 
 	ws, err := manager.Resolve(c.nameOrID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	if ws.Status == workspace.StatusRunning && !c.force {
-		return cli.CmdErr(c, "%w", errWsRunning)
+		return cmd.Errorf(c, "%w", errWsRunning)
 	}
 
 	e.Print("Destroying workspace: %s\n", ws.Name)
@@ -92,7 +92,7 @@ func (c *cmdDestroy) Run(e *cli.Env) error {
 func (c *cmdDestroy) destroyAll(e *cli.Env, manager *workspace.Manager) error {
 	wss, err := manager.List()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 	if len(wss) == 0 {
 		e.Print("No workspaces to destroy.\n")

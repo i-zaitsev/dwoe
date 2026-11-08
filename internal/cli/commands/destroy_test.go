@@ -7,9 +7,9 @@ package commands
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func TestDestroyCmd_Parse(t *testing.T) {
@@ -99,11 +99,11 @@ func TestDestroyCmd_Run_All(t *testing.T) {
 func TestDestroyCmd_Run_AllWithoutForce(t *testing.T) {
 	t.Parallel()
 	setup := newCmdTestSetup(t)
-	cmd := &cmdDestroy{all: true}
+	c := &cmdDestroy{all: true}
 
-	err := cmd.Run(setup.env)
+	err := c.Run(setup.env)
 
-	assert.ErrVal(t, err).As(new(*cli.ArgMissingError)).Fatal()
+	assert.ErrVal(t, err).As(new(*cmd.ArgMissingError)).Fatal()
 }
 
 func TestDestroyCmd_Run_NotFound(t *testing.T) {

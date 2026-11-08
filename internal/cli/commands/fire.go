@@ -5,7 +5,6 @@
 package commands
 
 import (
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/config"
 	"github.com/i-zaitsev/dwoe/internal/config/provider"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdFire
@@ -39,26 +39,26 @@ func (c *cmdFire) Desc() string { return "Quick-start workspace from repo" }
 func (c *cmdFire) Args() string { return "--repo <url|path> [flags]" }
 
 func (c *cmdFire) Parse(args []string) error {
-	_, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.repo, "repo", "", "repository URL or local path")
-		fs.StringVar(&c.repo, "r", "", "repository URL or local path")
-		fs.StringVar(&c.work, "work", "", "path to a file or directory with instructions")
-		fs.StringVar(&c.work, "w", "", "path to a file or directory with instructions")
-		fs.StringVar(&c.do, "do", "", "inline task prompt")
-		fs.StringVar(&c.model, "model", "", "model to use")
-		fs.StringVar(&c.model, "m", "", "model to use")
-		fs.StringVar(&c.provider, "provider", "", "agent provider (anthropic, openai)")
-		fs.StringVar(&c.batchID, "batch", "", "batch group ID")
-		fs.StringVar(&c.batchID, "b", "", "batch group ID")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.repo, "repo", "", "repository URL or local path")
+	fs.StringVar(&c.repo, "r", "", "repository URL or local path")
+	fs.StringVar(&c.work, "work", "", "path to a file or directory with instructions")
+	fs.StringVar(&c.work, "w", "", "path to a file or directory with instructions")
+	fs.StringVar(&c.do, "do", "", "inline task prompt")
+	fs.StringVar(&c.model, "model", "", "model to use")
+	fs.StringVar(&c.model, "m", "", "model to use")
+	fs.StringVar(&c.provider, "provider", "", "agent provider (anthropic, openai)")
+	fs.StringVar(&c.batchID, "batch", "", "batch group ID")
+	fs.StringVar(&c.batchID, "b", "", "batch group ID")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
 	if c.repo == "" {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "repo"})
+		return cmd.Errorf(c, "%w", &cmd.ArgMissingError{Name: "repo"})
 	}
 	if c.do != "" && c.work != "" {
-		return cli.CmdErr(c, "cannot use both --do and --work")
+		return cmd.Errorf(c, "cannot use both --do and --work")
 	}
 	return nil
 }
@@ -69,12 +69,12 @@ func (c *cmdFire) Run(e *cli.Env) error {
 	ctx := e.Context()
 	global, err := config.LoadGlobalConfig(e.DataDir())
 	if err != nil {
-		return cli.CmdErr(c, "load global config: %w", err)
+		return cmd.Errorf(c, "load global config: %w", err)
 	}
 
 	providerName, err := provider.ParseName(c.provider)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	seed := &config.Task{
@@ -88,7 +88,7 @@ func (c *cmdFire) Run(e *cli.Env) error {
 	} else if c.work != "" {
 		promptFile, err := resolveWork(c.work)
 		if err != nil {
-			return cli.CmdErr(c, "%w", err)
+			return cmd.Errorf(c, "%w", err)
 		}
 		seed.Source.PromptFile = promptFile
 	}
@@ -98,7 +98,7 @@ func (c *cmdFire) Run(e *cli.Env) error {
 	} else {
 		abs, errAbs := filepath.Abs(c.repo)
 		if errAbs != nil {
-			return cli.CmdErr(c, "resolve repo path: %w", errAbs)
+			return cmd.Errorf(c, "resolve repo path: %w", errAbs)
 		}
 		seed.Source.LocalPath = abs
 	}
@@ -117,16 +117,16 @@ func (c *cmdFire) Run(e *cli.Env) error {
 
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	ws, err := manager.Create(task)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	if err := manager.Start(ctx, ws.ID); err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	e.Print("Started workspace: %s\n", ws.Name)
@@ -135,14 +135,14 @@ func (c *cmdFire) Run(e *cli.Env) error {
 	if c.batchID != "" {
 		rec, errBatch := batch.LoadOrCreate(e.DataDir(), c.batchID, c.repo)
 		if errBatch != nil {
-			return cli.CmdErr(c, "%w", errBatch)
+			return cmd.Errorf(c, "%w", errBatch)
 		}
 		rec.Entries = append(rec.Entries, batch.Entry{
 			WorkspaceID: ws.ID,
 			Branch:      batch.BranchName(c.work),
 		})
 		if errSave := batch.SaveRecord(e.DataDir(), rec); errSave != nil {
-			return cli.CmdErr(c, "%w", errSave)
+			return cmd.Errorf(c, "%w", errSave)
 		}
 		e.Print("- Batch: %s\n", c.batchID)
 	}

@@ -5,7 +5,6 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 	"path/filepath"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/cli/batchinfo"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdPatches exports commits from a completed workspace as patch files.
@@ -48,20 +48,20 @@ func (c *cmdPatches) Args() string { return "<name|id> --dir <dir>" }
 // In single mode, a workspace name or ID is required as a positional argument.
 // In batch mode, batch selects all workspaces from a previously executed batch.
 func (c *cmdPatches) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.batchID, "batch", "", "export patches for all workspaces in a batch")
-		fs.StringVar(&c.dir, "dir", "", "output directory for patch files")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.batchID, "batch", "", "export patches for all workspaces in a batch")
+	fs.StringVar(&c.dir, "dir", "", "output directory for patch files")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
 	if c.dir == "" {
-		return cli.CmdErr(c, "%w", &cli.ArgMissingError{Name: "--dir"})
+		return cmd.Errorf(c, "%w", &cmd.ArgMissingError{Name: "--dir"})
 	}
 	if c.batchID != "" {
 		return nil
 	}
-	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	c.nameOrID, err = cmd.RequiredArg(c, fs, "name or id")
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (c *cmdPatches) runSingle(e *cli.Env) error {
 
 	n, err := c.exportPatch(ws.WorkDir(), c.dir)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	if n == 0 {
@@ -106,14 +106,14 @@ func (c *cmdPatches) runBatch(e *cli.Env) error {
 
 	rec, err := batch.LoadRecord(e.DataDir(), c.batchID)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	results, err := batchinfo.Collect(e, rec, func(ws *workspace.Workspace, entry batch.Entry) (int, error) {
 		return c.exportPatch(ws.WorkDir(), filepath.Join(c.dir, entry.Branch))
 	})
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	ok, failed := batchinfo.Report(e, results, "patch(es)")
@@ -121,7 +121,7 @@ func (c *cmdPatches) runBatch(e *cli.Env) error {
 	e.Print("\nExported patches for %d/%d workspaces into %s\n", ok, len(results), c.dir)
 
 	if failed > 0 {
-		return cli.CmdErr(c, "%d workspace(s) failed", failed)
+		return cmd.Errorf(c, "%d workspace(s) failed", failed)
 	}
 
 	return nil

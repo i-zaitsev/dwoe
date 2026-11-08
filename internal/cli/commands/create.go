@@ -5,11 +5,11 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdCreate creates a new workspace.
@@ -29,13 +29,13 @@ func (c *cmdCreate) Args() string { return "<task.yaml>" }
 // The subcommand requires a task file as the first argument.
 // Optional argument overrides the workspace name from the task file.
 func (c *cmdCreate) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.StringVar(&c.name, "name", "", "override workspace name")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.StringVar(&c.name, "name", "", "override workspace name")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.taskPath, err = cli.RequiredArg(c, fs, "task file")
+	c.taskPath, err = cmd.RequiredArg(c, fs, "task file")
 	if err != nil {
 		return err
 	}
@@ -49,18 +49,18 @@ func (c *cmdCreate) Run(e *cli.Env) error {
 
 	taskCfg, err := loadTaskConfig(c.taskPath, e.DataDir())
 	if err != nil {
-		return cli.CmdErr(c, "load config: %w", err)
+		return cmd.Errorf(c, "load config: %w", err)
 	}
 	applyTaskOverrides(e, taskCfg, c.name)
 
 	manager, err := e.Manager()
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 
 	ws, err := manager.FindOrCreate(e.Context(), taskCfg)
 	if err != nil {
-		return cli.CmdErr(c, "%w", err)
+		return cmd.Errorf(c, "%w", err)
 	}
 	if ws.Done {
 		e.Print("Workspace already done: %s\n", ws.Name)

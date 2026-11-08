@@ -7,9 +7,9 @@ package commands
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func TestPatchesCmd_Parse(t *testing.T) {
@@ -59,12 +59,12 @@ func TestPatchesCmd_Parse_Errors(t *testing.T) {
 
 func TestPatchesCmd_Parse_MissingDir(t *testing.T) {
 	t.Parallel()
-	assert.ErrVal(t, new(cmdPatches).Parse([]string{"ws-1"})).As(new(*cli.ArgMissingError)).Fatal()
+	assert.ErrVal(t, new(cmdPatches).Parse([]string{"ws-1"})).As(new(*cmd.ArgMissingError)).Fatal()
 }
 
 func TestPatchesCmd_Parse_MissingNameOrID(t *testing.T) {
 	t.Parallel()
-	assert.ErrVal(t, new(cmdPatches).Parse([]string{"--dir", "/tmp"})).As(new(*cli.ArgMissingError)).Fatal()
+	assert.ErrVal(t, new(cmdPatches).Parse([]string{"--dir", "/tmp"})).As(new(*cmd.ArgMissingError)).Fatal()
 }
 
 func TestPatchesCmd_Run_Single(t *testing.T) {

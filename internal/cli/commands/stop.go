@@ -5,11 +5,11 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 	"time"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdStop stops a running workspace.
@@ -30,14 +30,14 @@ func (c *cmdStop) Args() string { return "<name|id>" }
 // Requires a workspace name or ID as the first positional argument. The
 // force flag skips the graceful shutdown period.
 func (c *cmdStop) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.BoolVar(&c.force, "force", false, "force kill (SIGKILL)")
-		fs.BoolVar(&c.force, "f", false, "force kill (SIGKILL)")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.BoolVar(&c.force, "force", false, "force kill (SIGKILL)")
+	fs.BoolVar(&c.force, "f", false, "force kill (SIGKILL)")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	c.nameOrID, err = cmd.RequiredArg(c, fs, "name or id")
 	if err != nil {
 		return err
 	}

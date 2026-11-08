@@ -7,9 +7,9 @@ package commands
 import (
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/state"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func TestCollectCmd_Parse(t *testing.T) {
@@ -67,7 +67,7 @@ func TestCollectCmd_Parse_MissingFlags(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.ErrVal(t, new(cmdCollect).Parse(tc.args)).As(new(*cli.ArgMissingError)).Fatal()
+			assert.ErrVal(t, new(cmdCollect).Parse(tc.args)).As(new(*cmd.ArgMissingError)).Fatal()
 		})
 	}
 }

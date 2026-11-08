@@ -5,10 +5,10 @@
 package commands
 
 import (
-	"flag"
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 type cmdInspect struct {
@@ -21,13 +21,13 @@ func (c *cmdInspect) Desc() string { return "Show detailed workspace info" }
 func (c *cmdInspect) Args() string { return "<name|id>" }
 
 func (c *cmdInspect) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, func(fs *flag.FlagSet) {
-		fs.BoolVar(&c.desc, "desc", false, "print the task description")
-	})
+	fs := cmd.NewFlagSet(c)
+	fs.BoolVar(&c.desc, "desc", false, "print the task description")
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	c.nameOrID, err = cmd.RequiredArg(c, fs, "name or id")
 	if err != nil {
 		return err
 	}

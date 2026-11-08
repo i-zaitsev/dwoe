@@ -27,9 +27,15 @@ func run() int {
 	defer stop()
 
 	provider.RegisterDefaultProviders()
-	cli.RegisterCommands(commands.Registry())
 	env := cli.NewEnv(os.Stdout, os.Stderr)
 	env.SetContext(ctx)
+
+	reg, err := commands.Registry()
+	if err != nil {
+		env.Error("error: %v\n", err)
+		return 1
+	}
+	cli.RegisterCommands(reg)
 
 	if err := cli.Run(env, os.Args[1:]); err != nil {
 		// ErrWorkspaceDone signals that a workspace was already completed

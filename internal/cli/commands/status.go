@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/i-zaitsev/dwoe/internal/cli"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 // cmdStatus displays the current state of a workspace.
@@ -26,11 +27,12 @@ func (c *cmdStatus) Args() string { return "<name|id>" }
 // Parse expects the arguments for the subcommand.
 // Requires a workspace name or ID as the first positional argument.
 func (c *cmdStatus) Parse(args []string) error {
-	fs, err := cli.ParseFlags(c, args, nil)
+	fs := cmd.NewFlagSet(c)
+	err := fs.Parse(args)
 	if err != nil {
-		return err
+		return cmd.Errorf(c, "%w", err)
 	}
-	c.nameOrID, err = cli.RequiredArg(c, fs, "name or id")
+	c.nameOrID, err = cmd.RequiredArg(c, fs, "name or id")
 	if err != nil {
 		return err
 	}

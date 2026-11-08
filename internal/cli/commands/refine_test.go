@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/i-zaitsev/dwoe/internal/cli"
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func TestRefineCmd_Parse(t *testing.T) {
@@ -86,9 +86,9 @@ func TestRefineCmd_Parse(t *testing.T) {
 
 func TestRefineCmd_Parse_MissingParent(t *testing.T) {
 	t.Parallel()
-	cmd := new(cmdRefine)
-	err := cmd.Parse([]string{"--do", "x"})
-	assert.ErrVal(t, err).As(new(*cli.ArgMissingError)).Fatal()
+	c := new(cmdRefine)
+	err := c.Parse([]string{"--do", "x"})
+	assert.ErrVal(t, err).As(new(*cmd.ArgMissingError)).Fatal()
 }
 
 func TestRefineCmd_Parse_MissingDoAndWork(t *testing.T) {
@@ -109,9 +109,9 @@ func TestRefineCmd_Parse_DoAndWorkConflict(t *testing.T) {
 
 func TestRefineCmd_Parse_UnknownFlag(t *testing.T) {
 	t.Parallel()
-	cmd := new(cmdRefine)
-	err := cmd.Parse([]string{"--bogus", "parent-ws"})
-	assert.ErrVal(t, err).As(new(*cli.FlagParseError)).Fatal()
+	c := new(cmdRefine)
+	err := c.Parse([]string{"--bogus", "parent-ws"})
+	assert.ErrVal(t, err).Contains("flag provided but not defined").Fatal()
 }
 
 func createCompletedParent(t *testing.T, setup *cmdTestSetup, id string) {

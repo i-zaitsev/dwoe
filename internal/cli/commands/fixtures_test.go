@@ -23,6 +23,7 @@ import (
 	"github.com/i-zaitsev/dwoe/internal/testutil"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
 	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
 func TestMain(m *testing.M) {
@@ -80,19 +81,19 @@ func logReader(s string) io.ReadCloser {
 	return io.NopCloser(strings.NewReader(s))
 }
 
-func checkParseFails(t *testing.T, cmd cli.Command) {
+func checkParseFails(t *testing.T, c cli.Command) {
 	t.Helper()
 	t.Run("nil_args", func(t *testing.T) {
 		t.Parallel()
-		assert.ErrVal(t, cmd.Parse(nil)).As(new(*cli.ArgMissingError)).Fatal()
+		assert.ErrVal(t, c.Parse(nil)).As(new(*cmd.ArgMissingError)).Fatal()
 	})
 	t.Run("empty_args", func(t *testing.T) {
 		t.Parallel()
-		assert.ErrVal(t, cmd.Parse([]string{})).As(new(*cli.ArgMissingError)).Fatal()
+		assert.ErrVal(t, c.Parse([]string{})).As(new(*cmd.ArgMissingError)).Fatal()
 	})
 	t.Run("bad_flag", func(t *testing.T) {
 		t.Parallel()
-		assert.ErrVal(t, cmd.Parse([]string{"-badflag"})).As(new(*cli.FlagParseError)).Fatal()
+		assert.ErrVal(t, c.Parse([]string{"-badflag"})).Contains("flag provided but not defined").Fatal()
 	})
 }
 
