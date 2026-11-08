@@ -55,7 +55,7 @@ Commands:
   status   <name|id>                  Show workspace status
   stop     <name|id>                  Stop running workspace
   version                             Show version
-  web      [--addr ADDR]              Start web dashboard
+  web      [--port PORT] [--ui-dir DIR] Start web dashboard
 ```
 The default location for workspace data, including logs, code artifacts, and task config, is `~/.dwoe`.
 
@@ -125,8 +125,11 @@ resources:
 Use `dwoe web` to start a dashboard for monitoring workers, streaming logs, and viewing workspace status in the browser.
 
 ```bash
-dwoe web --addr :9090
+dwoe web --port 9090
 ```
+
+The dashboard is server-rendered HTML with htmx, served together with a JSON API under `/api/v1`.
+Templates and static files are embedded in the binary; `--ui-dir pkg/hio/ui` reads them from disk instead.
 
 ## Examples
 
@@ -140,4 +143,5 @@ make lint
 make all
 ```
 
-Note that the project includes `.air.toml` and `make dev` allows hot reloading upon changes. 
+To work on the dashboard, run `make dev`. It starts `cmd/web` with Air hot reload and debug logging on 127.0.0.1:8080.
+Go changes trigger a rebuild; template and CSS changes under `pkg/hio/ui` show up on the next request.

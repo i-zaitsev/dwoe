@@ -4,6 +4,10 @@
 
 ### Features
 
+- The web dashboard is rebuilt on Go templates and htmx: boosted navigation, debounced filtering, live log streaming over SSE, lazy diffs, and light/dark themes
+- A JSON API under `/api/v1` serves workspaces, diffs, logs (with SSE streaming), and batches
+- `dwoe web --ui-dir` reads templates and static files from a directory, for development
+- The `cmd/web` entry point runs the dashboard on its own with `-addr` (host), `-port`, `-log-level`, `-datadir`, and `-ui-dir`
 - Multi-provider agents basic support: `anthropic` and `openai`
 - The `fire` command supports `--provider` flag
 - Task description shown by `dwoe inspect -desc` and in the web dashboard
@@ -27,6 +31,8 @@
 
 ### Other
 
+- Project layout: the dashboard lives in `pkg/hio`, independent of dwoe, and `web/` connects it to the workspace manager; `internal/schema` and thin entry points in `cmd/`
+- The CLI command framework and the test assertions come from `github.com/i-zaitsev/pkg`
 - Human-readable log format via `--logfmt=text`, with the source location on warnings and errors
 - Colors only when the log writer is a terminal
 - Default models are now `claude-sonnet-5` and `gpt-5.6-terra`
