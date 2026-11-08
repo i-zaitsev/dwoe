@@ -5,167 +5,132 @@
 package web
 
 import (
-	"html/template"
-	"net/http"
+	"log/slog"
 	"time"
 
+	"github.com/i-zaitsev/dwoe/internal/batch"
 	"github.com/i-zaitsev/dwoe/internal/workspace"
+	"github.com/i-zaitsev/dwoe/pkg/hio/data"
 )
 
-// batchSummary stores information collected from workers.
-type batchSummary struct {
-	ID       string     // batch id
-	Workers  int        // number of workers that processed this batch
-	Started  *time.Time // earliest time among all worker entries
-	Finished *time.Time // latest time among all worker entries
+// batchModel reads batches from the workspace manager.
+type batchModel struct {
+	mgr *workspace.Manager
 }
 
-// ShortID returns a shortened version of the batch ID.
-func (b *batchSummary) ShortID() string {
-	if len(b.ID) > 8 {
-		return b.ID[:8]
-	}
-	return b.ID
-}
-
-// StartedFmt returns a formatted version of the batch start time.
-func (b *batchSummary) StartedFmt() string {
-	return fmtTime(b.Started)
-}
-
-// FinishedFmt returns a formatted version of the batch finish time.
-func (b *batchSummary) FinishedFmt() string {
-	return fmtTime(b.Finished)
-}
-
-func (b *batchSummary) UpdateStarted(t *time.Time) {
-	if t == nil {
-		return
-	}
-	if b.Started == nil || b.Started.After(*t) {
-		b.Started = t
-	}
-}
-
-func (b *batchSummary) UpdateFinished(t *time.Time) {
-	if t == nil {
-		return
-	}
-	if b.Finished == nil || b.Finished.Before(*t) {
-		b.Finished = t
-	}
-}
-
-func fmtTime(t *time.Time) string {
-	if t == nil {
-		return "-"
-	}
-	return t.Format("2006-01-02 15:04")
-}
-
-// batchesPageData passed to the rendered template with batch summaries and global page config.
-type batchesPageData struct {
-	pageConfig
-	Batches []batchSummary
-}
-
-// batchDiffEntry stores information about a single workspace diff.
-type batchDiffEntry struct {
-	Name    string
-	ID      string
-	Commits []workspace.CommitInfo
-	Stat    string
-	Diff    template.HTML
-}
-
-// batchChangesData passed to the rendered template with batch diffs and global page config.
-type batchChangesData struct {
-	pageConfig
-	BatchID string
-	Diffs   []batchDiffEntry
-}
-
-func (s *Server) listBatches(w http.ResponseWriter, r *http.Request) {
-	if batchID := r.URL.Query().Get("batch"); batchID != "" {
-		// If requested a specific batch, returns detailed information about
-		// the changes for this batch. Otherwise, the endpoint returns the
-		// list of batch summaries.
-		s.batchChanges(w, r, batchID)
-		return
-	}
-
-	records, err := s.workspaces.BatchRecords()
+func (m *batchModel) List() ([]data.Batch, error) {
+	records, err := m.mgr.BatchRecords()
 	if err != nil {
-		records = nil
+		return nil, err
 	}
 
-	var summaries []batchSummary
-
-	// Collect summary information for the batch.
-	// The batch start time is equal to the earliest task start time,
-	// and the finish time is the latest task finish time. If not
-	// all tasks are finished, the batch finish time is left empty.
+	batches := make([]data.Batch, 0, len(records))
 	for _, rec := range records {
-		sum := batchSummary{ID: rec.ID, Workers: len(rec.Entries)}
-		allFinished := true
-		for _, entry := range rec.Entries {
-			ws, errGet := s.workspaces.Get(entry.WorkspaceID)
-			if errGet != nil {
-				continue
-			}
-			sum.UpdateStarted(ws.StartedAt)
-			sum.UpdateFinished(ws.FinishedAt)
-			if ws.FinishedAt == nil {
-				allFinished = false
-			}
-		}
-		if !allFinished {
-			sum.Finished = nil // filled when all tasks are completed
-		}
-		summaries = append(summaries, sum)
+		batches = append(batches, summarizeBatch(rec, m.mgr.Get))
 	}
 
-	writeHTMLPageHeaders(w)
-	writeTemplate(w, "batches-page", batchesPageData{
-		pageConfig: pageConfigFromRequest(r),
-		Batches:    summaries,
-	})
+	return batches, nil
 }
 
-func (s *Server) batchChanges(w http.ResponseWriter, r *http.Request, batchID string) {
-	records, err := s.workspaces.BatchRecords()
+func (m *batchModel) Get(id string) (data.Batch, error) {
+	records, err := m.mgr.BatchRecords()
 	if err != nil {
-		records = nil
+		return data.Batch{}, err
 	}
 
-	var diffs []batchDiffEntry
 	for _, rec := range records {
-		if rec.ID != batchID {
+		if rec.ID != id {
 			continue
 		}
+		b := summarizeBatch(rec, m.mgr.Get)
+		b.Changes = batchChanges(rec, m.mgr.Get, m.mgr.Diff)
+		return b, nil
+	}
+
+	return data.Batch{}, data.ErrRecordNotFound
+}
+
+type batchRef struct {
+	ID    string
+	Color int
+}
+
+// batchIndex maps every workspace ID to its batch and the batch's display color.
+func batchIndex(records []*batch.Record) map[string]batchRef {
+	index := make(map[string]batchRef)
+	for i, rec := range records {
+		color := (i % 4) + 1
 		for _, entry := range rec.Entries {
-			ws, errGet := s.workspaces.Get(entry.WorkspaceID)
-			if errGet != nil {
-				continue
-			}
-			diff, errDiff := s.workspaces.Diff(entry.WorkspaceID)
-			if errDiff != nil {
-				continue
-			}
-			diffs = append(diffs, batchDiffEntry{
-				Name:    ws.Name,
-				ID:      ws.ID,
-				Commits: diff.Commits,
-				Stat:    diff.Stat,
-				Diff:    formatDiff(diff.Diff),
-			})
+			index[entry.WorkspaceID] = batchRef{ID: rec.ID, Color: color}
+		}
+	}
+	return index
+}
+
+type lookupFunc func(id string) (*workspace.Workspace, error)
+
+// summarizeBatch collects the summary of a batch record.
+// The start time is the earliest start of its workspaces, and the finish time is the latest finish.
+// It stays empty until every workspace has finished.
+// Only workspaces that still resolve are counted as workers.
+func summarizeBatch(rec *batch.Record, lookup lookupFunc) data.Batch {
+	b := data.Batch{ID: rec.ID}
+	allFinished := true
+
+	for _, entry := range rec.Entries {
+		ws, err := lookup(entry.WorkspaceID)
+		if err != nil {
+			slog.Debug("web: batch workspace", "id", entry.WorkspaceID, "err", err)
+			continue
+		}
+		b.Workers++
+		b.StartedAt = earliest(b.StartedAt, ws.StartedAt)
+		b.FinishedAt = latest(b.FinishedAt, ws.FinishedAt)
+		if ws.FinishedAt == nil {
+			allFinished = false
 		}
 	}
 
-	writeHTMLPageHeaders(w)
-	writeTemplate(w, "batches-changes", batchChangesData{
-		pageConfig: pageConfigFromRequest(r),
-		BatchID:    batchID,
-		Diffs:      diffs,
-	})
+	if !allFinished {
+		b.FinishedAt = nil
+	}
+
+	return b
+}
+
+// batchChanges returns the diffs of the batch workspaces that resolve and have one.
+func batchChanges(
+	rec *batch.Record,
+	lookup lookupFunc,
+	diff func(id string) (*workspace.DiffInfo, error),
+) []data.BatchChange {
+	var changes []data.BatchChange
+	for _, entry := range rec.Entries {
+		ws, err := lookup(entry.WorkspaceID)
+		if err != nil {
+			slog.Debug("web: batch workspace", "id", entry.WorkspaceID, "err", err)
+			continue
+		}
+		d, err := diff(entry.WorkspaceID)
+		if err != nil {
+			slog.Debug("web: batch diff", "id", entry.WorkspaceID, "err", err)
+			continue
+		}
+		changes = append(changes, data.BatchChange{Workspace: summarize(ws), Diff: toDiff(d)})
+	}
+	return changes
+}
+
+func earliest(a, b *time.Time) *time.Time {
+	if a == nil || (b != nil && b.Before(*a)) {
+		return b
+	}
+	return a
+}
+
+func latest(a, b *time.Time) *time.Time {
+	if a == nil || (b != nil && b.After(*a)) {
+		return b
+	}
+	return a
 }

@@ -2,15 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package web
+package main
 
 import (
-	"testing"
+	"os"
 
-	"github.com/i-zaitsev/pkg/assert"
+	"github.com/i-zaitsev/dwoe/web"
 )
 
-func TestServer_New(t *testing.T) {
-	serv := NewServer(addr)
-	assert.Eq(t, serv.addr, addr)
+func main() {
+	os.Exit(web.Main(os.Args[1:]))
 }

@@ -5,7 +5,10 @@
 package commands
 
 import (
+	"log/slog"
+
 	"github.com/i-zaitsev/dwoe/internal/cli"
+	"github.com/i-zaitsev/dwoe/pkg/hio/config"
 	"github.com/i-zaitsev/dwoe/web"
 	"github.com/i-zaitsev/pkg/cmd"
 )
@@ -13,21 +16,25 @@ import (
 // cmdWeb starts the web dashboard.
 //
 // The dashboard provides a browser-based UI for monitoring workspaces.
-// The addr flag controls the listen address (default ":8080").
+// The dashboard listens on the loopback address; the port flag changes the
+// port (default 8080). The ui-dir flag reads templates and static files from
+// a directory instead of the embedded ones.
 type cmdWeb struct {
-	addr string
+	port  int
+	uiDir string
 }
 
 // Name returns the subcommand name.
 func (c *cmdWeb) Name() string { return "web" }
 func (c *cmdWeb) Desc() string { return "Start web dashboard" }
-func (c *cmdWeb) Args() string { return "[--addr ADDR]" }
+func (c *cmdWeb) Args() string { return "[--port PORT] [--ui-dir DIR]" }
 
 // Parse expects the arguments for the subcommand.
-// The optional addr flag sets the HTTP listen address.
+// The optional port flag sets the HTTP listen port.
 func (c *cmdWeb) Parse(args []string) error {
 	fs := cmd.NewFlagSet(c)
-	fs.StringVar(&c.addr, "addr", "127.0.0.1:8080", "listen address")
+	fs.IntVar(&c.port, "port", 8080, "listen port")
+	fs.StringVar(&c.uiDir, "ui-dir", "", "read templates and static files from this directory")
 	err := fs.Parse(args)
 	if err != nil {
 		return cmd.Errorf(c, "%w", err)
@@ -35,19 +42,21 @@ func (c *cmdWeb) Parse(args []string) error {
 	return nil
 }
 
-// Run starts the web server and blocks until it returns.
+// Run starts the web server and blocks until it stops.
 func (c *cmdWeb) Run(e *cli.Env) error {
 	manager, err := e.Manager()
-
 	if err != nil {
 		return err
 	}
 
-	srv := web.NewServer(c.addr)
-	web.Routes(srv)
-	srv.SetSource(manager)
+	env := config.NewEnv(config.Config{
+		Addr:     "127.0.0.1",
+		Port:     c.port,
+		UIDir:    c.uiDir,
+		LogLevel: slog.LevelWarn,
+	})
 
-	e.Print("Dashboard: http://%s\n", c.addr)
+	e.Print("Dashboard: http://%s\n", env.ServerAddr())
 
-	return srv.ListenAndServe(e.Context())
+	return web.Serve(e.Context(), env, web.NewModels(manager))
 }
