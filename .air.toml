@@ -2,9 +2,9 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/dwoe ./cmd/dwoe"
-  entrypoint = "./tmp/dwoe"
-  args_bin = ["web"]
-  include_ext = ["go", "html", "css", "js"]
-  exclude_dir = ["tmp", "bin", "examples", "test"]
+  cmd = "go build -o ./tmp/web ./cmd/web"
+  entrypoint = "./tmp/web"
+  args_bin = ["-log-level", "debug", "-ui-dir", "pkg/hio/ui"]
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "bin", "examples", "test", "drafts"]
   delay = 500

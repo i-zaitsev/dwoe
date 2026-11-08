@@ -8,10 +8,34 @@ linters:
     - ineffassign
     - gocritic
     - revive
+    - depguard
 
 linters-settings:
   errcheck:
     check-type-assertions: true
+  depguard:
+    rules:
+      hio-independent-of-dwoe:
+        list-mode: lax
+        files:
+          - "**/pkg/hio/**"
+        deny:
+          - pkg: github.com/i-zaitsev/dwoe/internal
+            desc: pkg/hio must not depend on dwoe internals; dwoe plugs in through the web package
+          - pkg: github.com/i-zaitsev/dwoe/web
+            desc: pkg/hio must not depend on the package that connects it to dwoe
+      hio-data-transport-free:
+        list-mode: lax
+        files:
+          - "**/pkg/hio/data/**"
+          - "!$test"
+        deny:
+          - pkg: net/http
+            desc: the data models know nothing about HTTP
+          - pkg: html/template
+            desc: the data models know nothing about HTML
+          - pkg: text/template
+            desc: the data models know nothing about templates
 
 issues:
   exclude-dirs:
