@@ -14,10 +14,14 @@ The CLI starts and manages worker containers, stores workspace data under the co
 
 ## Repository Layout
 
-- `cmd/`: CLI entry points. Keep `main.go` thin and delegate behavior to packages.
+- `cmd/`: CLI entry points. Keep entry points like `cmd/dwoe/dwoe.go` and `cmd/web/web.go` thin and delegate behavior to packages.
 - `internal/`: application packages for CLI, Docker, workspace, state, config, logging, migrations, and utilities.
-- `web/`: web dashboard handlers, templates, static assets, and tests.
-- `schema/`: schema-related code and tests.
+- `internal/schema/`: stream-json schema code and tests; fixtures live in `schematest`.
+- `pkg/hio/`: the web dashboard, independent of dwoe: HTML pages with htmx, a JSON API under `/api/v1`, middleware, and SSE log streaming. It must not import `internal/`.
+  - `pkg/hio/data/`: the types and model interfaces the dashboard reads (no HTTP, no HTML).
+  - `pkg/hio/config/`: server flags and the runtime environment (`Config`, `Env`).
+  - `pkg/hio/ui/`: embedded templates (`layout/`, `pages/`, `partials/`) and static files. htmx attributes belong in `layout/` and `partials/` only.
+- `web/`: connects `pkg/hio` to dwoe: implements the `data` models over the workspace manager and runs the server for `dwoe web` and `cmd/web`.
 - `docker/`: Dockerfiles for default agent and proxy images.
 - `examples/`: walkthrough projects and task YAML examples.
 - `test/integration/`: integration tests, Docker-backed fixtures, and integration testdata.
@@ -27,9 +31,9 @@ The CLI starts and manages worker containers, stores workspace data under the co
 - `make build`: build `bin/dwoe` from `./cmd/dwoe`.
 - `make test`: run `go test ./...`.
 - `make test-v`: run verbose unit tests.
-- `make lint`: run formatting, vet, and `golangci-lint run`.
+- `make lint`: run formatting, vet, and `golangci-lint run` (with the Go toolchain declared in `go.mod`, so it works with a newer local Go).
 - `make all`: run lint, tests, and build.
-- `make dev`: run the Air hot-reload dashboard command configured in `.air.toml`.
+- `make dev`: run the dashboard (`cmd/web`) with Air hot reload (`.air.toml`); templates and static files are read from `pkg/hio/ui` on every request, so edits need no rebuild.
 - `make integration-test`: run integration tests with `-tags=integration`; Docker is required.
 
 Before considering code complete, run the narrowest relevant tests first, then prefer `make test` and `make lint` when practical.
@@ -92,6 +96,7 @@ When running in the `/iterator` mode, this is a guided, step-by-step development
 
 - Add focused tests near the package being changed
 - Use table-driven tests for functions with multiple input/output cases using `[]struct{...}` and `for _, tt := range tests { ... }`
+- Use assertions from `github.com/i-zaitsev/pkg/assert`
 - Use `t.Helper()` in test helper functions
 - Use `t.TempDir()` for temp directories
 - Use `TestMain` for global fixtures and only when strictly necessary
@@ -102,7 +107,7 @@ When running in the `/iterator` mode, this is a guided, step-by-step development
 ## Project Structure
 
 - Follow the standard Go project layout: `cmd/`, `internal/`, `pkg/` where applicable
-- Keep `main.go` thin: delegate to packages under `internal/`
+- Keep entry points like `cmd/dwoe/dwoe.go` thin: delegate to packages under `internal/`
 - One package per directory. The package name matches the directory name
 
 ## Linting
