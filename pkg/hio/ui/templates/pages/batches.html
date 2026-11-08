@@ -1,0 +1,25 @@
+{{define "content"}}
+<section class="panel">
+	<h2>Batches</h2>
+	{{if .Batches}}
+	<table>
+		<thead>
+			<tr><th>Batch</th><th>Workers</th><th>Started</th><th>Finished</th><th></th></tr>
+		</thead>
+		<tbody>
+			{{range .Batches}}
+			<tr>
+				<td><a href="/?batch={{.ID}}">{{shortID .ID}}</a></td>
+				<td>{{.Workers}}</td>
+				<td>{{fmtTime .StartedAt}}</td>
+				<td>{{fmtTime .FinishedAt}}</td>
+				<td><a href="/batches/{{.ID}}">Changes</a></td>
+			</tr>
+			{{end}}
+		</tbody>
+	</table>
+	{{else}}
+	<p class="muted">No batches found.</p>
+	{{end}}
+</section>
+{{end}}

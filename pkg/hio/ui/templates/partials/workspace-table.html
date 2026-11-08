@@ -1,0 +1,22 @@
+{{define "workspace-table"}}
+{{if .Workspaces}}
+<table>
+	<thead>
+		<tr><th>Name</th><th>Status</th><th>Batch</th><th>Started</th><th>Duration</th></tr>
+	</thead>
+	<tbody>
+		{{range .Workspaces}}
+		<tr>
+			<td><a href="/workspaces/{{.ID}}">{{.Name}}</a></td>
+			<td><span class="badge {{statusClass .Status}}">{{.Status}}</span></td>
+			<td>{{if .BatchID}}<a href="/?batch={{.BatchID}}">{{shortID .BatchID}}</a>{{end}}</td>
+			<td>{{fmtTime .StartedAt}}</td>
+			<td>{{duration .}}</td>
+		</tr>
+		{{end}}
+	</tbody>
+</table>
+{{else}}
+<p class="muted">No workspaces found.</p>
+{{end}}
+{{end}}

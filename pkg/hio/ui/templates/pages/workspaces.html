@@ -1,0 +1,9 @@
+{{define "content"}}
+<section class="panel">
+	<h2>Workspaces{{if .Batch}} <small>in batch {{shortID .Batch}} · <a href="/">clear</a></small>{{end}}</h2>
+	{{template "filter" .}}
+	<div id="results">
+		{{template "workspace-table" .}}
+	</div>
+</section>
+{{end}}
