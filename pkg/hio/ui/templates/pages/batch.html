@@ -1,0 +1,11 @@
+{{define "content"}}
+<h2>Changes in batch {{shortID .Batch.ID}}</h2>
+{{range .Batch.Changes}}
+<section class="panel">
+	<h3><a href="/workspaces/{{.Workspace.ID}}">{{.Workspace.Name}}</a></h3>
+	{{template "diff" .Diff}}
+</section>
+{{else}}
+<p class="muted">No changes.</p>
+{{end}}
+{{end}}

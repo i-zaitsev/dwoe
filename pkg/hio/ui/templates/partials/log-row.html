@@ -1,0 +1,11 @@
+{{define "log-row"}}
+<div class="log {{eventClass .Kind}}">
+	<span class="time">{{.Time}}</span>
+	<span class="kind">{{.Kind}}</span>
+	{{if .Detail}}
+	<details><summary>{{.Text}}</summary><pre>{{.Detail}}</pre></details>
+	{{else}}
+	<span class="text">{{.Text}}</span>
+	{{end}}
+</div>
+{{end}}

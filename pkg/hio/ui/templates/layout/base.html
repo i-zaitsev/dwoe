@@ -1,0 +1,27 @@
+{{define "base"}}<!doctype html>
+<html lang="en" data-theme="{{.Theme}}">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="htmx-config" content='{"responseHandling":[{"code":".*","swap":true}],"includeIndicatorStyles":false}'>
+	<title>{{.Title}} · dwoe</title>
+	<link rel="stylesheet" href="/static/app.css">
+	<script src="/static/htmx.min.js" defer></script>
+	<script src="/static/htmx-ext-sse.min.js" defer></script>
+	<script src="/static/app.js" defer></script>
+</head>
+<body hx-boost="true" hx-ext="sse">
+	<header class="top">
+		<a class="brand" href="/">dwoe</a>
+		<nav>
+			<a href="/"{{if eq .Active "workspaces"}} class="active"{{end}}>Workspaces</a>
+			<a href="/batches"{{if eq .Active "batches"}} class="active"{{end}}>Batches</a>
+			<a href="/theme?v={{if eq .Theme "dark"}}light{{else}}dark{{end}}" hx-boost="false">{{if eq .Theme "dark"}}Light{{else}}Dark{{end}}</a>
+		</nav>
+	</header>
+	<main class="container">
+		{{template "content" .}}
+	</main>
+</body>
+</html>
+{{end}}

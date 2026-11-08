@@ -1,0 +1,25 @@
+{{define "content"}}
+{{template "workspace-info" .Workspace}}
+{{with .Workspace}}
+	{{if .Prompt}}
+	<section class="panel">
+		<h2>Prompt</h2>
+		<pre>{{.Prompt}}</pre>
+	</section>
+	{{end}}
+	{{if .TaskConfig}}
+	<section class="panel">
+		<h2>Task config</h2>
+		<pre>{{.TaskConfig}}</pre>
+	</section>
+	{{end}}
+	<section class="panel">
+		<h2>Logs</h2>
+		{{template "log-stream" .}}
+	</section>
+	<section class="panel">
+		<h2>Changes</h2>
+		{{template "diff-lazy" .}}
+	</section>
+{{end}}
+{{end}}

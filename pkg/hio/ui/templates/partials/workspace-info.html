@@ -1,0 +1,19 @@
+{{define "workspace-info"}}
+<section class="panel"{{if .Running}} hx-get="/workspaces/{{.ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML"{{end}}>
+	<h2>{{.Name}} <span class="badge {{statusClass .Status}}">{{.Status}}</span></h2>
+	{{if .Description}}<p class="muted">{{.Description}}</p>{{end}}
+	<table>
+		<tbody>
+			<tr><th>ID</th><td>{{.ID}}</td></tr>
+			<tr><th>Exit</th><td>{{.Exit}}</td></tr>
+			{{if .Model}}<tr><th>Model</th><td>{{.Model}}</td></tr>{{end}}
+			<tr><th>Created</th><td>{{fmtTime .CreatedAt}}</td></tr>
+			<tr><th>Started</th><td>{{fmtTime .StartedAt}}</td></tr>
+			<tr><th>Finished</th><td>{{fmtTime .FinishedAt}}</td></tr>
+			<tr><th>Duration</th><td>{{duration .}}</td></tr>
+			<tr><th>Path</th><td>{{.BasePath}}</td></tr>
+			{{if .BatchID}}<tr><th>Batch</th><td><a href="/batches/{{.BatchID}}">{{.BatchID}}</a></td></tr>{{end}}
+		</tbody>
+	</table>
+</section>
+{{end}}

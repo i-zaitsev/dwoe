@@ -1,0 +1,3 @@
+{{define "log-rows"}}
+{{range .}}{{template "log-row" .}}{{else}}<p class="muted">No log lines.</p>{{end}}
+{{end}}

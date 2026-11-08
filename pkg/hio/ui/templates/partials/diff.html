@@ -1,0 +1,10 @@
+{{define "diff"}}
+{{if .Commits}}
+<ul class="commits">
+	{{range .Commits}}<li><code>{{.Hash}}</code> {{.Message}}</li>{{end}}
+</ul>
+{{end}}
+{{if .Stat}}<pre class="muted">{{.Stat}}</pre>{{end}}
+<pre class="diff">{{range diffLines .Patch}}<span class="{{.Class}}">{{.Text}}
+</span>{{end}}</pre>
+{{end}}
