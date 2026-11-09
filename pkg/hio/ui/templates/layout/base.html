@@ -14,8 +14,8 @@
 	<header class="top">
 		<a class="brand" href="/">dwoe</a>
 		<nav>
-			<a href="/"{{if eq .Active "workspaces"}} class="active"{{end}}>Workspaces</a>
-			<a href="/batches"{{if eq .Active "batches"}} class="active"{{end}}>Batches</a>
+			<a href="/"{{if eq .Active "workspaces"}} class="active" aria-current="page"{{end}}>Workspaces</a>
+			<a href="/batches"{{if eq .Active "batches"}} class="active" aria-current="page"{{end}}>Batches</a>
 			<a href="/theme?v={{if eq .Theme "dark"}}light{{else}}dark{{end}}" hx-boost="false">{{if eq .Theme "dark"}}Light{{else}}Dark{{end}}</a>
 		</nav>
 	</header>
