@@ -45,13 +45,6 @@ type diffJSON struct {
 	Diff    string       `json:"diff"`
 }
 
-func fmtWorkspaceTime(t *time.Time) string {
-	if t == nil {
-		return ""
-	}
-	return t.Format(time.DateTime)
-}
-
 func newWorkspaceView(ws data.Workspace) workspaceView {
 	return workspaceView{
 		ID:          ws.ID,
