@@ -5,6 +5,7 @@
 package hio
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -93,4 +94,35 @@ func TestCacheControl(t *testing.T) {
 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	assert.Eq(t, rr.Header().Get("Cache-Control"), "no-store")
+}
+
+type failingFlusher struct {
+	http.ResponseWriter
+	err error
+}
+
+func (f failingFlusher) FlushError() error { return f.err }
+
+func TestStatusWriter_FlushErrorReachesUnderlying(t *testing.T) {
+	errFlush := errors.New("flush failed")
+	tests := []struct {
+		name string
+		w    http.ResponseWriter
+		want error
+	}{
+		{"flushes_recorder", httptest.NewRecorder(), nil},
+		{"returns_underlying_error", failingFlusher{httptest.NewRecorder(), errFlush}, errFlush},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sw := &statusWriter{ResponseWriter: tt.w, status: http.StatusOK}
+
+			err := http.NewResponseController(sw).Flush()
+
+			assert.Eq(t, err, tt.want)
+			if rr, ok := tt.w.(*httptest.ResponseRecorder); ok {
+				assert.True(t, rr.Flushed)
+			}
+		})
+	}
 }

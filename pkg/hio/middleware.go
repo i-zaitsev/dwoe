@@ -20,8 +20,12 @@ func (w *statusWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
+func (w *statusWriter) FlushError() error {
+	return http.NewResponseController(w.ResponseWriter).Flush()
+}
+
 func (w *statusWriter) Flush() {
-	_ = http.NewResponseController(w.ResponseWriter).Flush()
+	_ = w.FlushError()
 }
 
 func (w *statusWriter) Unwrap() http.ResponseWriter {
