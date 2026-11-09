@@ -135,7 +135,15 @@ func (app *App) logsStreamPage(w http.ResponseWriter, r *http.Request) {
 		return rc.Flush()
 	})
 	if err != nil {
-		app.Log().Debug("workspace logs", "id", ws.ID, "err", err)
+		if !app.logStreamFailed(r, ws.ID, err) {
+			return
+		}
+		row, errRender := app.renderString("log-error-row", logStreamErrorMessage)
+		if errRender != nil {
+			app.Log().Error("render log error row", "err", errRender)
+		} else {
+			writeSSE(w, "error", row)
+		}
 	}
 
 	writeSSE(w, "done", "completed")

@@ -62,7 +62,11 @@ func (app *App) logsStreamHandler(w http.ResponseWriter, r *http.Request) {
 		return rc.Flush()
 	})
 	if err != nil {
-		app.Log().Debug("workspace logs", "id", ws.ID, "err", err)
+		if !app.logStreamFailed(r, ws.ID, err) {
+			return
+		}
+		payload, _ := json.Marshal(map[string]string{"error": logStreamErrorMessage})
+		writeSSE(w, "error", string(payload))
 	}
 
 	writeSSE(w, "done", "completed")

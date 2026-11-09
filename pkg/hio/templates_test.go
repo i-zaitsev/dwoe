@@ -178,7 +178,7 @@ func TestTemplates(t *testing.T) {
 				has(
 					`hx-get="/workspaces/ws-2/info" hx-trigger="every 5s" hx-swap="outerHTML"`,
 					`<div sse-connect="/workspaces/ws-2/logs/stream" sse-close="done">`,
-					`<div sse-swap="log" hx-swap="beforeend" hx-target="#log-rows"></div>`,
+					`<div sse-swap="log,error" hx-swap="beforeend" hx-target="#log-rows"></div>`,
 					`<div id="log-rows" class="log-rows" data-follow></div>`,
 					`hx-get="/workspaces/ws-2/diff" hx-trigger="load"`,
 				),
@@ -430,6 +430,13 @@ func TestTemplates(t *testing.T) {
 				`hx-swap="outerHTML"`,
 				`<p class="error">try later</p>`,
 			),
+		},
+		{
+			name:     "log_error_row_shows_escaped_message_with_error_class",
+			set:      partialsSet,
+			tmpl:     "log-error-row",
+			data:     "<b>the log stream failed</b>",
+			expected: has(`<div class="log err">`, `<span class="kind">error</span>`, `&lt;b&gt;the log stream failed`),
 		},
 	}
 
