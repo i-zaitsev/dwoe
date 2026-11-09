@@ -34,3 +34,15 @@ func writeSSE(w io.Writer, event, data string) {
 	}
 	_, _ = fmt.Fprint(w, "\n")
 }
+
+const logStreamErrorMessage = "the log stream failed"
+
+// logStreamFailed logs a failed log stream and reports whether the client
+// should get an error event. A cancelled request is not an error.
+func (app *App) logStreamFailed(r *http.Request, id string, err error) bool {
+	if r.Context().Err() != nil {
+		return false
+	}
+	app.Log().Error("workspace logs", "id", id, "err", err)
+	return true
+}
