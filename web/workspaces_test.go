@@ -6,6 +6,7 @@ package web
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -149,6 +150,59 @@ func TestInWorkDir(t *testing.T) {
 			_, ok := inWorkDir("testdata/ws-alpha/workspace", tt.file)
 
 			assert.Eq(t, ok, tt.wantOK)
+		})
+	}
+}
+
+func TestLookup_FallsBackOnlyOnNotFound(t *testing.T) {
+	byID := fixtureWorkspace(nil)
+	byName := fixtureWorkspace(nil)
+	broken := errors.New("broken state file")
+	missing := &state.NotFoundError{ID: "x"}
+	wrapped := fmt.Errorf("load state: %w", missing)
+
+	tests := []struct {
+		name    string
+		getID   func(string) (*workspace.Workspace, error)
+		getName func(string) (*workspace.Workspace, error)
+		want    *workspace.Workspace
+		wantErr error
+	}{
+		{
+			"by_id",
+			func(string) (*workspace.Workspace, error) { return byID, nil },
+			func(string) (*workspace.Workspace, error) { return nil, broken },
+			byID, nil,
+		},
+		{
+			"id_not_found_then_name",
+			func(string) (*workspace.Workspace, error) { return nil, wrapped },
+			func(string) (*workspace.Workspace, error) { return byName, nil },
+			byName, nil,
+		},
+		{
+			"id_fails_with_other_error",
+			func(string) (*workspace.Workspace, error) { return nil, broken },
+			func(string) (*workspace.Workspace, error) { return byName, nil },
+			nil, broken,
+		},
+		{
+			"both_not_found",
+			func(string) (*workspace.Workspace, error) { return nil, wrapped },
+			func(string) (*workspace.Workspace, error) { return nil, missing },
+			nil, data.ErrRecordNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := lookup("x", tt.getID, tt.getName)
+
+			if tt.wantErr != nil {
+				assert.ErrVal(t, err).Is(tt.wantErr).Fatal()
+			} else {
+				assert.ErrVal(t, err).Nil().Fatal()
+			}
+			assert.True(t, got == tt.want)
 		})
 	}
 }
