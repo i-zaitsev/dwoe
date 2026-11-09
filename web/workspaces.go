@@ -255,9 +255,26 @@ func resolvePromptContent(ws *workspace.Workspace) string {
 
 func inWorkDir(workDir, filePath string) (string, bool) {
 	full := filepath.Join(workDir, filePath)
-	rel, err := filepath.Rel(workDir, full)
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+	if !isInside(workDir, full) {
 		return "", false
 	}
-	return full, true
+
+	realDir, err := filepath.EvalSymlinks(workDir)
+	if err != nil {
+		return "", false
+	}
+	realFull, err := filepath.EvalSymlinks(full)
+	if err != nil || !isInside(realDir, realFull) {
+		return "", false
+	}
+
+	return realFull, true
+}
+
+func isInside(dir, path string) bool {
+	rel, err := filepath.Rel(dir, path)
+	if err != nil {
+		return false
+	}
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }

@@ -7,6 +7,8 @@ package web
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -134,26 +136,6 @@ func TestEmitEvents_StopsWhenEmitFails(t *testing.T) {
 	assert.Eq(t, calls, 1)
 }
 
-func TestInWorkDir(t *testing.T) {
-	tests := []struct {
-		name   string
-		file   string
-		wantOK bool
-	}{
-		{"plain", "prompt.md", true},
-		{"nested", "docs/prompt.md", true},
-		{"parent", "../outside.md", false},
-		{"nested_parent", "docs/../../outside.md", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, ok := inWorkDir("testdata/ws-alpha/workspace", tt.file)
-
-			assert.Eq(t, ok, tt.wantOK)
-		})
-	}
-}
-
 func TestLookup_FallsBackOnlyOnNotFound(t *testing.T) {
 	byID := fixtureWorkspace(nil)
 	byName := fixtureWorkspace(nil)
@@ -203,6 +185,44 @@ func TestLookup_FallsBackOnlyOnNotFound(t *testing.T) {
 				assert.ErrVal(t, err).Nil().Fatal()
 			}
 			assert.True(t, got == tt.want)
+		})
+	}
+}
+
+func TestInWorkDir(t *testing.T) {
+	workDir := t.TempDir()
+	outside := t.TempDir()
+	mustWrite := func(path string) {
+		t.Helper()
+		assert.ErrVal(t, os.MkdirAll(filepath.Dir(path), 0o755)).Nil().Fatal()
+		assert.ErrVal(t, os.WriteFile(path, []byte("x"), 0o644)).Nil().Fatal()
+	}
+	mustWrite(filepath.Join(workDir, "prompt.md"))
+	mustWrite(filepath.Join(workDir, "docs", "prompt.md"))
+	mustWrite(filepath.Join(outside, "secret.md"))
+	assert.ErrVal(t, os.Symlink(filepath.Join(outside, "secret.md"), filepath.Join(workDir, "link_out.md"))).Nil().Fatal()
+	assert.ErrVal(t, os.Symlink(outside, filepath.Join(workDir, "dir_out"))).Nil().Fatal()
+	assert.ErrVal(t, os.Symlink(filepath.Join(workDir, "docs", "prompt.md"), filepath.Join(workDir, "link_in.md"))).Nil().Fatal()
+
+	tests := []struct {
+		name   string
+		file   string
+		wantOK bool
+	}{
+		{"plain", "prompt.md", true},
+		{"nested", "docs/prompt.md", true},
+		{"parent", "../outside.md", false},
+		{"nested_parent", "docs/../../outside.md", false},
+		{"symlink_outside", "link_out.md", false},
+		{"symlink_dir_outside", "dir_out/secret.md", false},
+		{"symlink_inside", "link_in.md", true},
+		{"missing", "absent.md", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, ok := inWorkDir(workDir, tt.file)
+
+			assert.Eq(t, ok, tt.wantOK)
 		})
 	}
 }
