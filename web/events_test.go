@@ -112,7 +112,9 @@ func TestParseLogEvents(t *testing.T) {
 			for _, ev := range got {
 				kinds = append(kinds, ev.Kind)
 			}
-			assert.Eq(t, len(kinds), len(tt.wantKinds))
+			if len(kinds) != len(tt.wantKinds) {
+				t.Fatalf("kinds = %v, want %v", kinds, tt.wantKinds)
+			}
 			for i, want := range tt.wantKinds {
 				assert.Eq(t, kinds[i], want)
 			}
@@ -131,7 +133,9 @@ func TestParseLogEvents_ToolUseKeepsInput(t *testing.T) {
 
 	got := parseLogEvents(line)
 
-	assert.Eq(t, len(got), 1)
+	if len(got) != 1 {
+		t.Fatalf("got %d events, want 1", len(got))
+	}
 	assert.Eq(t, got[0].Text, "Bash: ls")
 	assert.Eq(t, string(got[0].Raw), `{"command":"ls"}`)
 }
