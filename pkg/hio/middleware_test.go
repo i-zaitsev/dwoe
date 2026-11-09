@@ -126,3 +126,31 @@ func TestStatusWriter_FlushErrorReachesUnderlying(t *testing.T) {
 		})
 	}
 }
+
+func TestRecoverPanic_AfterResponseStarted(t *testing.T) {
+	tests := []struct {
+		name  string
+		start func(http.ResponseWriter)
+		code  int
+	}{
+		{"after_write", func(w http.ResponseWriter) { _, _ = w.Write([]byte("data: 1\n\n")) }, http.StatusOK},
+		{"after_write_header", func(w http.ResponseWriter) { w.WriteHeader(http.StatusAccepted) }, http.StatusAccepted},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := newTestApp(t)
+			inner := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				tt.start(w)
+				panic("boom")
+			})
+			handler := app.recoverPanic(app.logRequest(inner))
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/workspaces/x", nil))
+
+			assert.Eq(t, rr.Code, tt.code)
+			assert.ContainsNone(t, rr.Body.String(), serverErrorMessage, "<html")
+			assert.Contains(t, app.logs.String(), "boom")
+		})
+	}
+}
