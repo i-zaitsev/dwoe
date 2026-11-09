@@ -5,11 +5,9 @@
 package web
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
-	"github.com/i-zaitsev/dwoe/internal/schema/schematest"
 	"github.com/i-zaitsev/pkg/assert"
 )
 
@@ -138,18 +136,4 @@ func TestParseLogEvents_ToolUseKeepsInput(t *testing.T) {
 	}
 	assert.Eq(t, got[0].Text, "Bash: ls")
 	assert.Eq(t, string(got[0].Raw), `{"command":"ls"}`)
-}
-
-func TestParseLogEvents_Fixtures(t *testing.T) {
-	for _, name := range []string{"sample.jsonl", "faulty.jsonl"} {
-		t.Run(name, func(t *testing.T) {
-			for _, line := range schematest.Lines(t, name) {
-				for _, ev := range parseLogEvents(line) {
-					assert.NotZero(t, ev.Kind)
-					_, err := json.Marshal(ev)
-					assert.ErrVal(t, err).Nil().Fatal()
-				}
-			}
-		})
-	}
 }

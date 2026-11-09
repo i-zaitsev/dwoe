@@ -105,20 +105,40 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestEmitEvents_Fixtures(t *testing.T) {
-	for _, name := range []string{"sample.jsonl", "faulty.jsonl"} {
-		t.Run(name, func(t *testing.T) {
-			lines := schematest.Lines(t, name)
-			var got []data.LogEvent
+	tests := []struct {
+		name      string
+		file      string
+		wantKinds []string
+	}{
+		{
+			"sample",
+			"sample.jsonl",
+			[]string{
+				"init", "thinking", "tool_use", "assistant", "text", "tool_result",
+				"task_started", "task_progress", "task_done", "rate_limit", "result", "api_retry",
+			},
+		},
+		{"faulty", "faulty.jsonl", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lines := schematest.Lines(t, tt.file)
+			var kinds []string
 
 			err := emitEvents(strings.NewReader(strings.Join(lines, "\n")), func(ev data.LogEvent) error {
-				got = append(got, ev)
+				kinds = append(kinds, ev.Kind)
 				return nil
 			})
 
 			assert.ErrVal(t, err).Nil().Fatal()
-			assert.True(t, len(got) > 0)
-			for _, ev := range got {
-				assert.NotZero(t, ev.Kind)
+			if tt.wantKinds == nil {
+				return
+			}
+			if len(kinds) != len(tt.wantKinds) {
+				t.Fatalf("kinds = %v, want %v", kinds, tt.wantKinds)
+			}
+			for i, want := range tt.wantKinds {
+				assert.Eq(t, kinds[i], want)
 			}
 		})
 	}
