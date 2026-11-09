@@ -128,6 +128,8 @@ Use `dwoe web` to start a dashboard for monitoring workers, streaming logs, and 
 dwoe web --port 9090
 ```
 
+The dashboard binds to 127.0.0.1 only. The port defaults to 8080 and is set with `--port`.
+
 The dashboard is server-rendered HTML with htmx, served together with a JSON API under `/api/v1`.
 Templates and static files are embedded in the binary; `--ui-dir pkg/hio/ui` reads them from disk instead.
 

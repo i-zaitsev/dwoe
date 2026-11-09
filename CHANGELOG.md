@@ -28,6 +28,7 @@
 - `dwoe-codex:latest` is gone: use any `dwoe-agent:*` image with `provider: openai`
 - Agent, git, and resources are optional task sections filled from globals and defaults
 - Sentinel hashes changed: a workspace completed by an earlier release re-runs once
+- `dwoe web --addr` is removed: the dashboard listens on 127.0.0.1 only; use `--port` to change the port
 
 ### Other
 
