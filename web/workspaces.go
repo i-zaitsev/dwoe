@@ -37,9 +37,15 @@ type workspaceModel struct {
 
 // resolve finds a workspace by ID first and by name next.
 func (m *workspaceModel) resolve(ref string) (*workspace.Workspace, error) {
-	ws, err := m.mgr.Get(ref)
-	if err != nil {
-		ws, err = m.mgr.GetByName(ref)
+	return lookup(ref, m.mgr.Get, m.mgr.GetByName)
+}
+
+// lookup tries getID first and falls back to getName only on a not-found error.
+func lookup(ref string, getID, getName func(string) (*workspace.Workspace, error)) (*workspace.Workspace, error) {
+	ws, err := getID(ref)
+	var missing *state.NotFoundError
+	if errors.As(err, &missing) {
+		ws, err = getName(ref)
 	}
 	if err != nil {
 		return nil, notFound(err)
