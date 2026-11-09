@@ -61,6 +61,20 @@ func TestTemplates(t *testing.T) {
 		expected check
 	}{
 		{
+			name:     "filter_input_is_labelled_for_screen_readers",
+			set:      partialsSet,
+			tmpl:     "filter",
+			data:     workspacesPageData{Query: "alp"},
+			expected: has(`aria-label="Filter by name"`),
+		},
+		{
+			name:     "error_message_is_announced_as_an_alert",
+			set:      partialsSet,
+			tmpl:     "error",
+			data:     "Not available.",
+			expected: has(`<p class="error" role="alert">Not available.</p>`),
+		},
+		{
 			name:     "filter_enter_does_not_send_a_second_search",
 			set:      partialsSet,
 			tmpl:     "filter",
@@ -366,7 +380,7 @@ func TestTemplates(t *testing.T) {
 			data: "Not <available>.",
 			expected: all(
 				fragment,
-				has(`<p class="error">Not &lt;available&gt;.</p>`),
+				has(`<p class="error" role="alert">Not &lt;available&gt;.</p>`),
 			),
 		},
 		{
