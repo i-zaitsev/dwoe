@@ -16,6 +16,11 @@
 	--add-bg: #12261a;
 	--del-bg: #2d1517;
 	--hunk-bg: #16253a;
+	--code-bg: #12151b;
+	--j-key: #c695ee;
+	--j-str: #8bd18b;
+	--j-num: #e3a575;
+	--j-lit: #ff857a;
 }
 
 :root[data-theme="light"] {
@@ -31,6 +36,11 @@
 	--add-bg: #e6f6ea;
 	--del-bg: #fdeaea;
 	--hunk-bg: #e3effc;
+	--code-bg: #f3f4f6;
+	--j-key: #6d3a9c;
+	--j-str: #2f6b2f;
+	--j-num: #a85a17;
+	--j-lit: #b43b3b;
 }
 
 * { box-sizing: border-box; }
@@ -106,7 +116,7 @@ pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
 
 .filter { margin-bottom: 0.75rem; }
 
-.log-rows { max-height: 70vh; overflow: auto; margin-top: 0.75rem; }
+.log-rows { margin-top: 0.75rem; }
 .log {
 	display: flex;
 	gap: 0.75rem;
@@ -120,8 +130,33 @@ pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
 .log.tool .kind { color: var(--run); }
 .log.ast .kind, .log.res .kind { color: var(--ok); }
 .log.think .kind, .log.cont .kind, .log.sys .kind { color: var(--muted); }
+.log summary { cursor: pointer; }
+.log details pre {
+	margin: 0.25rem 0 0.5rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	font-size: 0.9em;
+}
+
+pre.code {
+	padding: 0.75rem;
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	overflow-x: auto;
+	font-size: 0.9em;
+}
+
+.json .jkey { color: var(--j-key); }
+.json .js { color: var(--j-str); }
+.json .jn { color: var(--j-num); }
+.json .jl { color: var(--j-lit); font-weight: 600; }
+.json .jb, .json .jp { color: var(--muted); }
 
 .commits { margin: 0 0 0.75rem; padding-left: 1.25rem; }
+.diff span { display: block; padding: 0 0.5rem; }
 .diff .add { background: var(--add-bg); }
 .diff .del { background: var(--del-bg); }
 .diff .hunk { background: var(--hunk-bg); color: var(--accent); }
