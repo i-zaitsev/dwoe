@@ -112,7 +112,13 @@ When running in the `/iterator` mode, this is a guided, step-by-step development
 
 ## Linting
 
-The project uses `.golangci.yml` with `errcheck`, `govet`, `staticcheck`, `unused`, `gosimple`, `ineffassign`, `gocritic`, and `revive`. Fix lint findings rather than suppressing them unless there is a specific reason.
+The project uses `.golangci.yml` with `errcheck`, `govet`, `staticcheck`, `unused`, `gosimple`, `ineffassign`, `gocritic`, `revive`, and `depguard`. Fix lint findings rather than suppressing them unless there is a specific reason.
+
+`depguard` enforces two rules:
+- `hio-independent-of-dwoe`: `pkg/hio` must not import `internal/` or `web/`.
+- `hio-data-transport-free`: `pkg/hio/data` (non-test files) must not import `net/http`, `html/template`, or `text/template`.
+
+`make lint` runs golangci-lint with the Go toolchain from `go.mod` (`LINT_TOOLCHAIN` in `Makefile`), so it needs network once to fetch that toolchain when the local Go differs.
 
 ## Verification
 
