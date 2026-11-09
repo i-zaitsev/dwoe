@@ -38,8 +38,8 @@ func (app *App) listBatchesHandler(w http.ResponseWriter, r *http.Request) {
 			Workers:     b.Workers,
 			StartedAt:   b.StartedAt,
 			FinishedAt:  b.FinishedAt,
-			StartedFmt:  fmtWorkspaceTime(b.StartedAt),
-			FinishedFmt: fmtWorkspaceTime(b.FinishedAt),
+			StartedFmt:  fmtTime(b.StartedAt),
+			FinishedFmt: fmtTime(b.FinishedAt),
 		})
 	}
 
