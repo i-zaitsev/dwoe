@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -25,6 +26,8 @@ import (
 const (
 	kb = 1024
 	mb = kb * kb
+
+	syncTimeout = 10 * time.Second
 )
 
 // workspaceModel reads workspaces from the workspace manager.
@@ -61,7 +64,9 @@ func (m *workspaceModel) Get(ctx context.Context, ref string) (data.Workspace, e
 	}
 
 	if ws.Status == workspace.StatusRunning {
-		if err = m.mgr.Sync(ctx, ws.ID); err != nil {
+		syncCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), syncTimeout)
+		defer cancel()
+		if err = m.mgr.Sync(syncCtx, ws.ID); err != nil {
 			slog.Debug("web: workspace sync", "id", ws.ID, "err", err)
 		} else if fresh, errGet := m.mgr.Get(ws.ID); errGet == nil {
 			ws = fresh
