@@ -9,6 +9,7 @@ package web
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -23,6 +24,10 @@ import (
 // Main runs the standalone dashboard and returns the process exit code.
 func Main(args []string) int {
 	cfg, err := config.Parse(args)
+	if errors.Is(err, flag.ErrHelp) {
+		config.Usage(os.Stderr)
+		return 0
+	}
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return 2

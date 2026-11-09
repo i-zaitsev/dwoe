@@ -5,7 +5,10 @@
 package config
 
 import (
+	"errors"
+	"flag"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/i-zaitsev/pkg/assert"
@@ -84,4 +87,29 @@ func TestEnv_LoggerHonoursLevel(t *testing.T) {
 
 	assert.False(t, log.Enabled(t.Context(), slog.LevelInfo))
 	assert.True(t, log.Enabled(t.Context(), slog.LevelError))
+}
+
+func TestParse_Help(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{"short", []string{"-h"}},
+		{"long", []string{"-help"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Parse(tt.args)
+
+			assert.True(t, errors.Is(err, flag.ErrHelp))
+		})
+	}
+}
+
+func TestUsage_ListsFlags(t *testing.T) {
+	var buf strings.Builder
+
+	Usage(&buf)
+
+	assert.ContainsAll(t, buf.String(), "-addr", "-port", "-datadir", "-ui-dir", "-log-level")
 }
