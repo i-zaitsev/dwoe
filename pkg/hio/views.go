@@ -5,6 +5,8 @@
 package hio
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"strings"
@@ -20,6 +22,7 @@ var funcMap = template.FuncMap{
 	"statusClass": statusClass,
 	"eventClass":  eventClass,
 	"diffLines":   diffLines,
+	"prettyJSON":  prettyJSON,
 }
 
 // duration describes how long a workspace ran.
@@ -117,4 +120,61 @@ func diffClass(line string) string {
 	default:
 		return ""
 	}
+}
+
+type jsonToken struct {
+	Class string
+	Text  string
+}
+
+// prettyJSON indents raw JSON and splits it into tokens classed for highlighting.
+// Input that is not valid JSON comes back as one plain token.
+func prettyJSON(raw []byte) []jsonToken {
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, raw, "", "  "); err != nil {
+		return []jsonToken{{Text: string(raw)}}
+	}
+	s := buf.String()
+	var tokens []jsonToken
+	for i := 0; i < len(s); {
+		end, class := nextJSONToken(s, i)
+		tokens = append(tokens, jsonToken{Class: class, Text: s[i:end]})
+		i = end
+	}
+	return tokens
+}
+
+func nextJSONToken(s string, i int) (int, string) {
+	switch c := s[i]; {
+	case c == '"':
+		end := i + 1
+		for end < len(s) && s[end] != '"' {
+			if s[end] == '\\' {
+				end++
+			}
+			end++
+		}
+		end = min(end+1, len(s))
+		if end < len(s) && s[end] == ':' {
+			return end, "jkey"
+		}
+		return end, "js"
+	case strings.IndexByte("{}[]", c) >= 0:
+		return i + 1, "jb"
+	case c == ':' || c == ',':
+		return i + 1, "jp"
+	case c == 't' || c == 'f' || c == 'n':
+		return scanWhile(s, i, func(b byte) bool { return b >= 'a' && b <= 'z' }), "jl"
+	case c == '-' || (c >= '0' && c <= '9'):
+		return scanWhile(s, i, func(b byte) bool { return strings.IndexByte("+-.eE0123456789", b) >= 0 }), "jn"
+	default:
+		return max(scanWhile(s, i, func(b byte) bool { return strings.IndexByte(" \t\r\n", b) >= 0 }), i+1), ""
+	}
+}
+
+func scanWhile(s string, i int, ok func(byte) bool) int {
+	for i < len(s) && ok(s[i]) {
+		i++
+	}
+	return i
 }

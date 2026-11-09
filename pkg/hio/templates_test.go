@@ -209,7 +209,7 @@ func TestTemplates(t *testing.T) {
 			data: workspacePageData{layoutData: darkLayout, Workspace: alpha},
 			expected: all(
 				has(
-					`<pre>Do the &lt;b&gt;thing&lt;/b&gt;.</pre>`,
+					`<pre class="code"><code>Do the &lt;b&gt;thing&lt;/b&gt;.</code></pre>`,
 					`<h2>Task config</h2>`,
 					`name: alpha`,
 					`/tmp/ws-base`,
