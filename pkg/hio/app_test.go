@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/i-zaitsev/pkg/assert"
 
@@ -204,6 +205,25 @@ func TestIsFragment(t *testing.T) {
 			}
 
 			assert.Eq(t, isFragment(req, "results"), tt.want)
+		})
+	}
+}
+
+func TestNewWorkspaceView_NilTimesAreDashes(t *testing.T) {
+	ts := time.Date(2025, 3, 15, 9, 30, 5, 0, time.UTC)
+	tests := []struct {
+		name string
+		ws   data.Workspace
+		want [3]string
+	}{
+		{"all_nil", data.Workspace{}, [3]string{"-", "-", "-"}},
+		{"created_only", data.Workspace{CreatedAt: &ts}, [3]string{"2025-03-15 09:30:05", "-", "-"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := newWorkspaceView(tt.ws)
+
+			assert.Eq(t, [3]string{v.CreatedFmt, v.StartedFmt, v.FinishedFmt}, tt.want)
 		})
 	}
 }
