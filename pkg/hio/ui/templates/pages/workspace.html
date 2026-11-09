@@ -2,24 +2,25 @@
 {{template "workspace-info" .Workspace}}
 {{with .Workspace}}
 	{{if .Prompt}}
-	<section class="panel">
-		<h2>Prompt</h2>
+	<details class="panel fold">
+		<summary><h2>Prompt</h2></summary>
 		<pre class="code"><code>{{.Prompt}}</code></pre>
-	</section>
+	</details>
 	{{end}}
 	{{if .TaskConfig}}
-	<section class="panel">
-		<h2>Task config</h2>
+	<details class="panel fold">
+		<summary><h2>Task config</h2></summary>
 		<pre class="code"><code>{{.TaskConfig}}</code></pre>
-	</section>
+	</details>
 	{{end}}
-	<section class="panel">
-		<h2>Logs</h2>
+	<details class="panel fold" open>
+		<summary><h2>Logs</h2></summary>
 		{{template "log-stream" .}}
-	</section>
-	<section class="panel">
-		<h2>Changes</h2>
+		<div id="log-end"></div>
+	</details>
+	<details class="panel fold" open>
+		<summary><h2>Changes</h2></summary>
 		{{template "diff-lazy" .}}
-	</section>
+	</details>
 {{end}}
 {{end}}

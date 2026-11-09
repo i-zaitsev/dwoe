@@ -140,6 +140,14 @@ pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
 	font-size: 0.9em;
 }
 
+.fold > summary { cursor: pointer; list-style: none; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary h2 { display: inline-block; margin: 0; }
+.fold > summary h2::before { content: "\25B8  "; color: var(--muted); }
+.fold[open] > summary h2::before { content: "\25BE  "; }
+.fold[open] > summary { margin-bottom: 0.75rem; }
+#log-end { scroll-margin-top: 60vh; }
+
 pre.code {
 	padding: 0.75rem;
 	background: var(--code-bg);

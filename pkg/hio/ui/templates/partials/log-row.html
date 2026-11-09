@@ -3,7 +3,7 @@
 	<span class="time">{{.Time}}</span>
 	<span class="kind">{{.Kind}}</span>
 	{{if or .Detail .Raw}}
-	<details><summary>{{.Text}}</summary>{{if .Detail}}<pre>{{.Detail}}</pre>{{end}}{{if .Raw}}<pre class="json">{{range prettyJSON .Raw}}{{if .Class}}<span class="{{.Class}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}</pre>{{end}}</details>
+	<details{{if eq .Kind "result"}} open{{end}}><summary>{{.Text}}</summary>{{if .Detail}}<pre>{{.Detail}}</pre>{{end}}{{if .Raw}}<pre class="json">{{range prettyJSON .Raw}}{{if .Class}}<span class="{{.Class}}">{{.Text}}</span>{{else}}{{.Text}}{{end}}{{end}}</pre>{{end}}</details>
 	{{else}}
 	<span class="text">{{.Text}}</span>
 	{{end}}
