@@ -61,10 +61,25 @@ func (app *App) workspacePage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type workspaceInfoError struct {
+	ID      string
+	Message string
+}
+
+// workspaceInfoPartial answers the info poll. A failed poll renders a panel that
+// keeps polling, so the next good answer restores it.
 func (app *App) workspaceInfoPartial(w http.ResponseWriter, r *http.Request) {
 	ws, err := app.models.Workspaces.Get(r.Context(), readRef(r))
 	if err != nil {
-		app.partialModelError(w, r, err)
+		if isMissing(err) {
+			app.partialModelError(w, r, err)
+			return
+		}
+		app.logError(r, err)
+		errPanel := workspaceInfoError{ID: readRef(r), Message: serverErrorMessage}
+		if errRender := app.writePartial(w, http.StatusInternalServerError, "workspace-info-error", errPanel); errRender != nil {
+			app.plainError(w, r, errRender)
+		}
 		return
 	}
 
