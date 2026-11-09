@@ -109,7 +109,9 @@ func TestDiffLines(t *testing.T) {
 		{"del", "-removed"},
 		{"", " context"},
 	}
-	assert.Eq(t, len(got), len(want))
+	if len(got) != len(want) {
+		t.Fatalf("diffLines returned %d lines, want %d", len(got), len(want))
+	}
 	for i := range want {
 		assert.Eq(t, got[i], want[i])
 	}
