@@ -12,15 +12,23 @@ import (
 
 type statusWriter struct {
 	http.ResponseWriter
-	status int
+	status  int
+	started bool
 }
 
 func (w *statusWriter) WriteHeader(status int) {
 	w.status = status
+	w.started = true
 	w.ResponseWriter.WriteHeader(status)
 }
 
+func (w *statusWriter) Write(b []byte) (int, error) {
+	w.started = true
+	return w.ResponseWriter.Write(b)
+}
+
 func (w *statusWriter) FlushError() error {
+	w.started = true
 	return http.NewResponseController(w.ResponseWriter).Flush()
 }
 
@@ -34,13 +42,19 @@ func (w *statusWriter) Unwrap() http.ResponseWriter {
 
 func (app *App) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		defer func() {
 			if pv := recover(); pv != nil {
+				err := fmt.Errorf("%v", pv)
+				if sw.started {
+					app.logError(r, err)
+					return
+				}
 				w.Header().Set("Connection", "close")
-				app.serverError(w, r, fmt.Errorf("%v", pv))
+				app.serverError(w, r, err)
 			}
 		}()
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(sw, r)
 	})
 }
 
