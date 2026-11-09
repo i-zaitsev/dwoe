@@ -61,6 +61,13 @@ func TestTemplates(t *testing.T) {
 		expected check
 	}{
 		{
+			name:     "filter_enter_does_not_send_a_second_search",
+			set:      partialsSet,
+			tmpl:     "filter",
+			data:     workspacesPageData{Query: "alp"},
+			expected: lacks(`, search"`),
+		},
+		{
 			name: "layout_dark_wires_htmx_theme_and_navigation",
 			set:  "workspaces.html",
 			tmpl: "base",
@@ -163,7 +170,7 @@ func TestTemplates(t *testing.T) {
 					`hx-include="closest form"`,
 					`hx-target="#results"`,
 					`hx-push-url="true"`,
-					`hx-trigger="input changed delay:300ms, search"`,
+					`hx-trigger="input changed delay:300ms"`,
 					`<noscript><button type="submit">Filter</button></noscript>`,
 				),
 				lacks(`type="hidden"`),
