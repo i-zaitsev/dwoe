@@ -1,6 +1,6 @@
 {{define "filter"}}
 <form class="filter" action="/" method="get">
-	<input type="search" name="q" value="{{.Query}}" placeholder="Filter by name" autocomplete="off"
+	<input type="search" name="q" value="{{.Query}}" placeholder="Filter by name" aria-label="Filter by name" autocomplete="off"
 		hx-get="/" hx-include="closest form" hx-target="#results" hx-push-url="true"
 		hx-trigger="input changed delay:300ms" hx-indicator="#filter-spinner">
 	{{if .Batch}}<input type="hidden" name="batch" value="{{.Batch}}">{{end}}
