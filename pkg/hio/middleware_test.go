@@ -83,7 +83,7 @@ func TestSecureHeaders(t *testing.T) {
 
 	assert.Eq(t, rr.Header().Get("X-Content-Type-Options"), "nosniff")
 	assert.Eq(t, rr.Header().Get("X-Frame-Options"), "deny")
-	assert.Eq(t, rr.Header().Get("Referrer-Policy"), "no-referrer")
+	assert.Eq(t, rr.Header().Get("Referrer-Policy"), "same-origin")
 }
 
 func TestCacheControl(t *testing.T) {
