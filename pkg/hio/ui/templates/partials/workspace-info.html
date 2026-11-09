@@ -1,3 +1,8 @@
+{{define "workspace-info-error"}}
+<section class="panel" hx-get="/workspaces/{{.ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML">
+	<p class="error">{{.Message}}</p>
+</section>
+{{end}}
 {{define "workspace-info"}}
 <section class="panel"{{if .Running}} hx-get="/workspaces/{{.ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML"{{end}}>
 	<h2>{{.Name}} <span class="badge {{statusClass .Status}}">{{.Status}}</span></h2>

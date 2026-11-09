@@ -419,6 +419,18 @@ func TestTemplates(t *testing.T) {
 				`<a href="/">Back to workspaces</a>`,
 			),
 		},
+		{
+			name: "workspace_info_error_keeps_polling",
+			set:  partialsSet,
+			tmpl: "workspace-info-error",
+			data: workspaceInfoError{ID: "ws-2", Message: "try later"},
+			expected: has(
+				`hx-get="/workspaces/ws-2/info"`,
+				`hx-trigger="every 5s"`,
+				`hx-swap="outerHTML"`,
+				`<p class="error">try later</p>`,
+			),
+		},
 	}
 
 	app := newTestApp(t)
