@@ -6,7 +6,7 @@
 	<div sse-swap="log,error" hx-swap="beforeend" hx-target="#log-rows"></div>
 </div>
 {{else}}
-<input type="search" name="filter" placeholder="Filter logs" autocomplete="off"
+<input type="search" name="filter" placeholder="Filter logs" aria-label="Filter logs" autocomplete="off"
 	hx-get="/workspaces/{{pathEscape .ID}}/logs" hx-target="#log-rows" hx-indicator="#log-spinner"
 	hx-trigger="input changed delay:300ms, search">
 <span id="log-spinner" class="htmx-indicator">…</span>

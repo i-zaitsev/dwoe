@@ -74,7 +74,7 @@ func TestTemplates(t *testing.T) {
 				`/static/app.css`,
 				`/static/app.js`,
 				`"responseHandling"`,
-				`<a href="/" class="active">Workspaces</a>`,
+				`<a href="/" class="active" aria-current="page">Workspaces</a>`,
 				`<a href="/batches">Batches</a>`,
 				`<a href="/theme?v=light" hx-boost="false">Light</a>`,
 			),
@@ -87,10 +87,10 @@ func TestTemplates(t *testing.T) {
 			expected: all(
 				has(
 					`<html lang="en" data-theme="light">`,
-					`<a href="/batches" class="active">Batches</a>`,
+					`<a href="/batches" class="active" aria-current="page">Batches</a>`,
 					`<a href="/theme?v=dark" hx-boost="false">Dark</a>`,
 				),
-				lacks(`<a href="/" class="active">`),
+				lacks(`<a href="/" class="active"`),
 			),
 		},
 		{
@@ -197,6 +197,7 @@ func TestTemplates(t *testing.T) {
 					`<th>Duration</th><td>7m 12s</td>`,
 					`hx-get="/workspaces/ws-1/logs" hx-trigger="load" hx-swap="innerHTML"`,
 					`<input type="search" name="filter"`,
+					`aria-label="Filter logs"`,
 					`hx-get="/workspaces/ws-1/diff" hx-trigger="load"`,
 				),
 				lacks(`sse-connect`, `every 5s`, `data-follow`),
