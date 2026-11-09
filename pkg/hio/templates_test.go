@@ -452,6 +452,25 @@ func TestTemplates(t *testing.T) {
 			data:     gamma,
 			expected: all(has(`hx-trigger="load"`), lacks(`every 5s`)),
 		},
+		{
+			name: "partials_escape_ids_in_urls",
+			set:  partialsSet,
+			tmpl: "log-stream",
+			data: data.Workspace{ID: "a b/c?d", Status: "running"},
+			expected: has(
+				`sse-connect="/workspaces/a%20b%2Fc%3Fd/logs/stream"`,
+			),
+		},
+		{
+			name: "workspace_info_escapes_ids_in_urls",
+			set:  partialsSet,
+			tmpl: "workspace-info",
+			data: data.Workspace{ID: "a b/c", BatchID: "x y", Status: "running", StartedAt: &started},
+			expected: has(
+				`hx-get="/workspaces/a%20b%2Fc/info"`,
+				`href="/batches/x%20y"`,
+			),
+		},
 	}
 
 	app := newTestApp(t)

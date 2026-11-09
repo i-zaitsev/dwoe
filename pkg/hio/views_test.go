@@ -115,3 +115,22 @@ func TestDiffLines(t *testing.T) {
 	}
 	assert.Eq(t, len(diffLines("")), 0)
 }
+
+func TestFuncMap_HasPathEscape(t *testing.T) {
+	fn, ok := funcMap["pathEscape"].(func(string) string)
+	assert.Eq(t, ok, true)
+
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"ws-1", "ws-1"},
+		{"a b", "a%20b"},
+		{"a/b?c", "a%2Fb%3Fc"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			assert.Eq(t, fn(tt.in), tt.want)
+		})
+	}
+}

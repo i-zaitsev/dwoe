@@ -1,10 +1,10 @@
 {{define "workspace-info-error"}}
-<section class="panel" hx-get="/workspaces/{{.ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML">
+<section class="panel" hx-get="/workspaces/{{pathEscape .ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML">
 	<p class="error">{{.Message}}</p>
 </section>
 {{end}}
 {{define "workspace-info"}}
-<section class="panel"{{if .Running}} hx-get="/workspaces/{{.ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML"{{end}}>
+<section class="panel"{{if .Running}} hx-get="/workspaces/{{pathEscape .ID}}/info" hx-trigger="every 5s" hx-swap="outerHTML"{{end}}>
 	<h2>{{.Name}} <span class="badge {{statusClass .Status}}">{{.Status}}</span></h2>
 	{{if .Description}}<p class="muted">{{.Description}}</p>{{end}}
 	<table>
@@ -18,7 +18,7 @@
 			<tr><th>Duration</th><td>{{duration .}}</td></tr>
 			{{if .FinishedAt}}<tr><th>Result</th><td><a href="#log-end">Jump to result</a></td></tr>{{end}}
 			<tr><th>Path</th><td>{{.BasePath}}</td></tr>
-			{{if .BatchID}}<tr><th>Batch</th><td><a href="/batches/{{.BatchID}}">{{.BatchID}}</a></td></tr>{{end}}
+			{{if .BatchID}}<tr><th>Batch</th><td><a href="/batches/{{pathEscape .BatchID}}">{{.BatchID}}</a></td></tr>{{end}}
 		</tbody>
 	</table>
 </section>

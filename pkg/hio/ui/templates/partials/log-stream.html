@@ -2,15 +2,15 @@
 {{if .Running}}
 <p class="muted">Following the log…</p>
 <div id="log-rows" class="log-rows" data-follow></div>
-<div sse-connect="/workspaces/{{.ID}}/logs/stream" sse-close="done">
+<div sse-connect="/workspaces/{{pathEscape .ID}}/logs/stream" sse-close="done">
 	<div sse-swap="log,error" hx-swap="beforeend" hx-target="#log-rows"></div>
 </div>
 {{else}}
 <input type="search" name="filter" placeholder="Filter logs" autocomplete="off"
-	hx-get="/workspaces/{{.ID}}/logs" hx-target="#log-rows" hx-indicator="#log-spinner"
+	hx-get="/workspaces/{{pathEscape .ID}}/logs" hx-target="#log-rows" hx-indicator="#log-spinner"
 	hx-trigger="input changed delay:300ms, search">
 <span id="log-spinner" class="htmx-indicator">…</span>
-<div id="log-rows" class="log-rows" hx-get="/workspaces/{{.ID}}/logs" hx-trigger="load" hx-swap="innerHTML">
+<div id="log-rows" class="log-rows" hx-get="/workspaces/{{pathEscape .ID}}/logs" hx-trigger="load" hx-swap="innerHTML">
 	<p class="muted">Loading…</p>
 </div>
 {{end}}
