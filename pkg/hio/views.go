@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"net/url"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ var funcMap = template.FuncMap{
 	"eventClass":  eventClass,
 	"diffLines":   diffLines,
 	"prettyJSON":  prettyJSON,
+	"pathEscape":  url.PathEscape,
 }
 
 // duration describes how long a workspace ran.
