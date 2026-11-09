@@ -52,10 +52,7 @@ func (f logLevelFlag) Set(s string) error {
 	return nil
 }
 
-// Parse reads the settings from command-line arguments.
-func Parse(args []string) (Config, error) {
-	cfg := Config{LogLevel: slog.LevelInfo}
-
+func newFlagSet(cfg *Config) *flag.FlagSet {
 	fs := flag.NewFlagSet("web", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&cfg.Addr, "addr", "127.0.0.1", "server address")
@@ -64,6 +61,23 @@ func Parse(args []string) (Config, error) {
 	fs.StringVar(&cfg.UIDir, "ui-dir", "", "read templates and static files from this directory instead of the embedded ones")
 	fs.Var(logLevelFlag{level: &cfg.LogLevel}, "log-level", "log level (debug|info|warn|error)")
 
+	return fs
+}
+
+// Usage writes the flags with their defaults to w.
+func Usage(w io.Writer) {
+	fs := newFlagSet(&Config{LogLevel: slog.LevelInfo})
+	fs.SetOutput(w)
+	_, _ = fmt.Fprintln(w, "Usage of web:")
+	fs.PrintDefaults()
+}
+
+// Parse reads the settings from command-line arguments.
+// For -h and -help the error wraps flag.ErrHelp.
+func Parse(args []string) (Config, error) {
+	cfg := Config{LogLevel: slog.LevelInfo}
+
+	fs := newFlagSet(&cfg)
 	if err := fs.Parse(args); err != nil {
 		return Config{}, fmt.Errorf("parse flags: %w", err)
 	}
