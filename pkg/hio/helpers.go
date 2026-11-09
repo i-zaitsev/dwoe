@@ -56,7 +56,7 @@ func readString(qs url.Values, key string, defaultValue string) string {
 }
 
 func isHTMX(r *http.Request) bool {
-	return r.Header.Get("HX-Request") == "true"
+	return r.Header.Get("HX-Request") == "true" && r.Header.Get("HX-Boosted") != "true"
 }
 
 // isFragment reports whether the request comes from htmx and targets the element with the given ID.
