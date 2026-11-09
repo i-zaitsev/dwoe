@@ -103,13 +103,15 @@ func TestServerError_ChoosesResponseByRequest(t *testing.T) {
 		name     string
 		path     string
 		htmx     bool
+		boosted  bool
 		wantType string
 		wantIn   []string
 		wantNone []string
 	}{
-		{"api_gets_json", "/api/v1/x", false, "application/json", []string{`"error"`}, []string{"<html"}},
-		{"page_gets_full_page", "/workspaces/x", false, "text/html; charset=utf-8", []string{"<html", "500"}, nil},
-		{"htmx_gets_fragment", "/workspaces/x", true, "text/html; charset=utf-8", []string{`class="error"`}, []string{"<html"}},
+		{"api_gets_json", "/api/v1/x", false, false, "application/json", []string{`"error"`}, []string{"<html"}},
+		{"page_gets_full_page", "/workspaces/x", false, false, "text/html; charset=utf-8", []string{"<html", "500"}, nil},
+		{"htmx_gets_fragment", "/workspaces/x", true, false, "text/html; charset=utf-8", []string{`class="error"`}, []string{"<html"}},
+		{"boosted_gets_full_page", "/workspaces/x", true, true, "text/html; charset=utf-8", []string{"<html", "500"}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,6 +119,9 @@ func TestServerError_ChoosesResponseByRequest(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
 			if tt.htmx {
 				req.Header.Set("HX-Request", "true")
+			}
+			if tt.boosted {
+				req.Header.Set("HX-Boosted", "true")
 			}
 			rr := httptest.NewRecorder()
 
@@ -189,6 +194,7 @@ func TestIsFragment(t *testing.T) {
 		{"htmx_other_target", map[string]string{"HX-Request": "true", "HX-Target": "main"}, false},
 		{"htmx_results", map[string]string{"HX-Request": "true", "HX-Target": "results"}, true},
 		{"target_without_htmx", map[string]string{"HX-Target": "results"}, false},
+		{"boosted_results", map[string]string{"HX-Request": "true", "HX-Boosted": "true", "HX-Target": "results"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
