@@ -1,5 +1,5 @@
 {{define "diff-lazy"}}
-<div hx-get="/workspaces/{{.ID}}/diff" hx-trigger="load">
+<div hx-get="/workspaces/{{.ID}}/diff" hx-trigger="load{{if .Running}}, every 5s{{end}}">
 	<p class="muted">Loading…</p>
 </div>
 {{end}}

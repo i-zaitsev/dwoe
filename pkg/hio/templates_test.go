@@ -180,7 +180,7 @@ func TestTemplates(t *testing.T) {
 					`<div sse-connect="/workspaces/ws-2/logs/stream" sse-close="done">`,
 					`<div sse-swap="log,error" hx-swap="beforeend" hx-target="#log-rows"></div>`,
 					`<div id="log-rows" class="log-rows" data-follow></div>`,
-					`hx-get="/workspaces/ws-2/diff" hx-trigger="load"`,
+					`hx-get="/workspaces/ws-2/diff" hx-trigger="load, every 5s"`,
 				),
 				lacks(`hx-get="/workspaces/ws-2/logs"`, `name="filter"`),
 			),
@@ -437,6 +437,20 @@ func TestTemplates(t *testing.T) {
 			tmpl:     "log-error-row",
 			data:     "<b>the log stream failed</b>",
 			expected: has(`<div class="log err">`, `<span class="kind">error</span>`, `&lt;b&gt;the log stream failed`),
+		},
+		{
+			name:     "diff_lazy_refreshes_every_5s_while_running",
+			set:      partialsSet,
+			tmpl:     "diff-lazy",
+			data:     beta,
+			expected: has(`<div hx-get="/workspaces/ws-2/diff" hx-trigger="load, every 5s">`),
+		},
+		{
+			name:     "diff_lazy_loads_once_when_not_running",
+			set:      partialsSet,
+			tmpl:     "diff-lazy",
+			data:     gamma,
+			expected: all(has(`hx-trigger="load"`), lacks(`every 5s`)),
 		},
 	}
 
