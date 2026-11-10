@@ -22,7 +22,8 @@ checksum:
   name_template: checksums.txt
 
 changelog:
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+  use: github-native
+
+release:
+  footer: |
+    See [CHANGELOG.md](https://github.com/i-zaitsev/dwoe/blob/{{ .Tag }}/CHANGELOG.md) for the full log.
