@@ -1,49 +1,53 @@
 # Changelog
 
-## Unreleased
+## v0.1.2 (2026-11-10)
 
 ### Features
 
-- The web dashboard is rebuilt on Go templates and htmx: boosted navigation, debounced filtering, live log streaming over SSE, lazy diffs, and light/dark themes
-- A JSON API under `/api/v1` serves workspaces, diffs, logs (with SSE streaming), and batches
-- `dwoe web --ui-dir` reads templates and static files from a directory, for development
-- The `cmd/web` entry point runs the dashboard on its own with `-addr` (host), `-port`, `-log-level`, `-datadir`, and `-ui-dir`
-- Multi-provider agents basic support: `anthropic` and `openai`
-- The `fire` command supports `--provider` flag
-- Task description shown by `dwoe inspect -desc` and in the web dashboard
-- Task configs are built through an options API
-- Layered Docker images for agents
-- Universal image with Go, Python, C, and C++ toolchains
-- The `make images` target to build the whole image tree
+- Web dashboard rebuilt on Go templates and htmx (#8)
+- JSON API under `/api/v1`
+- Standalone `cmd/web` and `dwoe web --ui-dir`
+- Added `dwoe web --host` and `--port` next to `--addr`
+- Highlighted JSON in logs, foldable sections, link to the result
+- Multi-provider agents: `anthropic` and `openai`
+- The `--provider` flag in `fire`
+- Task description in `inspect -desc` and the dashboard
+- Options API for task configs
+- Layered and universal Docker images, `make images`
 
 ### Fixes
 
-- The `--model` override had no effect and now applies to the task
-- Unknown provider names no longer panic
-- Provider credentials and allowed domains are resolved from the provider registry
-- `codex exec` authenticates with `CODEX_API_KEY` and falls back to `OPENAI_API_KEY`
+- The `--model` override applies to the task
+- No panic on unknown provider names
+- Provider credentials and domains from the registry
+- Codex auth with `CODEX_API_KEY` or `OPENAI_API_KEY`
+- Running workspaces survive cancelled dashboard requests
+- Dashboard errors on polls, streams, and page loads
+- Prompt files limited to the work dir, symlinks included
+- Theme toggle keeps the current page
 
 ### Breaking
 
-- `dwoe-codex:latest` is gone: use any `dwoe-agent:*` image with `provider: openai`
-- Agent, git, and resources are optional task sections filled from globals and defaults
-- Sentinel hashes changed: a workspace completed by an earlier release re-runs once
-- `dwoe web --addr` is removed: the dashboard listens on 127.0.0.1 only; use `--port` to change the port
-
-### Other
-
-- Project layout: the dashboard lives in `pkg/hio`, independent of dwoe, and `web/` connects it to the workspace manager; `internal/schema` and thin entry points in `cmd/`
-- The CLI command framework and the test assertions come from `github.com/i-zaitsev/pkg`
-- Human-readable log format via `--logfmt=text`, with the source location on warnings and errors
-- Colors only when the log writer is a terminal
-- Default models are now `claude-sonnet-5` and `gpt-5.6-terra`
-- Base image moved to Debian Trixie
-- Consistent `Workspace created|started` wording in command output
-- CI type-checks the integration build tag
+- The `dwoe-codex:latest` image removed: use `dwoe-agent:*` and `provider: openai`
+- Agent, git, and resources are optional task sections
+- Sentinel hashes changed: completed workspaces re-run once
 
 ### Docs
 
-- Provider key, authentication per provider, and the image tree
+- Providers, authentication, and the image tree
+- Dashboard, project layout, and lint rules
+
+### Other
+
+- Dashboard in `pkg/hio`, schema in `internal/`, thin entry points
+- CLI framework and assertions from `github.com/i-zaitsev/pkg`
+- Text log format via `--logfmt=text`
+- Colors only on a terminal
+- Default models `claude-sonnet-5` and `gpt-5.6-terra`
+- Base image on Debian Trixie
+- Consistent command output wording
+- Lint enforces dashboard layering, pins the Go toolchain
+- CI type-checks the integration build tag
 
 ## v0.1.1 (2026-04-21)
 
