@@ -55,7 +55,7 @@ Commands:
   status   <name|id>                  Show workspace status
   stop     <name|id>                  Stop running workspace
   version                             Show version
-  web      [--port PORT] [--ui-dir DIR] Start web dashboard
+  web      [--addr HOST:PORT | --host HOST --port PORT] [--ui-dir DIR] Start web dashboard
 ```
 The default location for workspace data, including logs, code artifacts, and task config, is `~/.dwoe`.
 
@@ -126,9 +126,12 @@ Use `dwoe web` to start a dashboard for monitoring workers, streaming logs, and 
 
 ```bash
 dwoe web --port 9090
+dwoe web --host 0.0.0.0
+dwoe web --addr 0.0.0.0:9090
 ```
 
-The dashboard binds to 127.0.0.1 only. The port defaults to 8080 and is set with `--port`.
+The dashboard listens on 127.0.0.1:8080 by default. `--host` and `--port` change one part,
+`--addr` sets both and cannot be combined with them.
 
 The dashboard is server-rendered HTML with htmx, served together with a JSON API under `/api/v1`.
 Templates and static files are embedded in the binary; `--ui-dir pkg/hio/ui` reads them from disk instead.
